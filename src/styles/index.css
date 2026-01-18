@@ -1,0 +1,21 @@
+@import "tailwindcss";
+
+html, body {
+    height: 100%;
+}
+
+body {
+    margin: 0;
+    background: #ffffff;
+    color: #111827;
+    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto,
+    "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", Arial, sans-serif;
+}
+
+/* 모바일에서 가로 스크롤 튀는 것 방지 (드로어/이미지 포함) */
+html {
+    overflow-x: hidden;
+}
+body {
+    overflow-x: hidden;
+}
