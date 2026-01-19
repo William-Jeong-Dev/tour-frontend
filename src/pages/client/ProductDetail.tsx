@@ -495,7 +495,7 @@ export default function ProductDetail() {
                                                                 ].join(" ")}
                                                             >
                                                                 <div className="text-xs font-bold text-neutral-800">{cell.date.getDate()}</div>
-                                                                <div className="mt-0.5 text-[11px] font-bold text-neutral-500">
+                                                                <div className="mt-0.5 text-[10px] font-bold text-neutral-500 whitespace-nowrap overflow-hidden text-ellipsis leading-none tracking-tight">
                                                                     {cheapest === null
                                                                         ? ""
                                                                         : cheapest === "가격문의"
