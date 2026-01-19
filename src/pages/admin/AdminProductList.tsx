@@ -3,6 +3,21 @@ import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { deleteProduct, listProducts } from "../../api/products.api";
 
+function fmtUpdatedAt(iso: string) {
+    // 2026-01-19T09:12:34.000Z -> 2026-01-19 18:12 (KST 느낌으로 로컬 표시)
+    try {
+        const d = new Date(iso);
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, "0");
+        const dd = String(d.getDate()).padStart(2, "0");
+        const hh = String(d.getHours()).padStart(2, "0");
+        const mi = String(d.getMinutes()).padStart(2, "0");
+        return `${yyyy}-${mm}-${dd} ${hh}:${mi}`;
+    } catch {
+        return iso;
+    }
+}
+
 export default function AdminProductList() {
     const [q, setQ] = useState("");
     const [region, setRegion] = useState("전체");
@@ -12,6 +27,7 @@ export default function AdminProductList() {
         queryFn: () => listProducts({ q, region }),
     });
 
+    // listProducts에서 이미 "최근 수정순" 정렬됨
     const items = query.data ?? [];
 
     const regions = useMemo(() => ["전체", "일본", "제주", "동남아", "유럽"], []);
@@ -29,7 +45,7 @@ export default function AdminProductList() {
                 <div>
                     <div className="text-xl font-semibold">상품 관리</div>
                     <div className="mt-2 text-sm text-neutral-400">
-                        상품 목록 / 등록 / 수정 / 삭제
+                        상품 목록 / 등록 / 수정 / 삭제 (기본 정렬: 최근 수정순)
                     </div>
                 </div>
 
@@ -87,6 +103,7 @@ export default function AdminProductList() {
                                 <th className="px-4 py-3">제목</th>
                                 <th className="px-4 py-3">지역</th>
                                 <th className="px-4 py-3">상태</th>
+                                <th className="px-4 py-3">최근수정</th>
                                 <th className="px-4 py-3">수정</th>
                                 <th className="px-4 py-3">삭제</th>
                             </tr>
@@ -104,6 +121,9 @@ export default function AdminProductList() {
                                     <td className="px-4 py-3">{p.region}</td>
                                     <td className="px-4 py-3">
                                         <StatusBadge status={p.status} />
+                                    </td>
+                                    <td className="px-4 py-3 text-xs text-neutral-300">
+                                        {fmtUpdatedAt(p.updatedAt)}
                                     </td>
                                     <td className="px-4 py-3">
                                         <Link
@@ -146,7 +166,7 @@ function StatusBadge({ status }: { status: string }) {
 
     return (
         <span className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${cls}`}>
-      {label}
-    </span>
+            {label}
+        </span>
     );
 }
