@@ -106,8 +106,8 @@ function useActiveSection(keys: TabKey[]) {
 function Badge({ children }: { children: string }) {
     return (
         <span className="inline-flex items-center rounded-md border border-neutral-200 bg-white px-2 py-1 text-xs font-bold text-neutral-700">
-      {children}
-    </span>
+            {children}
+        </span>
     );
 }
 
@@ -121,8 +121,8 @@ function StatusPill({ status }: { status: EventItem["status"] }) {
 
     return (
         <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-extrabold ${cls}`}>
-      {status}
-    </span>
+            {status}
+        </span>
     );
 }
 
@@ -162,22 +162,6 @@ function QtyControl({
     );
 }
 
-function MapEmbed({ query }: { query: string }) {
-    // 외부 라이브러리 없이 iframe로 간단히(나중에 Kakao/Google SDK로 교체 가능)
-    const src = `https://www.google.com/maps?q=${encodeURIComponent(query)}&output=embed`;
-    return (
-        <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white">
-            <div className="flex items-center justify-between border-b border-neutral-200 px-4 py-3">
-                <div className="text-sm font-extrabold text-neutral-900">지도</div>
-                <div className="text-xs text-neutral-500">{query}</div>
-            </div>
-            <div className="aspect-[16/10] w-full">
-                <iframe title="map" src={src} className="h-full w-full" loading="lazy" />
-            </div>
-        </div>
-    );
-}
-
 export default function ProductDetail() {
     const { id } = useParams();
     const location = useLocation();
@@ -190,7 +174,7 @@ export default function ProductDetail() {
 
     // 데모 데이터(실제 API 붙이면 여기만 교체)
     const tags = useMemo(() => {
-        // jiantour 화면처럼 상단에 “규슈골프/온천골프/1인1실” 느낌 :contentReference[oaicite:1]{index=1}
+        // jiantour 화면처럼 상단에 “규슈골프/온천골프/1인1실” 느낌
         return product?.badge
             ? ["일본골프", "온천골프", product.badge]
             : ["일본골프", "온천골프", "1인1실"];
@@ -198,9 +182,9 @@ export default function ProductDetail() {
 
     const baseTitle =
         product?.title ??
-        "[일본골프][사가] 이마리 실속 온천 골프(3일/36홀) #1인1실 #이마리시내호텔"; // 참고 페이지 타이틀 느낌 :contentReference[oaicite:2]{index=2}
+        "[일본골프][사가] 이마리 실속 온천 골프(3일/36홀) #1인1실 #이마리시내호텔";
 
-    const heroPriceText = product?.price ?? "649,000원 부터~"; // 참고 페이지 가격 표기 느낌 :contentReference[oaicite:3]{index=3}
+    const heroPriceText = product?.price ?? "649,000원 부터~";
 
     const heroImg =
         product?.img ??
@@ -208,8 +192,6 @@ export default function ProductDetail() {
 
     // 출발일/행사(데모)
     const events: EventItem[] = useMemo(() => {
-        // 참고 페이지는 2026-01/02 월 캘린더 + 날짜별 “64.9만/76.9만/가격문의” 형태 :contentReference[oaicite:4]{index=4}
-        // 여기서는 데모로 몇 개만 심어둠
         return [
             { id: "e1", dateISO: "2026-01-28", label: "2026-01-28 (수)", status: "출발확정", priceAdult: 649000 },
             { id: "e2", dateISO: "2026-01-29", label: "2026-01-29 (목)", status: "예약가능", priceAdult: 649000 },
@@ -243,7 +225,7 @@ export default function ProductDetail() {
 
     const totalPrice = useMemo(() => {
         if (!selectedEvent || selectedEvent.status === "가격문의") return null;
-        // 데모: 성인만 과금, 아동/유아 0원(참고 페이지도 아동/유아 0원 예시) :contentReference[oaicite:5]{index=5}
+        // 데모: 성인만 과금, 아동/유아 0원
         return adult * selectedEvent.priceAdult;
     }, [selectedEvent, adult]);
 
@@ -271,7 +253,8 @@ export default function ProductDetail() {
         // 날짜가 바뀌면 그 날짜의 첫 이벤트로 자동 선택
         const first = selectedDateEvents[0];
         if (first) setSelectedEventId(first.id);
-    }, [selectedDateISO]); // eslint-disable-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedDateISO]);
 
     const scrollToTab = (key: TabKey) => {
         const el = refs.current[key];
@@ -394,8 +377,7 @@ export default function ProductDetail() {
 
                 {/* 탭 바 (sticky) */}
                 <div
-                    className={`sticky top-[72px] z-30 mt-8 bg-white/95 backdrop-blur ${
-                        tabShadow ? "shadow-sm" : ""
+                    className={`sticky top-[72px] z-30 mt-8 bg-white/95 backdrop-blur ${tabShadow ? "shadow-sm" : ""
                     }`}
                 >
                     <div className="border-y border-neutral-200">
@@ -607,8 +589,8 @@ export default function ProductDetail() {
                                         <div className="text-sm font-semibold text-neutral-600">
                                             총 금액{" "}
                                             <span className="ml-2 text-2xl font-extrabold text-neutral-900">
-                        {totalPrice === null ? "가격문의" : `${krw(totalPrice)}원`}
-                      </span>
+                                                {totalPrice === null ? "가격문의" : `${krw(totalPrice)}원`}
+                                            </span>
                                         </div>
                                         <button
                                             type="button"
@@ -652,9 +634,12 @@ export default function ProductDetail() {
                                     </div>
                                 </div>
 
-                                {/* 지도 컴포넌트 */}
-                                <div className="mt-6">
-                                    <MapEmbed query="Imari, Saga, Japan" />
+                                {/* 지도 제거 후 대체 안내(원하면 삭제 가능) */}
+                                <div className="mt-6 rounded-2xl border border-neutral-200 bg-white p-5">
+                                    <div className="text-sm font-extrabold text-neutral-900">집결/이동 안내</div>
+                                    <p className="mt-3 text-sm leading-6 text-neutral-600">
+                                        (데모) 미팅 장소/픽업/이동 동선 정보는 추후 확정서 또는 상세정보로 제공됩니다.
+                                    </p>
                                 </div>
                             </section>
 
