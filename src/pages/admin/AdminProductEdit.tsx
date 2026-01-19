@@ -142,14 +142,12 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
             if (mode === "create") return createProduct(form);
             return updateProduct(id, form);
         },
-        onSuccess: (result) => {
+        onSuccess: () => {
             qc.invalidateQueries({ queryKey: ["admin-products"] });
             qc.invalidateQueries({ queryKey: ["products"] });
 
-            if (mode === "create" && result?.id) {
-                nav(`/admin/products/${result.id}/${tab}`, { replace: true });
-                return;
-            }
+            // ✅ 저장 후에는 상품 리스트로 돌아가기 (create/edit 공통)
+            nav("/admin/products", { replace: true });
         },
     });
 
@@ -170,10 +168,11 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
                         취소
                     </button>
                     <button
+                        disabled={save.isPending}
                         onClick={() => save.mutate()}
-                        className="rounded-xl bg-neutral-50 px-4 py-2 text-sm font-semibold text-neutral-950"
+                        className="rounded-xl bg-neutral-50 px-4 py-2 text-sm font-semibold text-neutral-950 disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                        저장
+                        {save.isPending ? "저장중..." : "저장"}
                     </button>
                 </div>
             </div>
@@ -223,8 +222,7 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
 
                                 <Field label="박">
                                     <input
-                                        inputMode="numeric"
-                                        value={String(form.nights)}
+                                        value={form.nights}
                                         onChange={(e) => setForm({ ...form, nights: clampInt(e.target.value, 0) })}
                                         className="w-full rounded-xl border border-neutral-800 bg-neutral-950/40 px-4 py-3 text-sm outline-none"
                                     />
@@ -232,8 +230,7 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
 
                                 <Field label="일">
                                     <input
-                                        inputMode="numeric"
-                                        value={String(form.days)}
+                                        value={form.days}
                                         onChange={(e) => setForm({ ...form, days: clampInt(e.target.value, 0) })}
                                         className="w-full rounded-xl border border-neutral-800 bg-neutral-950/40 px-4 py-3 text-sm outline-none"
                                     />
@@ -246,56 +243,38 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
                                     onChange={(e) => setForm({ ...form, status: e.target.value as ProductStatus })}
                                     className="w-full rounded-xl border border-neutral-800 bg-neutral-950/40 px-4 py-3 text-sm outline-none"
                                 >
-                                    {STATUSES.map((s) => (
-                                        <option key={s.value} value={s.value}>
-                                            {s.label}
+                                    {STATUSES.map((x) => (
+                                        <option key={x.value} value={x.value}>
+                                            {x.label}
                                         </option>
                                     ))}
                                 </select>
                             </Field>
 
-                            <Field label="가격 텍스트(목록/상세 상단)">
-                                <input
-                                    value={form.priceText}
-                                    onChange={(e) => setForm({ ...form, priceText: e.target.value })}
-                                    className="w-full rounded-xl border border-neutral-800 bg-neutral-950/40 px-4 py-3 text-sm outline-none"
-                                />
-                            </Field>
-
-                            <Field label="썸네일 URL">
+                            <Field label="대표 이미지 URL">
                                 <input
                                     value={form.thumbnailUrl}
                                     onChange={(e) => setForm({ ...form, thumbnailUrl: e.target.value })}
                                     className="w-full rounded-xl border border-neutral-800 bg-neutral-950/40 px-4 py-3 text-sm outline-none"
                                 />
                             </Field>
+
+                            <Field label="가격 텍스트(예: 97.9만 / 상담 문의)">
+                                <input
+                                    value={form.priceText}
+                                    onChange={(e) => setForm({ ...form, priceText: e.target.value })}
+                                    className="w-full rounded-xl border border-neutral-800 bg-neutral-950/40 px-4 py-3 text-sm outline-none"
+                                />
+                            </Field>
                         </div>
 
                         <div className="space-y-3">
-                            <Field label="상세 설명(임시: 텍스트)">
-                <textarea
-                    value={form.description}
-                    onChange={(e) => setForm({ ...form, description: e.target.value })}
-                    rows={10}
-                    className="w-full rounded-xl border border-neutral-800 bg-neutral-950/40 px-4 py-3 text-sm outline-none"
-                />
-                            </Field>
-
-                            <Field label="이미지 URL들(줄바꿈 입력)">
-                <textarea
-                    value={form.images.join("\n")}
-                    onChange={(e) =>
-                        setForm({
-                            ...form,
-                            images: e.target.value
-                                .split("\n")
-                                .map((x) => x.trim())
-                                .filter(Boolean),
-                        })
-                    }
-                    rows={5}
-                    className="w-full rounded-xl border border-neutral-800 bg-neutral-950/40 px-4 py-3 text-sm outline-none"
-                />
+                            <Field label="상품 소개(텍스트)">
+                                <textarea
+                                    value={form.description}
+                                    onChange={(e) => setForm({ ...form, description: e.target.value })}
+                                    className="min-h-[340px] w-full rounded-2xl border border-neutral-800 bg-neutral-950/40 px-4 py-3 text-sm outline-none"
+                                />
                             </Field>
                         </div>
                     </div>
@@ -329,10 +308,7 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
                 ) : null}
 
                 {tab === "offers" ? (
-                    <OffersEditor
-                        value={form.departures}
-                        onChange={(next) => setForm({ ...form, departures: next })}
-                    />
+                    <OffersEditor value={form.departures} onChange={(next) => setForm({ ...form, departures: next })} />
                 ) : null}
 
                 {tab === "assets" ? (
@@ -465,13 +441,7 @@ const MEAL_OPTIONS: Array<{ value: MealType; label: string }> = [
     { value: "FREE", label: "자유" },
 ];
 
-function ItineraryEditor({
-                             value,
-                             onChange,
-                         }: {
-    value: ItineraryDay[];
-    onChange: (next: ItineraryDay[]) => void;
-}) {
+function ItineraryEditor({ value, onChange }: { value: ItineraryDay[]; onChange: (next: ItineraryDay[]) => void }) {
     const addDay = () => {
         const nextNo = (value?.length ?? 0) + 1;
         const day: ItineraryDay = {
@@ -538,23 +508,15 @@ function ItineraryEditor({
         onChange(
             (value ?? []).map((d) => {
                 if (d.id !== dayId) return d;
-                return {
-                    ...d,
-                    rows: (d.rows ?? []).map((r) => (r.id === rowId ? { ...r, ...patch } : r)),
-                };
+                return { ...d, rows: (d.rows ?? []).map((r) => (r.id === rowId ? { ...r, ...patch } : r)) };
             })
         );
     };
 
     return (
         <div className="space-y-4">
-            <div className="flex items-end justify-between gap-3">
-                <div>
-                    <div className="text-base font-semibold text-neutral-200">일정표</div>
-                    <div className="mt-1 text-sm text-neutral-400">
-                        문서 표처럼 ‘일차 → 행(장소/교통/시간/내용/식사)’ 형태로 입력합니다.
-                    </div>
-                </div>
+            <div className="flex items-center justify-between">
+                <div className="text-sm font-semibold text-neutral-200">일정표</div>
                 <button
                     type="button"
                     onClick={addDay}
@@ -566,81 +528,80 @@ function ItineraryEditor({
 
             {(value ?? []).map((day) => (
                 <div key={day.id} className="rounded-2xl border border-neutral-900 bg-neutral-950/20 p-4">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div className="flex flex-wrap items-center gap-3">
-                            <div className="text-sm font-semibold text-neutral-100">{day.title}</div>
-
-                            <input
-                                value={day.dateText}
-                                onChange={(e) => updateDay(day.id, { dateText: e.target.value })}
-                                placeholder="예) 2026/04/20(월)"
-                                className="w-[180px] rounded-xl border border-neutral-800 bg-neutral-950/40 px-3 py-2 text-xs outline-none"
-                            />
+                    <div className="flex flex-wrap items-end justify-between gap-3">
+                        <div className="grid gap-3 md:grid-cols-2">
+                            <Field label="일차 제목">
+                                <input
+                                    value={day.title ?? ""}
+                                    onChange={(e) => updateDay(day.id, { title: e.target.value })}
+                                    className="w-full rounded-xl border border-neutral-800 bg-neutral-950/40 px-4 py-2 text-sm outline-none"
+                                />
+                            </Field>
+                            <Field label="날짜 텍스트(옵션)">
+                                <input
+                                    value={day.dateText ?? ""}
+                                    onChange={(e) => updateDay(day.id, { dateText: e.target.value })}
+                                    className="w-full rounded-xl border border-neutral-800 bg-neutral-950/40 px-4 py-2 text-sm outline-none"
+                                />
+                            </Field>
                         </div>
-
-                        <div className="flex gap-2">
-                            <button
-                                type="button"
-                                onClick={() => addRow(day.id)}
-                                className="rounded-xl border border-neutral-800 px-3 py-2 text-xs text-neutral-200 hover:bg-neutral-900"
-                            >
-                                + 행 추가
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => removeDay(day.id)}
-                                className="rounded-xl border border-neutral-800 px-3 py-2 text-xs text-neutral-200 hover:bg-neutral-900"
-                            >
-                                일차 삭제
-                            </button>
-                        </div>
+                        <button
+                            type="button"
+                            onClick={() => removeDay(day.id)}
+                            className="rounded-xl border border-neutral-800 px-4 py-2 text-sm text-neutral-200 hover:bg-neutral-900"
+                        >
+                            일차 삭제
+                        </button>
                     </div>
 
                     <div className="mt-4 overflow-x-auto rounded-2xl border border-neutral-900">
-                        <table className="min-w-[920px] w-full text-left text-xs">
+                        <table className="min-w-[980px] w-full text-left text-xs">
                             <thead className="bg-neutral-950/40 text-neutral-300">
                             <tr>
-                                <th className="px-3 py-2 w-[130px]">장소</th>
-                                <th className="px-3 py-2 w-[130px]">교통편</th>
-                                <th className="px-3 py-2 w-[90px]">시간</th>
-                                <th className="px-3 py-2">여행일정</th>
+                                <th className="px-3 py-2 w-[160px]">장소</th>
+                                <th className="px-3 py-2 w-[120px]">교통</th>
+                                <th className="px-3 py-2 w-[100px]">시간</th>
+                                <th className="px-3 py-2">내용</th>
                                 <th className="px-3 py-2 w-[90px]">조식</th>
                                 <th className="px-3 py-2 w-[90px]">중식</th>
                                 <th className="px-3 py-2 w-[90px]">석식</th>
-                                <th className="px-3 py-2 w-[70px]">삭제</th>
+                                <th className="px-3 py-2 w-[90px]"></th>
                             </tr>
                             </thead>
-                            <tbody className="divide-y divide-neutral-900 bg-neutral-950/20">
+                            <tbody className="divide-y divide-neutral-900">
                             {(day.rows ?? []).map((row) => (
                                 <tr key={row.id} className="align-top text-neutral-200">
                                     <td className="px-3 py-2">
                                         <input
-                                            value={row.place}
+                                            value={row.place ?? ""}
                                             onChange={(e) => updateRow(day.id, row.id, { place: e.target.value })}
-                                            className="w-full rounded-lg border border-neutral-800 bg-neutral-950/40 px-2 py-2 text-xs outline-none"
+                                            className="w-full rounded-lg border border-neutral-800 bg-neutral-950/40 px-2 py-2 outline-none"
                                         />
                                     </td>
                                     <td className="px-3 py-2">
                                         <input
-                                            value={row.transport}
-                                            onChange={(e) => updateRow(day.id, row.id, { transport: e.target.value })}
-                                            className="w-full rounded-lg border border-neutral-800 bg-neutral-950/40 px-2 py-2 text-xs outline-none"
+                                            value={row.transport ?? ""}
+                                            onChange={(e) =>
+                                                updateRow(day.id, row.id, { transport: e.target.value })
+                                            }
+                                            className="w-full rounded-lg border border-neutral-800 bg-neutral-950/40 px-2 py-2 outline-none"
                                         />
                                     </td>
                                     <td className="px-3 py-2">
                                         <input
-                                            value={row.time}
+                                            value={row.time ?? ""}
                                             onChange={(e) => updateRow(day.id, row.id, { time: e.target.value })}
-                                            className="w-full rounded-lg border border-neutral-800 bg-neutral-950/40 px-2 py-2 text-xs outline-none"
+                                            className="w-full rounded-lg border border-neutral-800 bg-neutral-950/40 px-2 py-2 outline-none"
                                         />
                                     </td>
                                     <td className="px-3 py-2">
-                      <textarea
-                          value={row.content}
-                          onChange={(e) => updateRow(day.id, row.id, { content: e.target.value })}
-                          rows={3}
-                          className="w-full rounded-lg border border-neutral-800 bg-neutral-950/40 px-2 py-2 text-xs outline-none"
-                      />
+                                            <textarea
+                                                value={row.content ?? ""}
+                                                onChange={(e) =>
+                                                    updateRow(day.id, row.id, { content: e.target.value })
+                                                }
+                                                className="min-h-[44px] w-full rounded-lg border border-neutral-800 bg-neutral-950/40 px-2 py-2 outline-none"
+                                            />
                                     </td>
                                     <td className="px-3 py-2">
                                         <select
@@ -648,11 +609,11 @@ function ItineraryEditor({
                                             onChange={(e) =>
                                                 updateRow(day.id, row.id, { mealMorning: e.target.value as MealType })
                                             }
-                                            className="w-full rounded-lg border border-neutral-800 bg-neutral-950/40 px-2 py-2 text-xs outline-none"
+                                            className="w-full rounded-lg border border-neutral-800 bg-neutral-950/40 px-2 py-2 outline-none"
                                         >
-                                            {MEAL_OPTIONS.map((m) => (
-                                                <option key={m.value} value={m.value}>
-                                                    {m.label}
+                                            {MEAL_OPTIONS.map((x) => (
+                                                <option key={x.value} value={x.value}>
+                                                    {x.label}
                                                 </option>
                                             ))}
                                         </select>
@@ -663,11 +624,11 @@ function ItineraryEditor({
                                             onChange={(e) =>
                                                 updateRow(day.id, row.id, { mealLunch: e.target.value as MealType })
                                             }
-                                            className="w-full rounded-lg border border-neutral-800 bg-neutral-950/40 px-2 py-2 text-xs outline-none"
+                                            className="w-full rounded-lg border border-neutral-800 bg-neutral-950/40 px-2 py-2 outline-none"
                                         >
-                                            {MEAL_OPTIONS.map((m) => (
-                                                <option key={m.value} value={m.value}>
-                                                    {m.label}
+                                            {MEAL_OPTIONS.map((x) => (
+                                                <option key={x.value} value={x.value}>
+                                                    {x.label}
                                                 </option>
                                             ))}
                                         </select>
@@ -678,11 +639,11 @@ function ItineraryEditor({
                                             onChange={(e) =>
                                                 updateRow(day.id, row.id, { mealDinner: e.target.value as MealType })
                                             }
-                                            className="w-full rounded-lg border border-neutral-800 bg-neutral-950/40 px-2 py-2 text-xs outline-none"
+                                            className="w-full rounded-lg border border-neutral-800 bg-neutral-950/40 px-2 py-2 outline-none"
                                         >
-                                            {MEAL_OPTIONS.map((m) => (
-                                                <option key={m.value} value={m.value}>
-                                                    {m.label}
+                                            {MEAL_OPTIONS.map((x) => (
+                                                <option key={x.value} value={x.value}>
+                                                    {x.label}
                                                 </option>
                                             ))}
                                         </select>
@@ -691,9 +652,9 @@ function ItineraryEditor({
                                         <button
                                             type="button"
                                             onClick={() => removeRow(day.id, row.id)}
-                                            className="rounded-lg border border-neutral-800 px-2 py-1 text-xs text-neutral-200 hover:bg-neutral-900"
+                                            className="rounded-lg border border-neutral-800 px-2 py-2 text-xs text-neutral-200 hover:bg-neutral-900"
                                         >
-                                            삭제
+                                            행 삭제
                                         </button>
                                     </td>
                                 </tr>
@@ -701,12 +662,22 @@ function ItineraryEditor({
                             </tbody>
                         </table>
                     </div>
+
+                    <div className="mt-3">
+                        <button
+                            type="button"
+                            onClick={() => addRow(day.id)}
+                            className="rounded-xl bg-neutral-50 px-4 py-2 text-sm font-semibold text-neutral-950"
+                        >
+                            + 행 추가
+                        </button>
+                    </div>
                 </div>
             ))}
 
             {(value ?? []).length === 0 ? (
                 <div className="rounded-2xl border border-dashed border-neutral-800 p-6 text-sm text-neutral-400">
-                    아직 일정표가 없습니다. “+ 일차 추가”를 눌러 시작하세요.
+                    일정표가 없습니다.
                 </div>
             ) : null}
         </div>
@@ -726,48 +697,48 @@ const DEPART_STATUSES: Array<{ value: DepartStatus; label: string }> = [
     { value: "INQUIRY", label: "가격문의" },
 ];
 
-function OffersEditor({
-                          value,
-                          onChange,
-                      }: {
-    value: Departure[];
-    onChange: (next: Departure[]) => void;
-}) {
+function OffersEditor({ value, onChange }: { value: Departure[]; onChange: (next: Departure[]) => void }) {
     const add = () => {
-        const item: Departure = {
+        const d: Departure = {
             id: uid("dep"),
-            dateISO: "",
+            dateISO: new Date().toISOString().slice(0, 10),
             offerType: "NORMAL",
             status: "AVAILABLE",
             priceAdult: 0,
-            remain: undefined,
-            min: undefined,
-            max: undefined,
+            remain: 0,
+            min: 1,
+            max: 0,
             note: "",
         };
-        onChange([...(value ?? []), item]);
+        onChange([...(value ?? []), d]);
     };
 
-    const remove = (id: string) => onChange((value ?? []).filter((x) => x.id !== id));
+    const remove = (depId: string) => onChange((value ?? []).filter((x) => x.id !== depId));
 
-    const patch = (id: string, p: Partial<Departure>) =>
-        onChange((value ?? []).map((x) => (x.id === id ? { ...x, ...p } : x)));
+    const update = (depId: string, patch: Partial<Departure>) => {
+        onChange((value ?? []).map((x) => (x.id === depId ? { ...x, ...patch } : x)));
+    };
+
+    const sorted = useMemo(() => {
+        const list = [...(value ?? [])];
+        list.sort((a, b) => {
+            if (a.dateISO !== b.dateISO) return a.dateISO.localeCompare(b.dateISO);
+            if (a.offerType !== b.offerType) return a.offerType.localeCompare(b.offerType);
+            return (a.priceAdult ?? 0) - (b.priceAdult ?? 0);
+        });
+        return list;
+    }, [value]);
 
     return (
         <div className="space-y-4">
-            <div className="flex items-end justify-between gap-3">
-                <div>
-                    <div className="text-base font-semibold text-neutral-200">출발일 + 오퍼(특가/이벤트)</div>
-                    <div className="mt-1 text-sm text-neutral-400">
-                        같은 날짜라도 오퍼 유형(기본/이벤트/특가)에 따라 가격이 다를 수 있어요.
-                    </div>
-                </div>
+            <div className="flex items-center justify-between">
+                <div className="text-sm font-semibold text-neutral-200">출발일 + 오퍼</div>
                 <button
                     type="button"
                     onClick={add}
                     className="rounded-xl bg-neutral-50 px-4 py-2 text-sm font-semibold text-neutral-950"
                 >
-                    + 출발일 추가
+                    + 출발 옵션 추가
                 </button>
             </div>
 
@@ -775,33 +746,32 @@ function OffersEditor({
                 <table className="min-w-[980px] w-full text-left text-xs">
                     <thead className="bg-neutral-950/40 text-neutral-300">
                     <tr>
-                        <th className="px-3 py-2 w-[130px]">출발일</th>
-                        <th className="px-3 py-2 w-[120px]">오퍼</th>
-                        <th className="px-3 py-2 w-[120px]">상태</th>
-                        <th className="px-3 py-2 w-[120px]">성인가</th>
-                        <th className="px-3 py-2 w-[90px]">잔여</th>
-                        <th className="px-3 py-2 w-[90px]">최소</th>
-                        <th className="px-3 py-2 w-[90px]">최대</th>
+                        <th className="px-3 py-2 w-[150px]">출발일</th>
+                        <th className="px-3 py-2 w-[140px]">오퍼</th>
+                        <th className="px-3 py-2 w-[140px]">상태</th>
+                        <th className="px-3 py-2 w-[140px]">성인가</th>
+                        <th className="px-3 py-2 w-[120px]">잔여</th>
+                        <th className="px-3 py-2 w-[120px]">최소</th>
+                        <th className="px-3 py-2 w-[120px]">최대</th>
                         <th className="px-3 py-2">메모</th>
-                        <th className="px-3 py-2 w-[70px]">삭제</th>
+                        <th className="px-3 py-2 w-[90px]"></th>
                     </tr>
                     </thead>
-                    <tbody className="divide-y divide-neutral-900 bg-neutral-950/20">
-                    {(value ?? []).map((d) => (
-                        <tr key={d.id} className="text-neutral-200">
+                    <tbody className="divide-y divide-neutral-900">
+                    {sorted.map((d) => (
+                        <tr key={d.id} className="align-top text-neutral-200">
                             <td className="px-3 py-2">
                                 <input
                                     value={d.dateISO}
-                                    onChange={(e) => patch(d.id, { dateISO: e.target.value })}
-                                    placeholder="YYYY-MM-DD"
-                                    className="w-full rounded-lg border border-neutral-800 bg-neutral-950/40 px-2 py-2 text-xs outline-none"
+                                    onChange={(e) => update(d.id, { dateISO: e.target.value })}
+                                    className="w-full rounded-lg border border-neutral-800 bg-neutral-950/40 px-2 py-2 outline-none"
                                 />
                             </td>
                             <td className="px-3 py-2">
                                 <select
                                     value={d.offerType}
-                                    onChange={(e) => patch(d.id, { offerType: e.target.value as OfferType })}
-                                    className="w-full rounded-lg border border-neutral-800 bg-neutral-950/40 px-2 py-2 text-xs outline-none"
+                                    onChange={(e) => update(d.id, { offerType: e.target.value as OfferType })}
+                                    className="w-full rounded-lg border border-neutral-800 bg-neutral-950/40 px-2 py-2 outline-none"
                                 >
                                     {OFFER_TYPES.map((x) => (
                                         <option key={x.value} value={x.value}>
@@ -813,11 +783,8 @@ function OffersEditor({
                             <td className="px-3 py-2">
                                 <select
                                     value={d.status}
-                                    onChange={(e) => {
-                                        const st = e.target.value as DepartStatus;
-                                        patch(d.id, { status: st, priceAdult: st === "INQUIRY" ? 0 : d.priceAdult });
-                                    }}
-                                    className="w-full rounded-lg border border-neutral-800 bg-neutral-950/40 px-2 py-2 text-xs outline-none"
+                                    onChange={(e) => update(d.id, { status: e.target.value as DepartStatus })}
+                                    className="w-full rounded-lg border border-neutral-800 bg-neutral-950/40 px-2 py-2 outline-none"
                                 >
                                     {DEPART_STATUSES.map((x) => (
                                         <option key={x.value} value={x.value}>
@@ -828,49 +795,44 @@ function OffersEditor({
                             </td>
                             <td className="px-3 py-2">
                                 <input
-                                    inputMode="numeric"
-                                    value={String(d.priceAdult ?? 0)}
-                                    onChange={(e) => patch(d.id, { priceAdult: clampInt(e.target.value, 0) })}
-                                    disabled={d.status === "INQUIRY"}
-                                    className="w-full rounded-lg border border-neutral-800 bg-neutral-950/40 px-2 py-2 text-xs outline-none disabled:opacity-40"
+                                    value={d.priceAdult ?? 0}
+                                    onChange={(e) => update(d.id, { priceAdult: clampInt(e.target.value, 0) })}
+                                    className="w-full rounded-lg border border-neutral-800 bg-neutral-950/40 px-2 py-2 outline-none"
                                 />
                             </td>
                             <td className="px-3 py-2">
                                 <input
-                                    inputMode="numeric"
-                                    value={d.remain == null ? "" : String(d.remain)}
-                                    onChange={(e) => patch(d.id, { remain: e.target.value === "" ? undefined : clampInt(e.target.value, 0) })}
-                                    className="w-full rounded-lg border border-neutral-800 bg-neutral-950/40 px-2 py-2 text-xs outline-none"
+                                    value={d.remain ?? 0}
+                                    onChange={(e) => update(d.id, { remain: clampInt(e.target.value, 0) })}
+                                    className="w-full rounded-lg border border-neutral-800 bg-neutral-950/40 px-2 py-2 outline-none"
                                 />
                             </td>
                             <td className="px-3 py-2">
                                 <input
-                                    inputMode="numeric"
-                                    value={d.min == null ? "" : String(d.min)}
-                                    onChange={(e) => patch(d.id, { min: e.target.value === "" ? undefined : clampInt(e.target.value, 0) })}
-                                    className="w-full rounded-lg border border-neutral-800 bg-neutral-950/40 px-2 py-2 text-xs outline-none"
+                                    value={d.min ?? 1}
+                                    onChange={(e) => update(d.id, { min: clampInt(e.target.value, 0) })}
+                                    className="w-full rounded-lg border border-neutral-800 bg-neutral-950/40 px-2 py-2 outline-none"
                                 />
                             </td>
                             <td className="px-3 py-2">
                                 <input
-                                    inputMode="numeric"
-                                    value={d.max == null ? "" : String(d.max)}
-                                    onChange={(e) => patch(d.id, { max: e.target.value === "" ? undefined : clampInt(e.target.value, 0) })}
-                                    className="w-full rounded-lg border border-neutral-800 bg-neutral-950/40 px-2 py-2 text-xs outline-none"
+                                    value={d.max ?? 0}
+                                    onChange={(e) => update(d.id, { max: clampInt(e.target.value, 0) })}
+                                    className="w-full rounded-lg border border-neutral-800 bg-neutral-950/40 px-2 py-2 outline-none"
                                 />
                             </td>
                             <td className="px-3 py-2">
                                 <input
                                     value={d.note ?? ""}
-                                    onChange={(e) => patch(d.id, { note: e.target.value })}
-                                    className="w-full rounded-lg border border-neutral-800 bg-neutral-950/40 px-2 py-2 text-xs outline-none"
+                                    onChange={(e) => update(d.id, { note: e.target.value })}
+                                    className="w-full rounded-lg border border-neutral-800 bg-neutral-950/40 px-2 py-2 outline-none"
                                 />
                             </td>
                             <td className="px-3 py-2">
                                 <button
                                     type="button"
                                     onClick={() => remove(d.id)}
-                                    className="rounded-lg border border-neutral-800 px-2 py-1 text-xs text-neutral-200 hover:bg-neutral-900"
+                                    className="rounded-lg border border-neutral-800 px-2 py-2 text-xs text-neutral-200 hover:bg-neutral-900"
                                 >
                                     삭제
                                 </button>
@@ -883,7 +845,7 @@ function OffersEditor({
 
             {(value ?? []).length === 0 ? (
                 <div className="rounded-2xl border border-dashed border-neutral-800 p-6 text-sm text-neutral-400">
-                    아직 출발일이 없습니다. “+ 출발일 추가”를 눌러 시작하세요.
+                    출발 옵션이 없습니다.
                 </div>
             ) : null}
         </div>

@@ -1,6 +1,9 @@
 import { Link } from "react-router-dom";
+import { useMemo } from "react";
 import Container from "../../components/common/Container";
 import MobileSnapCarousel from "../../components/common/MobileSnapCarousel";
+import { useProducts } from "../../hooks/useProducts";
+import type { Product } from "../../types/product";
 
 type Card = {
     id: string;
@@ -27,63 +30,17 @@ const heroSideCards: Card[] = [
     },
 ];
 
-const specialCards: Card[] = [
-    {
-        id: "sp-1",
-        title: "미야자키 ANA 리조트",
-        price: "639,000원~",
-        img: "https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=900&q=80",
-    },
-    {
-        id: "sp-2",
-        title: "가고시마 시내 호텔",
-        price: "659,000원~",
-        img: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=80",
-    },
-    {
-        id: "sp-3",
-        title: "오키나와 주전거리",
-        price: "979,000원~",
-        img: "https://images.unsplash.com/photo-1470770841072-f978cf4d019e?auto=format&fit=crop&w=900&q=80",
-    },
-    {
-        id: "sp-4",
-        title: "미야코지마 브릿지베이",
-        price: "999,000원~",
-        img: "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=900&q=80",
-    },
-];
-
-const onsenTopCards: Card[] = [
-    {
-        id: "on-1",
-        title: "미야자키 시내 다색 3일/45홀",
-        price: "589,000원~",
-        img: "https://images.unsplash.com/photo-1500375592092-40eb2168fd21?auto=format&fit=crop&w=900&q=80",
-        badge: "온천",
-    },
-    {
-        id: "on-2",
-        title: "이마리 온천 2색 3일/36홀",
-        price: "649,000원~",
-        img: "https://images.unsplash.com/photo-1500375592092-40eb2168fd21?auto=format&fit=crop&w=900&q=80",
-        badge: "온천",
-    },
-    {
-        id: "on-3",
-        title: "야소 구주 온천 3색 3일/54홀",
-        price: "799,000원~",
-        img: "https://images.unsplash.com/photo-1500375592092-40eb2168fd21?auto=format&fit=crop&w=900&q=80",
-        badge: "온천",
-    },
-    {
-        id: "on-4",
-        title: "후쿠오카 야쿠시마 G.C 3일/54홀",
-        price: "769,000원~",
-        img: "https://images.unsplash.com/photo-1500375592092-40eb2168fd21?auto=format&fit=crop&w=900&q=80",
-        badge: "실속",
-    },
-];
+function toCard(p: Product): Card {
+    return {
+        id: p.id,
+        title: p.title,
+        price: p.priceText || "상담 문의",
+        img:
+            p.thumbnailUrl ||
+            "https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=900&q=80",
+        badge: p.region || undefined,
+    };
+}
 
 function SectionTitle({ left, right }: { left: string; right?: string }) {
     return (
@@ -143,6 +100,19 @@ function ProductCard({ item }: { item: Card }) {
 }
 
 export default function Home() {
+    // ✅ Admin에서 만든 데이터가 홈에서도 보이게: mock DB(listProducts) 기반
+    // - 지금 단계에서는 PUBLISHED만 홈에 노출
+    const productsQuery = useProducts();
+    const published = useMemo(() => {
+        const items = productsQuery.data ?? [];
+        return items.filter((p) => p.status === "PUBLISHED");
+    }, [productsQuery.data]);
+
+    // 섹션별로 4개씩 뽑아 쓰기 (원하면 region/태그 기반으로 더 세분화 가능)
+    const homeCards = useMemo(() => published.map(toCard), [published]);
+    const specialCards = homeCards.slice(0, 4);
+    const onsenTopCards = homeCards.slice(4, 8).length ? homeCards.slice(4, 8) : homeCards.slice(0, 4);
+
     return (
         <main className="bg-white">
             <Container>
@@ -235,20 +205,29 @@ export default function Home() {
                 <section className="py-8 md:py-10">
                     <SectionTitle left="특가 🔥 얼리버드 골프" />
 
-                    {/* Desktop grid */}
-                    <div className="mt-6 hidden md:grid md:grid-cols-4 md:gap-6">
-                        {specialCards.map((p) => (
-                            <ProductCard key={p.id} item={p} />
-                        ))}
-                    </div>
+                    {productsQuery.isLoading ? (
+                        <div className="mt-6 rounded-2xl border border-neutral-200 bg-white p-6 text-sm text-neutral-500">
+                            상품 불러오는 중...
+                        </div>
+                    ) : specialCards.length === 0 ? (
+                        <div className="mt-6 rounded-2xl border border-dashed border-neutral-300 bg-white p-6 text-sm text-neutral-500">
+                            아직 노출(PUBLISHED) 상품이 없습니다. 어드민에서 상품을 등록/노출로 바꿔주세요.
+                        </div>
+                    ) : (
+                        <>
+                            {/* Desktop grid */}
+                            <div className="mt-6 hidden md:grid md:grid-cols-4 md:gap-6">
+                                {specialCards.map((p) => (
+                                    <ProductCard key={p.id} item={p} />
+                                ))}
+                            </div>
 
-                    {/* Mobile carousel + dots */}
-                    <div className="mt-6 md:hidden">
-                        <MobileSnapCarousel
-                            items={specialCards}
-                            renderItem={(p) => <ProductCard item={p} />}
-                        />
-                    </div>
+                            {/* Mobile carousel */}
+                            <div className="mt-6 md:hidden">
+                                <MobileSnapCarousel items={specialCards} renderItem={(p) => <ProductCard item={p} />} />
+                            </div>
+                        </>
+                    )}
                 </section>
 
                 {/* ONSEN */}
@@ -322,10 +301,10 @@ export default function Home() {
                                             <div className="min-w-0">
                                                 <div className="flex items-center gap-2">
                           <span className="rounded-md bg-emerald-50 px-2 py-1 text-[11px] font-bold text-emerald-700">
-                            온천
+                            {c.badge ?? "추천"}
                           </span>
                                                     <span className="rounded-md bg-sky-50 px-2 py-1 text-[11px] font-bold text-sky-700">
-                            3박4일
+                            상품
                           </span>
                                                 </div>
                                                 <div className="mt-2 line-clamp-1 text-sm font-semibold text-neutral-900">{c.title}</div>

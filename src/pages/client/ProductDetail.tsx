@@ -1,6 +1,10 @@
 import { Link, useLocation, useParams } from "react-router-dom";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import Container from "../../components/common/Container";
+
+import type { DepartStatus, Departure, MealType, OfferType, Product } from "../../types/product";
+import { getProduct } from "../../api/products.api";
 
 type Card = {
     id: string;
@@ -8,14 +12,6 @@ type Card = {
     price: string;
     img: string;
     badge?: string;
-};
-
-type EventItem = {
-    id: string;
-    dateISO: string; // YYYY-MM-DD
-    label: string; // 표시용
-    status: "예약가능" | "가격문의" | "출발확정";
-    priceAdult: number; // 원 단위
 };
 
 type TabKey =
@@ -28,6 +24,14 @@ type TabKey =
 
 function krw(n: number) {
     return n.toLocaleString("ko-KR");
+}
+
+function formatManwon(n: number) {
+    // 97.9만 / 98만 같이 1줄로 보이도록
+    const v = n / 10000;
+    const fixed = Math.round(v * 10) / 10;
+    const s = fixed.toFixed(1);
+    return `${s.endsWith(".0") ? s.slice(0, -2) : s}만`;
 }
 
 function toISODate(d: Date) {
@@ -111,19 +115,45 @@ function Badge({ children }: { children: string }) {
     );
 }
 
-function StatusPill({ status }: { status: EventItem["status"] }) {
+function statusLabel(status: DepartStatus) {
+    if (status === "AVAILABLE") return "예약가능";
+    if (status === "CONFIRMED") return "출발확정";
+    return "가격문의";
+}
+
+function StatusPill({ status }: { status: DepartStatus }) {
     const cls =
-        status === "예약가능"
+        status === "AVAILABLE"
             ? "bg-emerald-50 text-emerald-700 border-emerald-100"
-            : status === "출발확정"
+            : status === "CONFIRMED"
                 ? "bg-sky-50 text-sky-700 border-sky-100"
                 : "bg-neutral-100 text-neutral-600 border-neutral-200";
 
     return (
         <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-extrabold ${cls}`}>
-            {status}
+            {statusLabel(status)}
         </span>
     );
+}
+
+function OfferPill({ offerType }: { offerType: OfferType }) {
+    const label = offerType === "NORMAL" ? "기본" : offerType === "EVENT" ? "이벤트" : "특가";
+    const cls =
+        offerType === "SPECIAL"
+            ? "bg-rose-50 text-rose-700 border-rose-100"
+            : offerType === "EVENT"
+                ? "bg-amber-50 text-amber-800 border-amber-100"
+                : "bg-neutral-100 text-neutral-700 border-neutral-200";
+
+    return <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-extrabold ${cls}`}>{label}</span>;
+}
+
+function mealLabel(m: MealType) {
+    if (m === "HOTEL") return "호텔식";
+    if (m === "INCLUDED") return "포함";
+    if (m === "EXCLUDED") return "불포함";
+    if (m === "FREE") return "자유";
+    return "-";
 }
 
 function QtyControl({
@@ -165,7 +195,15 @@ function QtyControl({
 export default function ProductDetail() {
     const { id } = useParams();
     const location = useLocation();
-    const product = (location.state as { product?: Card } | null)?.product;
+    const navProduct = (location.state as { product?: Card } | null)?.product;
+
+    const productQuery = useQuery({
+        queryKey: ["product", { id }],
+        queryFn: () => getProduct(String(id ?? "")),
+        enabled: Boolean(id),
+    });
+
+    const product = (productQuery.data ?? null) as Product | null;
 
     // ✅ 상세로 들어오면 “항상 맨 위”로
     useEffect(() => {
@@ -174,49 +212,85 @@ export default function ProductDetail() {
 
     // 데모 데이터(실제 API 붙이면 여기만 교체)
     const tags = useMemo(() => {
-        // jiantour 화면처럼 상단에 “규슈골프/온천골프/1인1실” 느낌
-        return product?.badge
-            ? ["일본골프", "온천골프", product.badge]
-            : ["일본골프", "온천골프", "1인1실"];
-    }, [product]);
+        // (임시) location.state로 넘어온 배지 유지 + 지역 기반 태그
+        const regionTag = (product?.region ?? "") ? `${product?.region}` : "";
+        return navProduct?.badge
+            ? [regionTag || "여행", "추천", navProduct.badge].filter(Boolean)
+            : [regionTag || "여행", "추천", "인기"].filter(Boolean);
+    }, [navProduct?.badge, product?.region]);
 
     const baseTitle =
         product?.title ??
         "[일본골프][사가] 이마리 실속 온천 골프(3일/36홀) #1인1실 #이마리시내호텔";
 
-    const heroPriceText = product?.price ?? "649,000원 부터~";
+    const heroPriceText = product?.priceText ?? navProduct?.price ?? "상담 문의";
 
     const heroImg =
-        product?.img ??
+        product?.thumbnailUrl ??
+        navProduct?.img ??
         "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=1800&q=80";
 
-    // 출발일/행사(데모)
-    const events: EventItem[] = useMemo(() => {
-        return [
-            { id: "e1", dateISO: "2026-01-28", label: "2026-01-28 (수)", status: "출발확정", priceAdult: 649000 },
-            { id: "e2", dateISO: "2026-01-29", label: "2026-01-29 (목)", status: "예약가능", priceAdult: 649000 },
-            { id: "e3", dateISO: "2026-01-30", label: "2026-01-30 (금)", status: "예약가능", priceAdult: 769000 },
-            { id: "e4", dateISO: "2026-02-01", label: "2026-02-01 (일)", status: "예약가능", priceAdult: 699000 },
-            { id: "e5", dateISO: "2026-02-09", label: "2026-02-09 (월)", status: "가격문의", priceAdult: 0 },
-        ];
-    }, []);
+    const departures: Departure[] = useMemo(() => {
+        const list = Array.isArray(product?.departures) ? product?.departures : [];
+        // 날짜/오퍼/가격 기준으로 정렬(표시 안정화)
+        return [...(list ?? [])].sort((a, b) => {
+            if (a.dateISO !== b.dateISO) return a.dateISO.localeCompare(b.dateISO);
+            if (a.status !== b.status) return a.status.localeCompare(b.status);
+            if (a.offerType !== b.offerType) return a.offerType.localeCompare(b.offerType);
+            return (a.priceAdult ?? 0) - (b.priceAdult ?? 0);
+        });
+    }, [product?.departures]);
 
-    const eventByDate = useMemo(() => {
-        const m = new Map<string, EventItem[]>();
-        events.forEach((e) => {
-            const list = m.get(e.dateISO) ?? [];
-            list.push(e);
-            m.set(e.dateISO, list);
+    const depByDate = useMemo(() => {
+        const m = new Map<string, Departure[]>();
+        departures.forEach((d) => {
+            const list = m.get(d.dateISO) ?? [];
+            list.push(d);
+            m.set(d.dateISO, list);
         });
         return m;
-    }, [events]);
+    }, [departures]);
 
-    const [selectedDateISO, setSelectedDateISO] = useState<string>(events[0]?.dateISO ?? toISODate(new Date()));
-    const [selectedEventId, setSelectedEventId] = useState<string>(events[0]?.id ?? "");
-    const selectedEvent = useMemo(
-        () => events.find((e) => e.id === selectedEventId) ?? null,
-        [events, selectedEventId]
+    const initialDateISO = useMemo(() => {
+        const first = departures[0]?.dateISO;
+        return first ?? toISODate(new Date());
+    }, [departures]);
+
+    const [selectedDateISO, setSelectedDateISO] = useState<string>(initialDateISO);
+    const [selectedDepartureId, setSelectedDepartureId] = useState<string>(departures[0]?.id ?? "");
+
+    useEffect(() => {
+        // productQuery가 늦게 도착하는 케이스(초기 state가 빈 departures 기반으로 잡힘) 보정
+        if (!departures.length) return;
+        // 현재 선택한 날짜가 없거나, 해당 날짜에 출발일이 없으면 첫 날짜로 이동
+        if (!depByDate.get(selectedDateISO)) {
+            setSelectedDateISO(departures[0].dateISO);
+        }
+        // 현재 선택 id가 유효하지 않으면 첫 항목으로
+        if (!departures.some((d) => d.id === selectedDepartureId)) {
+            setSelectedDepartureId(departures[0].id);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [departures.length]);
+
+    const selectedDeparture = useMemo(
+        () => departures.find((d) => d.id === selectedDepartureId) ?? null,
+        [departures, selectedDepartureId]
     );
+
+    // 비동기 로딩(쿼리) 후 최초 데이터가 들어오면 기본 선택값을 보정
+    useEffect(() => {
+        if (!departures.length) return;
+        // 선택된 날짜가 아직 비어있거나, 데이터에 존재하지 않으면 첫 출발일로
+        if (!depByDate.has(selectedDateISO)) {
+            setSelectedDateISO(departures[0].dateISO);
+        }
+        // 선택된 출발이 없으면 첫 출발로
+        if (!selectedDepartureId || !departures.some((d) => d.id === selectedDepartureId)) {
+            setSelectedDepartureId(departures[0].id);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [departures.length]);
 
     // 인원/총액
     const [adult, setAdult] = useState(1);
@@ -224,10 +298,10 @@ export default function ProductDetail() {
     const [infant, setInfant] = useState(0);
 
     const totalPrice = useMemo(() => {
-        if (!selectedEvent || selectedEvent.status === "가격문의") return null;
-        // 데모: 성인만 과금, 아동/유아 0원
-        return adult * selectedEvent.priceAdult;
-    }, [selectedEvent, adult]);
+        if (!selectedDeparture || selectedDeparture.status === "INQUIRY") return null;
+        // (현재는 성인만 과금)
+        return adult * (selectedDeparture.priceAdult ?? 0);
+    }, [selectedDeparture, adult]);
 
     // 탭/섹션
     const tabKeys: TabKey[] = ["select", "itinerary", "summary", "info", "schedule", "policy"];
@@ -247,12 +321,18 @@ export default function ProductDetail() {
     const m1 = useMemo(() => getMonthMatrix(calBase), [calBase]);
     const m2 = useMemo(() => getMonthMatrix(addMonths(calBase, 1)), [calBase]);
 
-    const selectedDateEvents = useMemo(() => eventByDate.get(selectedDateISO) ?? [], [eventByDate, selectedDateISO]);
+    const selectedDateDepartures = useMemo(() => depByDate.get(selectedDateISO) ?? [], [depByDate, selectedDateISO]);
 
     useEffect(() => {
         // 날짜가 바뀌면 그 날짜의 첫 이벤트로 자동 선택
-        const first = selectedDateEvents[0];
-        if (first) setSelectedEventId(first.id);
+        const list = selectedDateDepartures;
+        if (!list.length) return;
+        // 기본 선택 규칙: (INQUIRY 제외) 최저가 → 없으면 첫 항목
+        const priced = list.filter((x) => x.status !== "INQUIRY" && (x.priceAdult ?? 0) > 0);
+        const next = priced.length
+            ? [...priced].sort((a, b) => (a.priceAdult ?? 0) - (b.priceAdult ?? 0))[0]
+            : list[0];
+        if (next) setSelectedDepartureId(next.id);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedDateISO]);
 
@@ -320,17 +400,17 @@ export default function ProductDetail() {
                                         <div className="flex items-center justify-between">
                                             <div className="text-xs text-neutral-500">행사금액</div>
                                             <div className="text-lg font-extrabold text-neutral-900">
-                                                {selectedEvent?.status === "가격문의"
+                                                {selectedDeparture?.status === "INQUIRY"
                                                     ? "가격문의"
-                                                    : selectedEvent
-                                                        ? `${krw(selectedEvent.priceAdult)}원`
+                                                    : selectedDeparture
+                                                        ? `${krw(selectedDeparture.priceAdult ?? 0)}원`
                                                         : "—"}
                                             </div>
                                         </div>
 
                                         <div className="flex items-center justify-between">
                                             <div className="text-xs text-neutral-500">상태</div>
-                                            <div>{selectedEvent ? <StatusPill status={selectedEvent.status} /> : null}</div>
+                                            <div>{selectedDeparture ? <StatusPill status={selectedDeparture.status} /> : null}</div>
                                         </div>
 
                                         <div className="grid grid-cols-2 gap-3 pt-2">
@@ -472,13 +552,13 @@ export default function ProductDetail() {
                                                         if (!cell.date) return <div key={i} className="h-12" />;
 
                                                         const iso = toISODate(cell.date);
-                                                        const list = eventByDate.get(iso) ?? [];
+                                                        const list = depByDate.get(iso) ?? [];
                                                         const cheapest =
                                                             list.length === 0
                                                                 ? null
-                                                                : list.some((x) => x.status === "가격문의")
+                                                                : list.some((x) => x.status === "INQUIRY")
                                                                     ? "가격문의"
-                                                                    : Math.min(...list.map((x) => x.priceAdult));
+                                                                    : Math.min(...list.map((x) => x.priceAdult ?? 0));
 
                                                         const selected = iso === selectedDateISO;
 
@@ -500,7 +580,7 @@ export default function ProductDetail() {
                                                                         ? ""
                                                                         : cheapest === "가격문의"
                                                                             ? "가격문의"
-                                                                            : `${Math.round(cheapest / 10000)}만`}
+                                                                            : formatManwon(cheapest)}
                                                                 </div>
                                                             </button>
                                                         );
@@ -518,19 +598,19 @@ export default function ProductDetail() {
                                         </div>
 
                                         <div className="mt-3 space-y-3">
-                                            {selectedDateEvents.length === 0 ? (
+                                            {selectedDateDepartures.length === 0 ? (
                                                 <div className="rounded-2xl border border-dashed border-neutral-300 p-6 text-sm text-neutral-500">
                                                     선택한 날짜에 등록된 행사가 없어요.
                                                 </div>
                                             ) : (
-                                                selectedDateEvents.map((ev) => {
-                                                    const isSelected = ev.id === selectedEventId;
-                                                    const priceText = ev.status === "가격문의" ? "가격문의" : `${krw(ev.priceAdult)}원`;
+                                                selectedDateDepartures.map((ev) => {
+                                                    const isSelected = ev.id === selectedDepartureId;
+                                                    const priceText = ev.status === "INQUIRY" ? "가격문의" : `${krw(ev.priceAdult)}원`;
                                                     return (
                                                         <button
                                                             key={ev.id}
                                                             type="button"
-                                                            onClick={() => setSelectedEventId(ev.id)}
+                                                            onClick={() => setSelectedDepartureId(ev.id)}
                                                             className={[
                                                                 "w-full rounded-2xl border p-4 text-left transition",
                                                                 isSelected
@@ -542,14 +622,16 @@ export default function ProductDetail() {
                                                                 <div className="min-w-0">
                                                                     <div className="flex items-center gap-2">
                                                                         <StatusPill status={ev.status} />
+                                                                        <OfferPill offerType={ev.offerType} />
                                                                         <div className="text-sm font-extrabold text-neutral-900 line-clamp-1">
                                                                             {baseTitle}
                                                                         </div>
                                                                     </div>
                                                                     <div className="mt-2 flex flex-wrap items-center gap-4 text-xs text-neutral-500">
-                                                                        <span>잔여인원: (데모)</span>
-                                                                        <span>최대예약: 20명 (데모)</span>
-                                                                        <span>최소출발: 4명 (데모)</span>
+                                                                        <span>잔여: {ev.remain == null ? "-" : `${ev.remain}명`}</span>
+                                                                        <span>최대: {ev.max == null ? "-" : `${ev.max}명`}</span>
+                                                                        <span>최소: {ev.min == null ? "-" : `${ev.min}명`}</span>
+                                                                        {ev.note ? <span className="text-neutral-400">메모: {ev.note}</span> : null}
                                                                     </div>
                                                                 </div>
 
@@ -660,10 +742,11 @@ export default function ProductDetail() {
                                             <div className="text-sm font-extrabold text-neutral-900">포함사항</div>
                                         </div>
                                         <ul className="mt-4 space-y-2 text-sm text-neutral-700">
-                                            <li>• 호텔: 센트럴 호텔 이마리(1인 1실/조식 포함)</li>
-                                            <li>• 골프 36홀: 그린피, 카트피 포함(4인 1조 기준)</li>
-                                            <li>• 송영차량: 공항-호텔/송영</li>
-                                            <li>• 여행자보험: 1억원 해외 여행자 보험</li>
+                                            {(product?.included ?? []).length ? (
+                                                (product?.included ?? []).map((x, i) => <li key={`${x}-${i}`}>• {x}</li>)
+                                            ) : (
+                                                <li className="text-neutral-400">등록된 포함사항이 없습니다.</li>
+                                            )}
                                         </ul>
                                     </div>
 
@@ -673,10 +756,11 @@ export default function ProductDetail() {
                                             <div className="text-sm font-extrabold text-neutral-900">불포함사항</div>
                                         </div>
                                         <ul className="mt-4 space-y-2 text-sm text-neutral-700">
-                                            <li>• 왕복항공권</li>
-                                            <li>• 캐디피, 클럽렌탈비</li>
-                                            <li>• 일정표 외 식사</li>
-                                            <li>• 개인 경비</li>
+                                            {(product?.excluded ?? []).length ? (
+                                                (product?.excluded ?? []).map((x, i) => <li key={`${x}-${i}`}>• {x}</li>)
+                                            ) : (
+                                                <li className="text-neutral-400">등록된 불포함사항이 없습니다.</li>
+                                            )}
                                         </ul>
                                     </div>
                                 </div>
@@ -684,10 +768,11 @@ export default function ProductDetail() {
                                 <div className="mt-6 rounded-2xl border border-neutral-200 bg-white p-5">
                                     <div className="text-sm font-extrabold text-neutral-900">참고사항</div>
                                     <ul className="mt-4 space-y-2 text-sm text-neutral-700">
-                                        <li>• 예약 시점과 현지 상황에 따라 금액이 변동될 수 있습니다.</li>
-                                        <li>• 확정서에 기재된 시간에 맞춰 출발, 미팅 장소 사전 대기 부탁드립니다.</li>
-                                        <li>• 라운드/차량 운영상 당일 변경이 어려울 수 있습니다.</li>
-                                        <li>• 분실물은 회수가 어려우며, 국제 배송 비용은 고객 부담입니다.</li>
+                                        {(product?.notices ?? []).length ? (
+                                            (product?.notices ?? []).map((x, i) => <li key={`${x}-${i}`}>• {x}</li>)
+                                        ) : (
+                                            <li className="text-neutral-400">등록된 참고사항이 없습니다.</li>
+                                        )}
                                     </ul>
                                 </div>
                             </section>
@@ -704,21 +789,9 @@ export default function ProductDetail() {
 
                                 <div className="mt-4 rounded-2xl border border-neutral-200 bg-white p-5">
                                     <div className="text-sm font-extrabold text-neutral-900">상품 소개</div>
-                                    <p className="mt-3 text-sm leading-6 text-neutral-600">
-                                        남자끼리 골프 여행 추천, 온천 + 1인실 + 자유 저녁 시간 등의 포인트를 강조하는 영역이야.
-                                        (데모) 실제 내용은 CMS/백오피스에서 내려주는 HTML 또는 마크다운으로 교체하면 됨.
+                                    <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-neutral-600">
+                                        {product?.description || "(임시) 아직 상품 소개가 없습니다."}
                                     </p>
-
-                                    <div className="mt-5 grid gap-4 md:grid-cols-3">
-                                        {["호텔", "골프코스", "식사/자유시간"].map((x) => (
-                                            <div key={x} className="rounded-2xl border border-neutral-200 p-4">
-                                                <div className="text-sm font-extrabold text-neutral-900">{x}</div>
-                                                <div className="mt-2 text-sm text-neutral-600">
-                                                    (데모) {x} 관련 상세 설명이 들어갑니다.
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
                                 </div>
                             </section>
 
@@ -733,27 +806,56 @@ export default function ProductDetail() {
                                 <h2 className="text-lg font-extrabold text-neutral-900">여행일정</h2>
 
                                 <div className="mt-4 space-y-4">
-                                    {[
-                                        { day: "1일차", date: "2026/01/28(수)", hotel: "센트럴 호텔 이마리", meals: ["아침: 불포함", "점심: 불포함", "저녁: 불포함"] },
-                                        { day: "2일차", date: "2026/01/29(목)", hotel: "센트럴 호텔 이마리", meals: ["아침: 호텔식", "점심: 불포함", "저녁: 불포함"] },
-                                        { day: "3일차", date: "2026/01/30(금)", hotel: "호텔 없음", meals: ["아침: 호텔식", "점심: 불포함", "저녁: 불포함"] },
-                                    ].map((d) => (
-                                        <div key={d.day} className="rounded-2xl border border-neutral-200 bg-white p-5">
-                                            <div className="flex flex-wrap items-center justify-between gap-3">
-                                                <div className="text-sm font-extrabold text-neutral-900">
-                                                    {d.day} <span className="ml-2 text-xs text-neutral-500">{d.date}</span>
+                                    {(product?.itinerary ?? []).length ? (
+                                        (product?.itinerary ?? []).map((day) => (
+                                            <div key={day.id} className="rounded-2xl border border-neutral-200 bg-white p-5">
+                                                <div className="flex flex-wrap items-center justify-between gap-3">
+                                                    <div className="text-sm font-extrabold text-neutral-900">
+                                                        {day.title || `${day.dayNo}일차`}
+                                                        {day.dateText ? (
+                                                            <span className="ml-2 text-xs text-neutral-500">{day.dateText}</span>
+                                                        ) : null}
+                                                    </div>
+                                                    <div className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-bold text-neutral-700">
+                                                        {product?.region ?? ""}
+                                                    </div>
                                                 </div>
-                                                <div className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-bold text-neutral-700">
-                                                    {d.hotel}
+
+                                                <div className="mt-4 overflow-x-auto rounded-2xl border border-neutral-200">
+                                                    <table className="min-w-[860px] w-full text-left text-xs">
+                                                        <thead className="bg-neutral-50 text-neutral-600">
+                                                        <tr>
+                                                            <th className="px-3 py-2 w-[140px]">장소</th>
+                                                            <th className="px-3 py-2 w-[110px]">교통</th>
+                                                            <th className="px-3 py-2 w-[90px]">시간</th>
+                                                            <th className="px-3 py-2">내용</th>
+                                                            <th className="px-3 py-2 w-[80px]">조식</th>
+                                                            <th className="px-3 py-2 w-[80px]">중식</th>
+                                                            <th className="px-3 py-2 w-[80px]">석식</th>
+                                                        </tr>
+                                                        </thead>
+                                                        <tbody className="divide-y divide-neutral-200">
+                                                        {(day.rows ?? []).map((row) => (
+                                                            <tr key={row.id} className="align-top text-neutral-800">
+                                                                <td className="px-3 py-2">{row.place || "-"}</td>
+                                                                <td className="px-3 py-2">{row.transport || "-"}</td>
+                                                                <td className="px-3 py-2">{row.time || "-"}</td>
+                                                                <td className="px-3 py-2 whitespace-pre-wrap">{row.content || "-"}</td>
+                                                                <td className="px-3 py-2">{mealLabel(row.mealMorning)}</td>
+                                                                <td className="px-3 py-2">{mealLabel(row.mealLunch)}</td>
+                                                                <td className="px-3 py-2">{mealLabel(row.mealDinner)}</td>
+                                                            </tr>
+                                                        ))}
+                                                        </tbody>
+                                                    </table>
                                                 </div>
                                             </div>
-                                            <ul className="mt-4 space-y-2 text-sm text-neutral-700">
-                                                {d.meals.map((m) => (
-                                                    <li key={m}>• {m}</li>
-                                                ))}
-                                            </ul>
+                                        ))
+                                    ) : (
+                                        <div className="rounded-2xl border border-dashed border-neutral-300 p-6 text-sm text-neutral-500">
+                                            등록된 일정표가 없습니다.
                                         </div>
-                                    ))}
+                                    )}
                                 </div>
                             </section>
 
