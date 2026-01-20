@@ -15,6 +15,7 @@ import type {
 } from "../../types/product";
 
 import { createProduct, getProduct, updateProduct, uid } from "../../api/products.api";
+import { listThemesAdmin, type ThemeRow } from "../../api/themes.api"; // ✅ 추가
 
 /* ---------------- tabs ---------------- */
 type TabKey = "basic" | "bullets" | "itinerary" | "offers" | "assets";
@@ -67,6 +68,25 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
         else nav(`/admin/products/${id}/${next}`);
     };
 
+    /* ---------- themes (for dropdown) ---------- */
+    const [themes, setThemes] = useState<ThemeRow[]>([]);
+    const [themesLoading, setThemesLoading] = useState(false);
+
+    useEffect(() => {
+        (async () => {
+            setThemesLoading(true);
+            try {
+                const list = await listThemesAdmin();
+                setThemes(list);
+            } catch (e) {
+                console.error("[themes] load error:", e);
+                setThemes([]);
+            } finally {
+                setThemesLoading(false);
+            }
+        })();
+    }, []);
+
     /* ---------- form ---------- */
     const [form, setForm] = useState<ProductUpsert>({
         title: "",
@@ -84,7 +104,10 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
         notices: [],
         itinerary: [],
         departures: [],
-    });
+
+        // ✅ 추가
+        themeId: null,
+    } as any);
 
     useEffect(() => {
         if (mode === "edit") {
@@ -107,7 +130,10 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
                     notices: p.notices ?? [],
                     itinerary: p.itinerary ?? [],
                     departures: p.departures ?? [],
-                });
+
+                    // ✅ 추가
+                    themeId: (p as any).themeId ?? null,
+                } as any);
             })();
         }
     }, [mode, id]);
@@ -165,7 +191,7 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
                         <Field label="제목">
                             <input
                                 value={form.title}
-                                onChange={(e) => setForm({ ...form, title: e.target.value })}
+                                onChange={(e) => setForm({ ...(form as any), title: e.target.value })}
                                 className="input"
                             />
                         </Field>
@@ -173,16 +199,43 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
                         <Field label="부제">
                             <input
                                 value={form.subtitle}
-                                onChange={(e) => setForm({ ...form, subtitle: e.target.value })}
+                                onChange={(e) => setForm({ ...(form as any), subtitle: e.target.value })}
                                 className="input"
                             />
+                        </Field>
+
+                        {/* ✅ 테마 선택 추가 */}
+                        <Field label="테마(상단 카테고리)">
+                            <select
+                                value={(form as any).themeId ?? ""}
+                                onChange={(e) =>
+                                    setForm({
+                                        ...(form as any),
+                                        themeId: e.target.value === "" ? null : e.target.value,
+                                    })
+                                }
+                                className="input"
+                                disabled={themesLoading}
+                            >
+                                <option value="">
+                                    {themesLoading ? "불러오는 중..." : "선택 안 함"}
+                                </option>
+                                {themes.map((t) => (
+                                    <option key={t.id} value={t.id}>
+                                        {t.name} {t.is_active ? "" : "(비노출)"}
+                                    </option>
+                                ))}
+                            </select>
+                            <div className="mt-1 text-[11px] text-neutral-500">
+                                고객 페이지 상단 메뉴 및 /theme/:slug 분류에 사용됩니다.
+                            </div>
                         </Field>
 
                         <div className="grid grid-cols-2 gap-3">
                             <Field label="지역">
                                 <select
                                     value={form.region}
-                                    onChange={(e) => setForm({ ...form, region: e.target.value })}
+                                    onChange={(e) => setForm({ ...(form as any), region: e.target.value })}
                                     className="input"
                                 >
                                     {REGIONS.map((x) => (
@@ -194,7 +247,7 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
                                 <select
                                     value={form.status}
                                     onChange={(e) =>
-                                        setForm({ ...form, status: e.target.value as ProductStatus })
+                                        setForm({ ...(form as any), status: e.target.value as ProductStatus })
                                     }
                                     className="input"
                                 >
@@ -213,7 +266,7 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
                                     value={form.nights}
                                     inputMode="numeric"
                                     onChange={(e) =>
-                                        setForm({ ...form, nights: clampInt(e.target.value) })
+                                        setForm({ ...(form as any), nights: clampInt(e.target.value) })
                                     }
                                     className="input"
                                 />
@@ -223,7 +276,7 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
                                     value={form.days}
                                     inputMode="numeric"
                                     onChange={(e) =>
-                                        setForm({ ...form, days: clampInt(e.target.value) })
+                                        setForm({ ...(form as any), days: clampInt(e.target.value) })
                                     }
                                     className="input"
                                 />
@@ -234,9 +287,21 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
 
                 {tab === "bullets" && (
                     <Section title="포함 / 불포함 / 참고">
-                        <ListEditor title="포함" items={form.included} onChange={(v) => setForm({ ...form, included: v })} />
-                        <ListEditor title="불포함" items={form.excluded} onChange={(v) => setForm({ ...form, excluded: v })} />
-                        <ListEditor title="참고" items={form.notices} onChange={(v) => setForm({ ...form, notices: v })} />
+                        <ListEditor
+                            title="포함"
+                            items={form.included}
+                            onChange={(v) => setForm({ ...(form as any), included: v })}
+                        />
+                        <ListEditor
+                            title="불포함"
+                            items={form.excluded}
+                            onChange={(v) => setForm({ ...(form as any), excluded: v })}
+                        />
+                        <ListEditor
+                            title="참고"
+                            items={form.notices}
+                            onChange={(v) => setForm({ ...(form as any), notices: v })}
+                        />
                     </Section>
                 )}
 
@@ -244,7 +309,7 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
                     <Section title="일정표">
                         <ItineraryEditor
                             days={form.itinerary ?? []}
-                            onChange={(v) => setForm({ ...form, itinerary: v })}
+                            onChange={(v) => setForm({ ...(form as any), itinerary: v })}
                         />
                     </Section>
                 )}
@@ -253,7 +318,7 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
                     <Section title="출발일 · 오퍼">
                         <OffersEditor
                             items={form.departures ?? []}
-                            onChange={(v) => setForm({ ...form, departures: v })}
+                            onChange={(v) => setForm({ ...(form as any), departures: v })}
                         />
                     </Section>
                 )}
@@ -323,11 +388,7 @@ function ListEditor({
             <div className="text-sm font-bold text-neutral-200">{title}</div>
 
             <div className="mt-2 flex gap-2">
-                <input
-                    value={draft}
-                    onChange={(e) => setDraft(e.target.value)}
-                    className="input flex-1"
-                />
+                <input value={draft} onChange={(e) => setDraft(e.target.value)} className="input flex-1" />
                 <button
                     onClick={() => {
                         if (!draft.trim()) return;

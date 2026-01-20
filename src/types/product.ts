@@ -75,6 +75,9 @@ export type Product = {
     //  출발일 + 오퍼(특가/이벤트)
     departures: Departure[];
 
+    // 여행상품 카테고리
+    themeId?: string | null;
+
     createdAt: string;
     updatedAt: string;
 };

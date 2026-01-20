@@ -9,6 +9,9 @@ function cx(...arr: Array<string | false | null | undefined>) {
 const NAVS = [
     { to: "/admin", label: "대시보드", end: true },
     { to: "/admin/products", label: "상품 관리" },
+
+    // ✅ 추가: 테마 관리
+    { to: "/admin/themes", label: "테마 관리" },
 ];
 
 export default function AdminLayout() {
@@ -158,7 +161,7 @@ function MenuLink({
                 )
             }
         >
-            <span>{label}</span>
+            <span className="whitespace-nowrap">{label}</span>
         </NavLink>
     );
 }

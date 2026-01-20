@@ -34,6 +34,9 @@ type ProductRow = {
     itinerary: any[];
     departures: any[];
 
+    // ✅ 추가
+    theme_id: string | null;
+
     created_at: string;
     updated_at: string;
 };
@@ -62,12 +65,17 @@ function toProduct(row: ProductRow): Product {
         itinerary: Array.isArray(row.itinerary) ? row.itinerary : [],
         departures: Array.isArray(row.departures) ? row.departures : [],
 
+        // ✅ 추가 (Product 타입에도 themeId가 있어야 함)
+        themeId: row.theme_id ?? null,
+
         createdAt: row.created_at ?? nowIso(),
         updatedAt: row.updated_at ?? nowIso(),
-    };
+    } as any;
 }
 
-function toRow(input: ProductUpsert): Omit<ProductRow, "id" | "created_at" | "updated_at"> {
+function toRow(
+    input: ProductUpsert
+): Omit<ProductRow, "id" | "created_at" | "updated_at"> {
     return {
         title: input.title ?? "",
         subtitle: input.subtitle ?? "",
@@ -88,6 +96,9 @@ function toRow(input: ProductUpsert): Omit<ProductRow, "id" | "created_at" | "up
 
         itinerary: Array.isArray(input.itinerary) ? input.itinerary : [],
         departures: Array.isArray(input.departures) ? input.departures : [],
+
+        // ✅ 추가 (ProductUpsert 타입에도 themeId가 있어야 함)
+        theme_id: (input as any).themeId ?? null,
     };
 }
 
