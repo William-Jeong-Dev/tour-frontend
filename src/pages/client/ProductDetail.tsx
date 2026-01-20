@@ -223,10 +223,15 @@ export default function ProductDetail() {
         enabled: Boolean(product?.themeId),
     });
 
-
-    // ✅ 상세로 들어오면 “항상 맨 위”로
     useEffect(() => {
-        window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
+        const hash = window.location.hash.replace("#", "") as TabKey;
+        if (!hash) return;
+
+        // refs가 연결되기 전에 실행될 수 있으니 약간 딜레이
+        setTimeout(() => {
+            if (refs.current[hash]) scrollToTab(hash);
+        }, 50);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [id]);
 
     const tags = useMemo(() => {
@@ -366,6 +371,10 @@ export default function ProductDetail() {
     const scrollToTab = (key: TabKey) => {
         const el = refs.current[key];
         if (!el) return;
+
+        // ✅ URL에 해시 반영 (뒤로가기/새로고침 시도 대비)
+        window.history.replaceState(null, "", `#${key}`);
+
         const top = el.getBoundingClientRect().top + window.scrollY - 120;
         window.scrollTo({ top, behavior: "smooth" });
     };
