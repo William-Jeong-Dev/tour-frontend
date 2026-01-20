@@ -1,5 +1,4 @@
-/* 🔽 전체 소스 시작 */
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
@@ -15,7 +14,6 @@ import type {
 } from "../../types/product";
 
 import { createProduct, getProduct, updateProduct, uid } from "../../api/products.api";
-import { listThemesAdmin, type ThemeRow } from "../../api/themes.api"; // ✅ 추가
 
 /* ---------------- tabs ---------------- */
 type TabKey = "basic" | "bullets" | "itinerary" | "offers" | "assets";
@@ -68,25 +66,6 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
         else nav(`/admin/products/${id}/${next}`);
     };
 
-    /* ---------- themes (for dropdown) ---------- */
-    const [themes, setThemes] = useState<ThemeRow[]>([]);
-    const [themesLoading, setThemesLoading] = useState(false);
-
-    useEffect(() => {
-        (async () => {
-            setThemesLoading(true);
-            try {
-                const list = await listThemesAdmin();
-                setThemes(list);
-            } catch (e) {
-                console.error("[themes] load error:", e);
-                setThemes([]);
-            } finally {
-                setThemesLoading(false);
-            }
-        })();
-    }, []);
-
     /* ---------- form ---------- */
     const [form, setForm] = useState<ProductUpsert>({
         title: "",
@@ -104,10 +83,9 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
         notices: [],
         itinerary: [],
         departures: [],
-
-        // ✅ 추가
-        themeId: null,
-    } as any);
+        // ✅ theme_id 이미 들어가 있다면 유지 (네 프로젝트에 맞게)
+        // themeId: null,
+    });
 
     useEffect(() => {
         if (mode === "edit") {
@@ -130,10 +108,8 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
                     notices: p.notices ?? [],
                     itinerary: p.itinerary ?? [],
                     departures: p.departures ?? [],
-
-                    // ✅ 추가
-                    themeId: (p as any).themeId ?? null,
-                } as any);
+                    // themeId: p.themeId ?? null,
+                });
             })();
         }
     }, [mode, id]);
@@ -144,13 +120,15 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
             if (mode === "create") return createProduct(form);
             return updateProduct(id, form);
         },
-        onSuccess: (res) => {
-            qc.invalidateQueries({ queryKey: ["admin-products"] });
-            if (mode === "create" && res?.id) {
-                nav(`/admin/products/${res.id}/basic`, { replace: true });
-            }
+        onSuccess: async () => {
+            // 리스트 캐시 무효화 + 화면도 갱신되도록
+            await qc.invalidateQueries({ queryKey: ["admin-products"] });
+
+            // ✅ 저장 후 무조건 리스트로 이동
+            nav("/admin/products", { replace: true });
         },
     });
+
 
     /* ====================== UI ====================== */
     return (
@@ -163,19 +141,36 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
                     </div>
                     <div className="mt-1 text-xs text-neutral-400">모바일에서도 편집 가능합니다</div>
                 </div>
+
+                {/* ✅ PC Actions (저장/취소) */}
+                <div className="hidden md:flex items-center gap-2">
+                    <button
+                        type="button"
+                        onClick={() => nav("/admin/products")}
+                        className="rounded-xl border border-neutral-800 bg-neutral-950/40 px-4 py-2 text-sm font-extrabold text-neutral-200 hover:bg-neutral-900"
+                    >
+                        취소
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => save.mutate()}
+                        className="rounded-xl bg-[#1C8B7B] px-4 py-2 text-sm font-extrabold text-white hover:brightness-95"
+                    >
+                        저장
+                    </button>
+                </div>
             </div>
 
             {/* ---------- tabs (mobile friendly) ---------- */}
-            <div className="sticky top-[56px] z-20 -mx-4 mt-4 bg-black/80 px-4 backdrop-blur">
-                <div className="flex gap-2 overflow-x-auto py-3">
+            {/* ✅ 입력 막는 문제 방지(pointer-events 처리) */}
+            <div className="sticky top-[56px] z-20 -mx-4 mt-4 bg-black/80 px-4 backdrop-blur pointer-events-none">
+                <div className="flex gap-2 overflow-x-auto py-3 pointer-events-auto">
                     {TABS.map((t) => (
                         <button
                             key={t.key}
                             onClick={() => goTab(t.key)}
                             className={`shrink-0 rounded-full px-4 py-2 text-sm font-bold ${
-                                tab === t.key
-                                    ? "bg-neutral-50 text-neutral-950"
-                                    : "bg-neutral-900 text-neutral-300"
+                                tab === t.key ? "bg-neutral-50 text-neutral-950" : "bg-neutral-900 text-neutral-300"
                             }`}
                         >
                             {t.label}
@@ -191,51 +186,28 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
                         <Field label="제목">
                             <input
                                 value={form.title}
-                                onChange={(e) => setForm({ ...(form as any), title: e.target.value })}
+                                onChange={(e) => setForm({ ...form, title: e.target.value })}
                                 className="input"
+                                placeholder="예) 오키나와 3박4일 골프 패키지"
                             />
                         </Field>
 
                         <Field label="부제">
                             <input
                                 value={form.subtitle}
-                                onChange={(e) => setForm({ ...(form as any), subtitle: e.target.value })}
+                                onChange={(e) => setForm({ ...form, subtitle: e.target.value })}
                                 className="input"
+                                placeholder="예) #1인1실 #온천 #시내호텔"
                             />
                         </Field>
 
-                        {/* ✅ 테마 선택 추가 */}
-                        <Field label="테마(상단 카테고리)">
-                            <select
-                                value={(form as any).themeId ?? ""}
-                                onChange={(e) =>
-                                    setForm({
-                                        ...(form as any),
-                                        themeId: e.target.value === "" ? null : e.target.value,
-                                    })
-                                }
-                                className="input"
-                                disabled={themesLoading}
-                            >
-                                <option value="">
-                                    {themesLoading ? "불러오는 중..." : "선택 안 함"}
-                                </option>
-                                {themes.map((t) => (
-                                    <option key={t.id} value={t.id}>
-                                        {t.name} {t.is_active ? "" : "(비노출)"}
-                                    </option>
-                                ))}
-                            </select>
-                            <div className="mt-1 text-[11px] text-neutral-500">
-                                고객 페이지 상단 메뉴 및 /theme/:slug 분류에 사용됩니다.
-                            </div>
-                        </Field>
+                        {/* (테마 드롭다운은 이미 있다고 했으니 여기 추가 안함) */}
 
                         <div className="grid grid-cols-2 gap-3">
                             <Field label="지역">
                                 <select
                                     value={form.region}
-                                    onChange={(e) => setForm({ ...(form as any), region: e.target.value })}
+                                    onChange={(e) => setForm({ ...form, region: e.target.value })}
                                     className="input"
                                 >
                                     {REGIONS.map((x) => (
@@ -246,9 +218,7 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
                             <Field label="상태">
                                 <select
                                     value={form.status}
-                                    onChange={(e) =>
-                                        setForm({ ...(form as any), status: e.target.value as ProductStatus })
-                                    }
+                                    onChange={(e) => setForm({ ...form, status: e.target.value as ProductStatus })}
                                     className="input"
                                 >
                                     {STATUSES.map((s) => (
@@ -265,9 +235,7 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
                                 <input
                                     value={form.nights}
                                     inputMode="numeric"
-                                    onChange={(e) =>
-                                        setForm({ ...(form as any), nights: clampInt(e.target.value) })
-                                    }
+                                    onChange={(e) => setForm({ ...form, nights: clampInt(e.target.value) })}
                                     className="input"
                                 />
                             </Field>
@@ -275,9 +243,7 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
                                 <input
                                     value={form.days}
                                     inputMode="numeric"
-                                    onChange={(e) =>
-                                        setForm({ ...(form as any), days: clampInt(e.target.value) })
-                                    }
+                                    onChange={(e) => setForm({ ...form, days: clampInt(e.target.value) })}
                                     className="input"
                                 />
                             </Field>
@@ -287,39 +253,21 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
 
                 {tab === "bullets" && (
                     <Section title="포함 / 불포함 / 참고">
-                        <ListEditor
-                            title="포함"
-                            items={form.included}
-                            onChange={(v) => setForm({ ...(form as any), included: v })}
-                        />
-                        <ListEditor
-                            title="불포함"
-                            items={form.excluded}
-                            onChange={(v) => setForm({ ...(form as any), excluded: v })}
-                        />
-                        <ListEditor
-                            title="참고"
-                            items={form.notices}
-                            onChange={(v) => setForm({ ...(form as any), notices: v })}
-                        />
+                        <ListEditor title="포함" items={form.included} onChange={(v) => setForm({ ...form, included: v })} />
+                        <ListEditor title="불포함" items={form.excluded} onChange={(v) => setForm({ ...form, excluded: v })} />
+                        <ListEditor title="참고" items={form.notices} onChange={(v) => setForm({ ...form, notices: v })} />
                     </Section>
                 )}
 
                 {tab === "itinerary" && (
                     <Section title="일정표">
-                        <ItineraryEditor
-                            days={form.itinerary ?? []}
-                            onChange={(v) => setForm({ ...(form as any), itinerary: v })}
-                        />
+                        <ItineraryEditor days={form.itinerary ?? []} onChange={(v) => setForm({ ...form, itinerary: v })} />
                     </Section>
                 )}
 
                 {tab === "offers" && (
                     <Section title="출발일 · 오퍼">
-                        <OffersEditor
-                            items={form.departures ?? []}
-                            onChange={(v) => setForm({ ...(form as any), departures: v })}
-                        />
+                        <OffersEditor items={form.departures ?? []} onChange={(v) => setForm({ ...form, departures: v })} />
                     </Section>
                 )}
 
@@ -383,52 +331,71 @@ function ListEditor({
 }) {
     const [draft, setDraft] = useState("");
 
-    return (
-        <div className="rounded-xl border border-neutral-800 bg-neutral-950/40 p-3">
-            <div className="text-sm font-bold text-neutral-200">{title}</div>
+    const addItem = () => {
+        const v = draft.trim();
+        if (!v) return;
+        onChange([...(items ?? []), v]);
+        setDraft("");
+    };
 
-            <div className="mt-2 flex gap-2">
-                <input value={draft} onChange={(e) => setDraft(e.target.value)} className="input flex-1" />
+    return (
+        <div className="rounded-2xl border border-neutral-800 bg-neutral-950/40 p-4">
+            <div className="flex items-center justify-between gap-3">
+                <div className="text-sm font-extrabold text-neutral-200">{title}</div>
                 <button
-                    onClick={() => {
-                        if (!draft.trim()) return;
-                        onChange([...items, draft.trim()]);
-                        setDraft("");
-                    }}
-                    className="rounded-xl bg-neutral-50 px-3 py-2 text-sm font-bold text-neutral-950"
+                    type="button"
+                    onClick={addItem}
+                    className="rounded-xl bg-neutral-50 px-4 py-2 text-sm font-extrabold text-neutral-950"
                 >
                     추가
                 </button>
             </div>
 
-            <div className="mt-3 space-y-2">
-                {items.map((x, i) => (
-                    <div
-                        key={i}
-                        className="flex items-center justify-between rounded-lg border border-neutral-800 px-3 py-2 text-sm text-neutral-200"
-                    >
-                        <span>{x}</span>
-                        <button
-                            onClick={() => onChange(items.filter((_, idx) => idx !== i))}
-                            className="text-xs text-neutral-400"
-                        >
-                            삭제
-                        </button>
+            {/* ✅ 입력칸이 안 보이던 문제 해결: 높이/배경/테두리/placeholder 강화 */}
+            <div className="mt-3">
+                <input
+                    value={draft}
+                    onChange={(e) => setDraft(e.target.value)}
+                    onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                            e.preventDefault();
+                            addItem();
+                        }
+                    }}
+                    placeholder={`${title} 항목을 입력하고 Enter 또는 '추가'를 누르세요`}
+                    className="input h-11"
+                />
+            </div>
+
+            <div className="mt-4 space-y-2">
+                {(items ?? []).length === 0 ? (
+                    <div className="rounded-xl border border-dashed border-neutral-800 bg-neutral-950/20 p-4 text-sm text-neutral-500">
+                        아직 등록된 항목이 없습니다.
                     </div>
-                ))}
+                ) : (
+                    (items ?? []).map((x, i) => (
+                        <div
+                            key={`${x}-${i}`}
+                            className="flex items-center justify-between gap-3 rounded-xl border border-neutral-800 bg-neutral-950/20 px-4 py-3"
+                        >
+                            <div className="min-w-0 text-sm text-neutral-200">{x}</div>
+                            <button
+                                type="button"
+                                onClick={() => onChange((items ?? []).filter((_, idx) => idx !== i))}
+                                className="shrink-0 rounded-lg border border-neutral-800 bg-neutral-950/40 px-3 py-1 text-xs font-extrabold text-neutral-200 hover:bg-neutral-900"
+                            >
+                                삭제
+                            </button>
+                        </div>
+                    ))
+                )}
             </div>
         </div>
     );
 }
 
 /* ====================== OFFERS (출발일/오퍼) ====================== */
-function OffersEditor({
-                          items,
-                          onChange,
-                      }: {
-    items: Departure[];
-    onChange: (v: Departure[]) => void;
-}) {
+function OffersEditor({ items, onChange }: { items: Departure[]; onChange: (v: Departure[]) => void }) {
     const add = () => {
         onChange([
             ...items,
@@ -469,21 +436,12 @@ function OffersEditor({
                     <div className="grid grid-cols-2 gap-3">
                         <div className="col-span-2">
                             <div className="mb-1 text-xs font-semibold text-neutral-400">출발일</div>
-                            <input
-                                type="date"
-                                value={d.dateISO ?? ""}
-                                onChange={(e) => update(i, { dateISO: e.target.value })}
-                                className="input"
-                            />
+                            <input type="date" value={d.dateISO ?? ""} onChange={(e) => update(i, { dateISO: e.target.value })} className="input" />
                         </div>
 
                         <div>
                             <div className="mb-1 text-xs font-semibold text-neutral-400">오퍼</div>
-                            <select
-                                value={d.offerType ?? "NORMAL"}
-                                onChange={(e) => update(i, { offerType: e.target.value as OfferType })}
-                                className="input"
-                            >
+                            <select value={d.offerType ?? "NORMAL"} onChange={(e) => update(i, { offerType: e.target.value as OfferType })} className="input">
                                 <option value="NORMAL">기본</option>
                                 <option value="EVENT">이벤트</option>
                                 <option value="SPECIAL">특가</option>
@@ -492,11 +450,7 @@ function OffersEditor({
 
                         <div>
                             <div className="mb-1 text-xs font-semibold text-neutral-400">상태</div>
-                            <select
-                                value={d.status ?? "AVAILABLE"}
-                                onChange={(e) => update(i, { status: e.target.value as DepartStatus })}
-                                className="input"
-                            >
+                            <select value={d.status ?? "AVAILABLE"} onChange={(e) => update(i, { status: e.target.value as DepartStatus })} className="input">
                                 <option value="AVAILABLE">예약가능</option>
                                 <option value="CONFIRMED">출발확정</option>
                                 <option value="INQUIRY">가격문의</option>
@@ -514,9 +468,7 @@ function OffersEditor({
                                 className={`input ${d.status === "INQUIRY" ? "opacity-60" : ""}`}
                             />
                             {d.status === "INQUIRY" ? (
-                                <div className="mt-1 text-[11px] text-neutral-500">
-                                    상태가 ‘가격문의’면 가격 입력이 비활성화됩니다.
-                                </div>
+                                <div className="mt-1 text-[11px] text-neutral-500">상태가 ‘가격문의’면 가격 입력이 비활성화됩니다.</div>
                             ) : null}
                         </div>
 
@@ -526,9 +478,7 @@ function OffersEditor({
                                 type="number"
                                 inputMode="numeric"
                                 value={d.remain ?? ""}
-                                onChange={(e) =>
-                                    update(i, { remain: e.target.value === "" ? undefined : clampInt(e.target.value) })
-                                }
+                                onChange={(e) => update(i, { remain: e.target.value === "" ? undefined : clampInt(e.target.value) })}
                                 className="input"
                             />
                         </div>
@@ -539,9 +489,7 @@ function OffersEditor({
                                 type="number"
                                 inputMode="numeric"
                                 value={d.min ?? ""}
-                                onChange={(e) =>
-                                    update(i, { min: e.target.value === "" ? undefined : clampInt(e.target.value) })
-                                }
+                                onChange={(e) => update(i, { min: e.target.value === "" ? undefined : clampInt(e.target.value) })}
                                 className="input"
                             />
                         </div>
@@ -552,21 +500,14 @@ function OffersEditor({
                                 type="number"
                                 inputMode="numeric"
                                 value={d.max ?? ""}
-                                onChange={(e) =>
-                                    update(i, { max: e.target.value === "" ? undefined : clampInt(e.target.value) })
-                                }
+                                onChange={(e) => update(i, { max: e.target.value === "" ? undefined : clampInt(e.target.value) })}
                                 className="input"
                             />
                         </div>
 
                         <div className="col-span-2">
                             <div className="mb-1 text-xs font-semibold text-neutral-400">메모(선택)</div>
-                            <input
-                                value={d.note ?? ""}
-                                onChange={(e) => update(i, { note: e.target.value })}
-                                className="input"
-                                placeholder="예: 특가 좌석 한정, 이벤트 안내 등"
-                            />
+                            <input value={d.note ?? ""} onChange={(e) => update(i, { note: e.target.value })} className="input" placeholder="예: 특가 좌석 한정, 이벤트 안내 등" />
                         </div>
                     </div>
 
@@ -578,11 +519,7 @@ function OffersEditor({
                 </div>
             ))}
 
-            <button
-                type="button"
-                onClick={add}
-                className="w-full rounded-xl border border-neutral-800 bg-neutral-950/40 py-3 text-sm font-bold text-neutral-200"
-            >
+            <button type="button" onClick={add} className="w-full rounded-xl border border-neutral-800 bg-neutral-950/40 py-3 text-sm font-bold text-neutral-200">
                 + 출발일 추가
             </button>
         </div>
@@ -590,13 +527,7 @@ function OffersEditor({
 }
 
 /* ====================== ITINERARY (일정표) ====================== */
-function ItineraryEditor({
-                             days,
-                             onChange,
-                         }: {
-    days: ItineraryDay[];
-    onChange: (v: ItineraryDay[]) => void;
-}) {
+function ItineraryEditor({ days, onChange }: { days: ItineraryDay[]; onChange: (v: ItineraryDay[]) => void }) {
     const renumberDays = (arr: ItineraryDay[]) =>
         arr.map((d, idx) => ({
             ...d,
@@ -660,13 +591,7 @@ function ItineraryEditor({
         onChange(next);
     };
 
-    const MealSelect = ({
-                            value,
-                            onChange,
-                        }: {
-        value: MealType;
-        onChange: (v: MealType) => void;
-    }) => (
+    const MealSelect = ({ value, onChange }: { value: MealType; onChange: (v: MealType) => void }) => (
         <select value={value} onChange={(e) => onChange(e.target.value as MealType)} className="input">
             <option value="NONE">없음</option>
             <option value="INCLUDED">포함</option>
@@ -687,11 +612,7 @@ function ItineraryEditor({
                     <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0 flex-1">
                             <div className="mb-1 text-xs font-semibold text-neutral-400">일차 제목</div>
-                            <input
-                                value={d.title ?? `${d.dayNo}일차`}
-                                onChange={(e) => updateDay(di, { title: e.target.value })}
-                                className="input"
-                            />
+                            <input value={d.title ?? `${d.dayNo}일차`} onChange={(e) => updateDay(di, { title: e.target.value })} className="input" />
                         </div>
                         <button onClick={() => removeDay(di)} className="mt-6 text-xs font-bold text-rose-400">
                             삭제
@@ -700,12 +621,7 @@ function ItineraryEditor({
 
                     <div className="mt-3">
                         <div className="mb-1 text-xs font-semibold text-neutral-400">날짜 텍스트(선택)</div>
-                        <input
-                            value={d.dateText ?? ""}
-                            onChange={(e) => updateDay(di, { dateText: e.target.value })}
-                            className="input"
-                            placeholder="예: 2026-03-21, 3/21(토) 등"
-                        />
+                        <input value={d.dateText ?? ""} onChange={(e) => updateDay(di, { dateText: e.target.value })} className="input" placeholder="예: 2026-03-21, 3/21(토) 등" />
                     </div>
 
                     {/* rows */}
@@ -715,64 +631,37 @@ function ItineraryEditor({
                                 <div className="grid grid-cols-2 gap-2">
                                     <div className="col-span-2">
                                         <div className="mb-1 text-xs font-semibold text-neutral-400">내용</div>
-                                        <textarea
-                                            value={r.content ?? ""}
-                                            onChange={(e) => updateRow(di, ri, { content: e.target.value })}
-                                            className="input min-h-[90px] resize-y"
-                                            placeholder="일정 내용을 입력하세요"
-                                        />
+                                        <textarea value={r.content ?? ""} onChange={(e) => updateRow(di, ri, { content: e.target.value })} className="input min-h-[90px] resize-y" placeholder="일정 내용을 입력하세요" />
                                     </div>
 
                                     <div>
                                         <div className="mb-1 text-xs font-semibold text-neutral-400">장소</div>
-                                        <input
-                                            value={r.place ?? ""}
-                                            onChange={(e) => updateRow(di, ri, { place: e.target.value })}
-                                            className="input"
-                                        />
+                                        <input value={r.place ?? ""} onChange={(e) => updateRow(di, ri, { place: e.target.value })} className="input" />
                                     </div>
 
                                     <div>
                                         <div className="mb-1 text-xs font-semibold text-neutral-400">교통</div>
-                                        <input
-                                            value={r.transport ?? ""}
-                                            onChange={(e) => updateRow(di, ri, { transport: e.target.value })}
-                                            className="input"
-                                        />
+                                        <input value={r.transport ?? ""} onChange={(e) => updateRow(di, ri, { transport: e.target.value })} className="input" />
                                     </div>
 
                                     <div>
                                         <div className="mb-1 text-xs font-semibold text-neutral-400">시간</div>
-                                        <input
-                                            value={r.time ?? ""}
-                                            onChange={(e) => updateRow(di, ri, { time: e.target.value })}
-                                            className="input"
-                                            placeholder="예: 10:30"
-                                        />
+                                        <input value={r.time ?? ""} onChange={(e) => updateRow(di, ri, { time: e.target.value })} className="input" placeholder="예: 10:30" />
                                     </div>
 
                                     <div>
                                         <div className="mb-1 text-xs font-semibold text-neutral-400">식사(아침)</div>
-                                        <MealSelect
-                                            value={r.mealMorning ?? ("NONE" as MealType)}
-                                            onChange={(v) => updateRow(di, ri, { mealMorning: v })}
-                                        />
+                                        <MealSelect value={r.mealMorning ?? ("NONE" as MealType)} onChange={(v) => updateRow(di, ri, { mealMorning: v })} />
                                     </div>
 
                                     <div>
                                         <div className="mb-1 text-xs font-semibold text-neutral-400">식사(점심)</div>
-                                        <MealSelect
-                                            value={r.mealLunch ?? ("NONE" as MealType)}
-                                            onChange={(v) => updateRow(di, ri, { mealLunch: v })}
-                                        />
+                                        <MealSelect value={r.mealLunch ?? ("NONE" as MealType)} onChange={(v) => updateRow(di, ri, { mealLunch: v })} />
                                     </div>
 
                                     <div>
                                         <div className="mb-1 text-xs font-semibold text-neutral-400">식사(저녁)</div>
-                                        <MealSelect
-                                            value={r.mealDinner ?? ("NONE" as MealType)}
-                                            onChange={(v) => updateRow(di, ri, { mealDinner: v })}
-                                        />
+                                        <MealSelect value={r.mealDinner ?? ("NONE" as MealType)} onChange={(v) => updateRow(di, ri, { mealDinner: v })} />
                                     </div>
                                 </div>
 
@@ -785,24 +674,15 @@ function ItineraryEditor({
                         ))}
                     </div>
 
-                    <button
-                        type="button"
-                        onClick={() => addRow(di)}
-                        className="mt-4 w-full rounded-xl border border-neutral-800 bg-neutral-950/40 py-3 text-sm font-bold text-neutral-200"
-                    >
+                    <button type="button" onClick={() => addRow(di)} className="mt-4 w-full rounded-xl border border-neutral-800 bg-neutral-950/40 py-3 text-sm font-bold text-neutral-200">
                         + 일정 추가
                     </button>
                 </div>
             ))}
 
-            <button
-                type="button"
-                onClick={addDay}
-                className="w-full rounded-xl border border-neutral-800 bg-neutral-950/40 py-3 text-sm font-bold text-neutral-200"
-            >
+            <button type="button" onClick={addDay} className="w-full rounded-xl border border-neutral-800 bg-neutral-950/40 py-3 text-sm font-bold text-neutral-200">
                 + 일차 추가
             </button>
         </div>
     );
 }
-
