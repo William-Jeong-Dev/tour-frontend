@@ -4,6 +4,7 @@ import Container from "../../components/common/Container";
 import MobileSnapCarousel from "../../components/common/MobileSnapCarousel";
 import { useProducts } from "../../hooks/useProducts";
 import type { Product } from "../../types/product";
+import HScroll from "../../components/common/HScroll";
 
 type Card = {
     id: string;

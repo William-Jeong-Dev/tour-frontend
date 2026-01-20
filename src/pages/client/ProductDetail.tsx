@@ -1,4 +1,4 @@
-import { Link, useLocation, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Container from "../../components/common/Container";
@@ -145,7 +145,11 @@ function OfferPill({ offerType }: { offerType: OfferType }) {
                 ? "bg-amber-50 text-amber-800 border-amber-100"
                 : "bg-neutral-100 text-neutral-700 border-neutral-200";
 
-    return <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-extrabold ${cls}`}>{label}</span>;
+    return (
+        <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-extrabold ${cls}`}>
+            {label}
+        </span>
+    );
 }
 
 function mealLabel(m: MealType) {
@@ -193,6 +197,7 @@ function QtyControl({
 }
 
 export default function ProductDetail() {
+    const nav = useNavigate();
     const { id } = useParams();
     const location = useLocation();
     const navProduct = (location.state as { product?: Card } | null)?.product;
@@ -212,7 +217,6 @@ export default function ProductDetail() {
 
     // 데모 데이터(실제 API 붙이면 여기만 교체)
     const tags = useMemo(() => {
-        // (임시) location.state로 넘어온 배지 유지 + 지역 기반 태그
         const regionTag = (product?.region ?? "") ? `${product?.region}` : "";
         return navProduct?.badge
             ? [regionTag || "여행", "추천", navProduct.badge].filter(Boolean)
@@ -232,7 +236,6 @@ export default function ProductDetail() {
 
     const departures: Departure[] = useMemo(() => {
         const list = Array.isArray(product?.departures) ? product?.departures : [];
-        // 날짜/오퍼/가격 기준으로 정렬(표시 안정화)
         return [...(list ?? [])].sort((a, b) => {
             if (a.dateISO !== b.dateISO) return a.dateISO.localeCompare(b.dateISO);
             if (a.status !== b.status) return a.status.localeCompare(b.status);
@@ -260,13 +263,10 @@ export default function ProductDetail() {
     const [selectedDepartureId, setSelectedDepartureId] = useState<string>(departures[0]?.id ?? "");
 
     useEffect(() => {
-        // productQuery가 늦게 도착하는 케이스(초기 state가 빈 departures 기반으로 잡힘) 보정
         if (!departures.length) return;
-        // 현재 선택한 날짜가 없거나, 해당 날짜에 출발일이 없으면 첫 날짜로 이동
         if (!depByDate.get(selectedDateISO)) {
             setSelectedDateISO(departures[0].dateISO);
         }
-        // 현재 선택 id가 유효하지 않으면 첫 항목으로
         if (!departures.some((d) => d.id === selectedDepartureId)) {
             setSelectedDepartureId(departures[0].id);
         }
@@ -278,14 +278,11 @@ export default function ProductDetail() {
         [departures, selectedDepartureId]
     );
 
-    // 비동기 로딩(쿼리) 후 최초 데이터가 들어오면 기본 선택값을 보정
     useEffect(() => {
         if (!departures.length) return;
-        // 선택된 날짜가 아직 비어있거나, 데이터에 존재하지 않으면 첫 출발일로
         if (!depByDate.has(selectedDateISO)) {
             setSelectedDateISO(departures[0].dateISO);
         }
-        // 선택된 출발이 없으면 첫 출발로
         if (!selectedDepartureId || !departures.some((d) => d.id === selectedDepartureId)) {
             setSelectedDepartureId(departures[0].id);
         }
@@ -299,7 +296,6 @@ export default function ProductDetail() {
 
     const totalPrice = useMemo(() => {
         if (!selectedDeparture || selectedDeparture.status === "INQUIRY") return null;
-        // (현재는 성인만 과금)
         return adult * (selectedDeparture.priceAdult ?? 0);
     }, [selectedDeparture, adult]);
 
@@ -321,13 +317,14 @@ export default function ProductDetail() {
     const m1 = useMemo(() => getMonthMatrix(calBase), [calBase]);
     const m2 = useMemo(() => getMonthMatrix(addMonths(calBase, 1)), [calBase]);
 
-    const selectedDateDepartures = useMemo(() => depByDate.get(selectedDateISO) ?? [], [depByDate, selectedDateISO]);
+    const selectedDateDepartures = useMemo(
+        () => depByDate.get(selectedDateISO) ?? [],
+        [depByDate, selectedDateISO]
+    );
 
     useEffect(() => {
-        // 날짜가 바뀌면 그 날짜의 첫 이벤트로 자동 선택
         const list = selectedDateDepartures;
         if (!list.length) return;
-        // 기본 선택 규칙: (INQUIRY 제외) 최저가 → 없으면 첫 항목
         const priced = list.filter((x) => x.status !== "INQUIRY" && (x.priceAdult ?? 0) > 0);
         const next = priced.length
             ? [...priced].sort((a, b) => (a.priceAdult ?? 0) - (b.priceAdult ?? 0))[0]
@@ -339,27 +336,28 @@ export default function ProductDetail() {
     const scrollToTab = (key: TabKey) => {
         const el = refs.current[key];
         if (!el) return;
-        const top = el.getBoundingClientRect().top + window.scrollY - 120; // sticky 헤더 높이 여유
+        const top = el.getBoundingClientRect().top + window.scrollY - 120;
         window.scrollTo({ top, behavior: "smooth" });
     };
 
     return (
         <main className="bg-white">
             <Container>
-                {/* 상단: 뒤로/상품ID */}
+                {/* ✅ 상단: 뒤로/상품ID (모바일 줄바꿈/노출 문제 해결) */}
                 <div className="pt-6">
                     <div className="flex items-center justify-between gap-3">
-                        <Link
-                            to="/"
-                            className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-800 hover:bg-neutral-50"
+                        {/* 모바일에서 글자 줄바꿈 방지 + 좁으면 오른쪽 요소가 숨겨지도록 */}
+                        <button
+                            type="button"
+                            onClick={() => nav(-1)}
+                            className="inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-800 hover:bg-neutral-50"
                         >
                             ← 홈으로
-                        </Link>
-                        <div className="text-sm text-neutral-500">상품 ID: {id}</div>
+                        </button>
                     </div>
                 </div>
 
-                {/* HERO: 태그 + 타이틀 + 가격 + 이미지 */}
+                {/* HERO */}
                 <section className="mt-6">
                     <div className="grid grid-cols-12 gap-8">
                         <div className="col-span-12 lg:col-span-7">
@@ -380,12 +378,16 @@ export default function ProductDetail() {
 
                             <div className="mt-6 overflow-hidden rounded-3xl border border-neutral-200 bg-white">
                                 <div className="aspect-[16/10] w-full overflow-hidden">
-                                    <img src={heroImg} alt={baseTitle} className="h-full w-full object-cover object-center" />
+                                    <img
+                                        src={heroImg}
+                                        alt={baseTitle}
+                                        className="h-full w-full object-cover object-center"
+                                    />
                                 </div>
                             </div>
                         </div>
 
-                        {/* 오른쪽: “선택중인 행사” 요약 카드(데스크탑 sticky) */}
+                        {/* 오른쪽: “선택중인 행사” */}
                         <aside className="col-span-12 lg:col-span-5">
                             <div className="lg:sticky lg:top-28">
                                 <div className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
@@ -410,7 +412,9 @@ export default function ProductDetail() {
 
                                         <div className="flex items-center justify-between">
                                             <div className="text-xs text-neutral-500">상태</div>
-                                            <div>{selectedDeparture ? <StatusPill status={selectedDeparture.status} /> : null}</div>
+                                            <div>
+                                                {selectedDeparture ? <StatusPill status={selectedDeparture.status} /> : null}
+                                            </div>
                                         </div>
 
                                         <div className="grid grid-cols-2 gap-3 pt-2">
@@ -435,7 +439,6 @@ export default function ProductDetail() {
                                     </div>
                                 </div>
 
-                                {/* 모바일에서는 CTA를 아래쪽에 한 번 더(원하면 유지) */}
                                 <div className="mt-4 grid grid-cols-2 gap-3 lg:hidden">
                                     <button
                                         type="button"
@@ -477,7 +480,7 @@ export default function ProductDetail() {
                                     type="button"
                                     onClick={() => scrollToTab(key)}
                                     className={[
-                                        "shrink-0 rounded-full px-4 py-2 text-sm font-bold transition",
+                                        "shrink-0 whitespace-nowrap rounded-full px-4 py-2 text-sm font-bold transition",
                                         active === key
                                             ? "bg-[#1C8B7B] text-white"
                                             : "bg-neutral-100 text-neutral-700 hover:bg-neutral-200",
@@ -490,10 +493,9 @@ export default function ProductDetail() {
                     </div>
                 </div>
 
-                {/* 본문(좌: 섹션들 / 우: sticky 요약은 위에 이미 있음) */}
+                {/* 본문 */}
                 <div className="pb-16 pt-8">
                     <div className="grid grid-cols-12 gap-8">
-                        {/* LEFT CONTENT */}
                         <div className="col-span-12 lg:col-span-7 space-y-10">
                             {/* 상품선택 */}
                             <section
@@ -531,7 +533,6 @@ export default function ProductDetail() {
                                         </div>
                                     </div>
 
-                                    {/* 2개월 캘린더 (데스크탑 2컬럼 / 모바일 1컬럼) */}
                                     <div className="mt-4 grid grid-cols-1 gap-6 md:grid-cols-2">
                                         {[m1, m2].map((m, idx) => (
                                             <div key={idx} className="rounded-2xl border border-neutral-200 p-4">
@@ -590,7 +591,6 @@ export default function ProductDetail() {
                                         ))}
                                     </div>
 
-                                    {/* 행사 선택 */}
                                     <div className="mt-6">
                                         <div className="flex items-center justify-between">
                                             <div className="text-sm font-extrabold text-neutral-900">행사 선택</div>
@@ -650,7 +650,6 @@ export default function ProductDetail() {
                                         </div>
                                     </div>
 
-                                    {/* 인원 선택 + 총액 */}
                                     <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3">
                                         <QtyControl label="성인 (만 12세 이상)" value={adult} onChange={setAdult} />
                                         <QtyControl
@@ -716,7 +715,6 @@ export default function ProductDetail() {
                                     </div>
                                 </div>
 
-                                {/* 지도 제거 후 대체 안내(원하면 삭제 가능) */}
                                 <div className="mt-6 rounded-2xl border border-neutral-200 bg-white p-5">
                                     <div className="text-sm font-extrabold text-neutral-900">집결/이동 안내</div>
                                     <p className="mt-3 text-sm leading-6 text-neutral-600">
@@ -883,8 +881,6 @@ export default function ProductDetail() {
                             </section>
                         </div>
 
-                        {/* RIGHT: 데스크탑에서 “선택중인 행사” 카드가 위에 있으니 여기서는 비워도 되지만,
-                필요하면 추가 sticky 블록을 둘 수 있음 */}
                         <div className="col-span-12 lg:col-span-5" />
                     </div>
                 </div>

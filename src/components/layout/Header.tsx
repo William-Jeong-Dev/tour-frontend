@@ -1,25 +1,24 @@
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "../../lib/supabase"; // ✅ 경로 확인 필요: "@/lib/supabase" 쓰면 더 깔끔
 
-type Theme = {
-    id: string;
-    name: string;
-    slug: string;
-    sort_order: number;
-};
+const CATS = [
+    "일본 골프",
+    "겨울 골프",
+    "특가 골프",
+    "부산 출발",
+    "동남아/중국/괌 골프",
+    "내맘대로 DIY 골프",
+    "골프여행 꿀팁",
+    "1:1 견적문의",
+];
 
 export default function Header() {
     const navigate = useNavigate();
-    const location = useLocation();
-
-    const [themes, setThemes] = useState<Theme[]>([]);
-    const [themesLoading, setThemesLoading] = useState(true);
 
     // ✅ 처음엔 활성화 없음
-    const [activeSlug, setActiveSlug] = useState<string | null>(null);
-
+    const [activeCat, setActiveCat] = useState<string | null>(null);
     const [scrolled, setScrolled] = useState(false);
+
     const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
     const [q, setQ] = useState("");
 
@@ -29,50 +28,6 @@ export default function Header() {
         window.addEventListener("scroll", onScroll, { passive: true });
         return () => window.removeEventListener("scroll", onScroll);
     }, []);
-
-    // ✅ themes 로딩 (DB에서 상단 카테고리 불러오기)
-    useEffect(() => {
-        let mounted = true;
-
-        async function loadThemes() {
-            setThemesLoading(true);
-
-            const { data, error } = await supabase
-                .from("product_themes")
-                .select("id,name,slug,sort_order")
-                .eq("is_active", true)
-                .order("sort_order", { ascending: true });
-
-            if (!mounted) return;
-
-            if (error) {
-                console.error("[product_themes] load error:", error);
-                setThemes([]);
-            } else {
-                setThemes((data ?? []) as Theme[]);
-            }
-
-            setThemesLoading(false);
-        }
-
-        loadThemes();
-
-        return () => {
-            mounted = false;
-        };
-    }, []);
-
-    // ✅ 현재 URL이 /theme/:slug 라면 그때만 active 표시
-    useEffect(() => {
-        // 예: /theme/japan-golf
-        const match = location.pathname.match(/^\/theme\/([^/]+)$/);
-        if (match?.[1]) {
-            setActiveSlug(match[1]);
-        } else {
-            // 홈(/)이나 다른 페이지면 active 없음
-            setActiveSlug(null);
-        }
-    }, [location.pathname]);
 
     const headerClass = useMemo(() => {
         return [
@@ -84,20 +39,21 @@ export default function Header() {
     const onSubmitSearch = (e: React.FormEvent) => {
         e.preventDefault();
         console.log("search:", q);
-        // TODO: 검색 페이지 연결 시:
         // navigate(`/search?q=${encodeURIComponent(q)}`)
     };
 
-    const onClickTheme = (slug: string) => {
-        // 클릭하면 테마 페이지로 이동 → URL 기반으로 active가 설정됨
-        navigate(`/theme/${slug}`);
+    const onClickCat = (t: string) => {
+        setActiveCat(t);
+        // ✅ 실제 테마 라우팅으로 연결하려면 slug 매핑 필요
+        // 지금은 예시로만 둠:
+        // navigate(`/theme/${slug}`)
     };
 
     return (
         <header className={headerClass}>
             {/* 상단 작은 메뉴 */}
             <div className="border-b border-white/15">
-                <div className="mx-auto flex w-full max-w-[1400px] items-center justify-end gap-4 px-6 py-2 text-xs text-white/90">
+                <div className="mx-auto flex w-full max-w-[1400px] items-center justify-end gap-4 px-4 py-2 text-xs text-white/90 md:px-6">
                     <a className="hover:text-white/70" href="#event">
                         기획전/이벤트
                     </a>
@@ -117,7 +73,7 @@ export default function Header() {
 
             {/* 로고 라인 */}
             <div className="border-b border-white/15">
-                <div className="mx-auto flex w-full max-w-[1400px] items-center justify-between gap-3 px-6 py-4">
+                <div className="mx-auto flex w-full max-w-[1400px] items-center justify-between gap-3 px-4 py-4 md:px-6">
                     <Link to="/" className="flex items-center gap-3">
                         <div className="h-9 w-9 rounded-full bg-white/95" />
                         <div className="leading-tight">
@@ -162,7 +118,7 @@ export default function Header() {
                 {/* Mobile Search Row */}
                 {mobileSearchOpen ? (
                     <div className="md:hidden">
-                        <div className="mx-auto w-full max-w-[1400px] px-6 pb-4">
+                        <div className="mx-auto w-full max-w-[1400px] px-4 pb-4 md:px-6">
                             <form onSubmit={onSubmitSearch} className="flex gap-2">
                                 <div className="flex flex-1 items-center gap-2 rounded-2xl bg-white/15 px-3 py-3">
                                     <span className="text-sm">🔍</span>
@@ -175,7 +131,7 @@ export default function Header() {
                                 </div>
                                 <button
                                     type="submit"
-                                    className="rounded-2xl bg-white/90 px-4 text-sm font-bold text-neutral-900"
+                                    className="whitespace-nowrap rounded-2xl bg-white/90 px-4 text-sm font-bold text-neutral-900"
                                 >
                                     검색
                                 </button>
@@ -185,34 +141,36 @@ export default function Header() {
                 ) : null}
             </div>
 
-            {/* 카테고리 라인 (DB 기반) */}
+            {/* ✅ 카테고리 라인: 모바일에서 왼쪽이 잘리는 문제 해결 */}
             <div className="border-b border-white/15">
-                <nav className="mx-auto w-full max-w-[1400px] px-6">
-                    <div className="flex items-center justify-center gap-7 overflow-x-auto py-3 text-sm font-semibold">
-                        {themesLoading ? (
-                            <div className="text-white/80">카테고리 불러오는 중...</div>
-                        ) : themes.length === 0 ? (
-                            <div className="text-white/80">등록된 카테고리가 없습니다.</div>
-                        ) : (
-                            themes.map((t) => {
-                                const isActive = activeSlug === t.slug;
-                                return (
-                                    <button
-                                        key={t.id}
-                                        type="button"
-                                        onClick={() => onClickTheme(t.slug)}
-                                        className={[
-                                            "whitespace-nowrap rounded-full px-3 py-1 transition",
-                                            isActive
-                                                ? "bg-white/20 text-white"
-                                                : "text-white/90 hover:text-white hover:bg-white/10",
-                                        ].join(" ")}
-                                    >
-                                        {t.name}
-                                    </button>
-                                );
-                            })
-                        )}
+                <nav className="mx-auto w-full max-w-[1400px] px-0 md:px-6">
+                    <div
+                        className={[
+                            "flex items-center gap-3 overflow-x-auto py-3 text-sm font-semibold",
+                            "px-4 md:px-0",
+                            "justify-start md:justify-center",
+                            "scroll-px-4",
+                            "[-webkit-overflow-scrolling:touch]",
+                        ].join(" ")}
+                    >
+                        {CATS.map((t) => {
+                            const isActive = activeCat === t;
+                            return (
+                                <button
+                                    key={t}
+                                    type="button"
+                                    onClick={() => onClickCat(t)}
+                                    className={[
+                                        "whitespace-nowrap rounded-full px-3 py-1 transition",
+                                        isActive
+                                            ? "bg-white/20 text-white"
+                                            : "text-white/90 hover:text-white hover:bg-white/10",
+                                    ].join(" ")}
+                                >
+                                    {t}
+                                </button>
+                            );
+                        })}
                     </div>
                 </nav>
             </div>

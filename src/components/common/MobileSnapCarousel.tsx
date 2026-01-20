@@ -21,6 +21,7 @@ export default function MobileSnapCarousel<T>({
 
     const wrapperClass = useMemo(() => {
         // Container(px-6)를 쓰는 구조라면 -mx-6로 좌우 풀블리드 느낌
+        // ✅ 단, 카드가 화면에 딱 붙어 보이는 문제는 트랙 padding으로 해결
         return noteFullBleed ? "-mx-6 md:mx-0" : "";
     }, [noteFullBleed]);
 
@@ -31,10 +32,8 @@ export default function MobileSnapCarousel<T>({
         const itemsEl = Array.from(root.querySelectorAll<HTMLElement>("[data-snap-item='1']"));
         if (itemsEl.length === 0) return;
 
-        // IntersectionObserver로 “현재 보이는 카드” 감지
         const io = new IntersectionObserver(
             (entries) => {
-                // 가장 많이 보이는 entry를 active로
                 const visible = entries
                     .filter((e) => e.isIntersecting)
                     .sort((a, b) => (b.intersectionRatio ?? 0) - (a.intersectionRatio ?? 0))[0];
@@ -71,15 +70,22 @@ export default function MobileSnapCarousel<T>({
         <div className={wrapperClass}>
             <div
                 ref={scrollerRef}
-                className="flex snap-x snap-mandatory gap-4 overflow-x-auto px-6 pb-2
-                   [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+                className={[
+                    // ✅ 핵심: 풀블리드(-mx-6)여도 카드가 화면 끝에 붙지 않도록 "좌우 안전 패딩" 유지
+                    // - 기존 px-6 유지 + 모바일에서 안전하게 (특히 작은 화면에서 더 안정적)
+                    "flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2",
+                    "px-6 md:px-0",
+
+                    // ✅ snap 시작 위치도 padding 기준으로 정확하게 잡히게
+                    // Tailwind arbitrary property로 scroll-padding 지정
+                    "[scroll-padding-left:24px] [scroll-padding-right:24px]",
+
+                    // scrollbar hide
+                    "[scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden",
+                ].join(" ")}
             >
                 {items.map((it, idx) => (
-                    <div
-                        key={idx}
-                        data-snap-item="1"
-                        className={`snap-start ${itemWidthClassName}`}
-                    >
+                    <div key={idx} data-snap-item="1" className={`snap-start ${itemWidthClassName}`}>
                         {renderItem(it, idx)}
                     </div>
                 ))}

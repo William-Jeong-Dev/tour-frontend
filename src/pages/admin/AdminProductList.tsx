@@ -137,16 +137,16 @@ export default function AdminProductList() {
 
                         {/* ✅ Desktop: Table */}
                         <div className="hidden overflow-hidden rounded-2xl border border-neutral-900 md:block">
-                            <table className="w-full text-left text-sm">
+                            <table className="w-full table-fixed text-left text-sm">
                                 <thead className="bg-neutral-950/40 text-neutral-300">
                                 <tr>
                                     <th className="px-4 py-3">ID</th>
                                     <th className="px-4 py-3">제목</th>
-                                    <th className="px-4 py-3">지역</th>
-                                    <th className="px-4 py-3">상태</th>
-                                    <th className="px-4 py-3">최근수정</th>
-                                    <th className="px-4 py-3">수정</th>
-                                    <th className="px-4 py-3">삭제</th>
+                                    <th className="px-4 py-3 w-[88px]">지역</th>
+                                    <th className="px-4 py-3 w-[96px]">상태</th>
+                                    <th className="px-4 py-3 w-[140px]">최근수정</th>
+                                    <th className="px-4 py-3 w-[88px] text-center">수정</th>
+                                    <th className="px-4 py-3 w-[88px] text-center">삭제</th>
                                 </tr>
                                 </thead>
                                 <tbody className="divide-y divide-neutral-900 bg-neutral-950/20">
@@ -163,22 +163,36 @@ export default function AdminProductList() {
                                         <td className="px-4 py-3">
                                             <StatusBadge status={p.status} />
                                         </td>
-                                        <td className="px-4 py-3 text-xs text-neutral-300">
+                                        <td className="px-4 py-3 text-xs text-neutral-300 whitespace-nowrap">
                                             {fmtUpdatedAt(p.updatedAt)}
                                         </td>
-                                        <td className="px-4 py-3">
+                                        <td className="px-4 py-3 text-center">
                                             <Link
                                                 to={`/admin/products/${p.id}/basic`}
-                                                className="rounded-lg border border-neutral-800 px-3 py-1 text-xs font-extrabold text-neutral-200 hover:bg-neutral-900"
+                                                className="
+                                                        inline-flex items-center justify-center
+                                                        whitespace-nowrap
+                                                        min-w-[56px] h-9 px-3
+                                                        rounded-lg border border-neutral-800
+                                                        text-xs font-extrabold text-neutral-200
+                                                        hover:bg-neutral-900
+                                                    "
                                             >
                                                 수정
                                             </Link>
                                         </td>
-                                        <td className="px-4 py-3">
+                                        <td className="px-4 py-3 text-center">
                                             <button
                                                 type="button"
                                                 onClick={() => onDelete(p.id)}
-                                                className="rounded-lg border border-neutral-800 px-3 py-1 text-xs font-extrabold text-neutral-200 hover:bg-neutral-900"
+                                                className="
+                                                        inline-flex items-center justify-center
+                                                        whitespace-nowrap
+                                                        min-w-[56px] h-9 px-3
+                                                        rounded-lg border border-neutral-800
+                                                        text-xs font-extrabold text-neutral-200
+                                                        hover:bg-neutral-900
+                                                    "
                                             >
                                                 삭제
                                             </button>
@@ -198,12 +212,25 @@ export default function AdminProductList() {
 function StatusBadge({ status }: { status: string }) {
     const cls =
         status === "PUBLISHED"
-            ? "bg-emerald-50 text-emerald-700"
+            ? "bg-emerald-50 text-emerald-700 border-emerald-100"
             : status === "HIDDEN"
-                ? "bg-neutral-200 text-neutral-700"
-                : "bg-amber-50 text-amber-700";
+                ? "bg-neutral-200 text-neutral-700 border-neutral-300"
+                : "bg-amber-50 text-amber-700 border-amber-100";
 
     const label = status === "PUBLISHED" ? "노출" : status === "HIDDEN" ? "숨김" : "임시";
 
-    return <span className={`inline-flex rounded-full px-3 py-1 text-xs font-extrabold ${cls}`}>{label}</span>;
+    return (
+        <span
+            className={[
+                "inline-flex items-center justify-center",
+                "whitespace-nowrap",
+                "min-w-[56px] h-9 px-3",
+                "rounded-full border",
+                "text-xs font-extrabold",
+                cls,
+            ].join(" ")}
+        >
+            {label}
+        </span>
+    );
 }
