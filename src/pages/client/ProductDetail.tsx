@@ -5,6 +5,7 @@ import Container from "../../components/common/Container";
 
 import type { DepartStatus, Departure, MealType, OfferType, Product } from "../../types/product";
 import { getProduct } from "../../api/products.api";
+import { getThemeById } from "../../api/themes.api";
 
 type Card = {
     id: string;
@@ -107,12 +108,18 @@ function useActiveSection(keys: TabKey[]) {
     return { active, refs };
 }
 
-function Badge({ children }: { children: string }) {
-    return (
-        <span className="inline-flex items-center rounded-md border border-neutral-200 bg-white px-2 py-1 text-xs font-bold text-neutral-700">
-            {children}
-        </span>
-    );
+function TagChip({ label, to }: { label: string; to?: string }) {
+    const base =
+        "inline-flex items-center rounded-md border border-neutral-200 bg-white px-2 py-1 text-xs font-bold text-neutral-700";
+
+    if (to) {
+        return (
+            <Link to={to} className={`${base} hover:bg-neutral-50`}>
+                {label}
+            </Link>
+        );
+    }
+    return <span className={base}>{label}</span>;
 }
 
 function statusLabel(status: DepartStatus) {
@@ -210,18 +217,41 @@ export default function ProductDetail() {
 
     const product = (productQuery.data ?? null) as Product | null;
 
+    const themeQuery = useQuery({
+        queryKey: ["theme", product?.themeId],
+        queryFn: () => getThemeById(String(product?.themeId)),
+        enabled: Boolean(product?.themeId),
+    });
+
+
     // ✅ 상세로 들어오면 “항상 맨 위”로
     useEffect(() => {
         window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
     }, [id]);
 
-    // 데모 데이터(실제 API 붙이면 여기만 교체)
     const tags = useMemo(() => {
-        const regionTag = (product?.region ?? "") ? `${product?.region}` : "";
-        return navProduct?.badge
-            ? [regionTag || "여행", "추천", navProduct.badge].filter(Boolean)
-            : [regionTag || "여행", "추천", "인기"].filter(Boolean);
-    }, [navProduct?.badge, product?.region]);
+        const out: Array<{ label: string; to?: string }> = [];
+
+        // 1) 지역(정보용)
+        if (product?.region) out.push({ label: product.region });
+
+        // 2) 추천(임시 고정 태그)
+        out.push({ label: "추천" });
+
+        // 3) 테마(있으면 클릭 -> /theme/:slug)
+        if (themeQuery.data?.name && themeQuery.data?.slug) {
+            out.push({ label: themeQuery.data.name, to: `/theme/${themeQuery.data.slug}` });
+        }
+
+        // 4) navProduct.badge가 region과 다르면 추가(중복 방지)
+        if (navProduct?.badge && navProduct.badge !== product?.region) {
+            out.push({ label: navProduct.badge });
+        }
+
+        // 5) label 중복 제거
+        const seen = new Set<string>();
+        return out.filter((x) => (seen.has(x.label) ? false : (seen.add(x.label), true)));
+    }, [product?.region, navProduct?.badge, themeQuery.data?.name, themeQuery.data?.slug]);
 
     const baseTitle =
         product?.title ??
@@ -363,18 +393,17 @@ export default function ProductDetail() {
                         <div className="col-span-12 lg:col-span-7">
                             <div className="flex flex-wrap gap-2">
                                 {tags.map((t) => (
-                                    <Badge key={t}>{t}</Badge>
+                                    <TagChip key={`${t.label}-${t.to ?? ""}`} label={t.label} to={t.to} />
                                 ))}
                             </div>
 
-                            <h1 className="mt-4 text-2xl font-extrabold tracking-tight text-neutral-900 md:text-3xl">
+                                <h1 className="mt-4 text-2xl font-extrabold tracking-tight text-neutral-900 md:text-3xl">
                                 {baseTitle}
-                            </h1>
+                                </h1>
 
                             <div className="mt-4 flex flex-wrap items-end gap-3">
                                 <div className="text-sm text-neutral-500">성인 1인 기준</div>
                                 <div className="text-2xl font-extrabold text-neutral-900">{heroPriceText}</div>
-                            </div>
 
                             <div className="mt-6 overflow-hidden rounded-3xl border border-neutral-200 bg-white">
                                 <div className="aspect-[16/10] w-full overflow-hidden">
@@ -455,6 +484,7 @@ export default function ProductDetail() {
                                 </div>
                             </div>
                         </aside>
+                    </div>
                     </div>
                 </section>
 

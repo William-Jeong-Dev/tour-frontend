@@ -66,3 +66,14 @@ export async function deleteTheme(id: string) {
     if (error) throw error;
     return true;
 }
+
+export async function getThemeById(id: string) {
+    const { data, error } = await supabase
+        .from("product_themes")
+        .select("id,name,slug,sort_order,is_active")
+        .eq("id", id)
+        .maybeSingle();
+
+    if (error) throw error;
+    return (data ?? null) as ThemeRow | null;
+}
