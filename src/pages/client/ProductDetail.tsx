@@ -15,13 +15,7 @@ type Card = {
     badge?: string;
 };
 
-type TabKey =
-    | "select"
-    | "itinerary"
-    | "summary"
-    | "info"
-    | "schedule"
-    | "policy";
+type TabKey = "select" | "itinerary" | "summary" | "info" | "schedule" | "policy";
 
 function krw(n: number) {
     return n.toLocaleString("ko-KR");
@@ -83,7 +77,6 @@ function useActiveSection(keys: TabKey[]) {
     useEffect(() => {
         const observer = new IntersectionObserver(
             (entries) => {
-                // 가장 위에 가까운/가장 많이 보이는 섹션을 active로
                 const visible = entries
                     .filter((e) => e.isIntersecting)
                     .sort((a, b) => (b.intersectionRatio ?? 0) - (a.intersectionRatio ?? 0));
@@ -91,7 +84,6 @@ function useActiveSection(keys: TabKey[]) {
             },
             {
                 root: null,
-                // 헤더 sticky 높이 감안해서 위쪽에서 조금 지나면 교체
                 rootMargin: "-120px 0px -65% 0px",
                 threshold: [0.1, 0.2, 0.35, 0.5],
             }
@@ -105,7 +97,7 @@ function useActiveSection(keys: TabKey[]) {
         return () => observer.disconnect();
     }, [keys]);
 
-    return { active, refs };
+    return { active, setActive, refs };
 }
 
 function TagChip({ label, to }: { label: string; to?: string }) {
@@ -138,8 +130,8 @@ function StatusPill({ status }: { status: DepartStatus }) {
 
     return (
         <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-extrabold ${cls}`}>
-            {statusLabel(status)}
-        </span>
+      {statusLabel(status)}
+    </span>
     );
 }
 
@@ -154,8 +146,8 @@ function OfferPill({ offerType }: { offerType: OfferType }) {
 
     return (
         <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-extrabold ${cls}`}>
-            {label}
-        </span>
+      {label}
+    </span>
     );
 }
 
@@ -223,13 +215,47 @@ export default function ProductDetail() {
         enabled: Boolean(product?.themeId),
     });
 
+    // 탭/섹션
+    const tabKeys: TabKey[] = ["select", "itinerary", "summary", "info", "schedule", "policy"];
+    const { active, setActive, refs } = useActiveSection(tabKeys);
+
+    // ✅ 클릭 시 이동 함수 (refs 말고 id로 찾으면 안정적)
+    const scrollToTab = (key: TabKey) => {
+        // 1) 섹션을 id로 찾는다
+        const el = document.getElementById(key);
+        if (!el) {
+            console.warn("[scrollToTab] section not found:", key);
+            return;
+        }
+
+        // 2) 해시 갱신
+        window.history.replaceState(null, "", `#${key}`);
+
+        // 3) 가장 안정적인 스크롤: scrollIntoView + offset 보정
+        //    (scrollIntoView는 확실히 움직임)
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+
+        // sticky 헤더 보정: scrollIntoView 후에 살짝 위로 당김
+        const offset = 120;
+        setTimeout(() => {
+            window.scrollBy({ top: -offset, left: 0, behavior: "instant" as ScrollBehavior });
+        }, 250);
+    };
+
+
+    // ✅ 상세로 들어오면 “항상 맨 위”로
+    useEffect(() => {
+        window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
+    }, [id]);
+
+    // ✅ 해시가 있으면 해당 섹션으로 이동
     useEffect(() => {
         const hash = window.location.hash.replace("#", "") as TabKey;
         if (!hash) return;
 
-        // refs가 연결되기 전에 실행될 수 있으니 약간 딜레이
         setTimeout(() => {
-            if (refs.current[hash]) scrollToTab(hash);
+            setActive(hash);
+            scrollToTab(hash);
         }, 50);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [id]);
@@ -237,23 +263,17 @@ export default function ProductDetail() {
     const tags = useMemo(() => {
         const out: Array<{ label: string; to?: string }> = [];
 
-        // 1) 지역(정보용)
         if (product?.region) out.push({ label: product.region });
-
-        // 2) 추천(임시 고정 태그)
         out.push({ label: "추천" });
 
-        // 3) 테마(있으면 클릭 -> /theme/:slug)
         if (themeQuery.data?.name && themeQuery.data?.slug) {
             out.push({ label: themeQuery.data.name, to: `/theme/${themeQuery.data.slug}` });
         }
 
-        // 4) navProduct.badge가 region과 다르면 추가(중복 방지)
         if (navProduct?.badge && navProduct.badge !== product?.region) {
             out.push({ label: navProduct.badge });
         }
 
-        // 5) label 중복 제거
         const seen = new Set<string>();
         return out.filter((x) => (seen.has(x.label) ? false : (seen.add(x.label), true)));
     }, [product?.region, navProduct?.badge, themeQuery.data?.name, themeQuery.data?.slug]);
@@ -334,10 +354,6 @@ export default function ProductDetail() {
         return adult * (selectedDeparture.priceAdult ?? 0);
     }, [selectedDeparture, adult]);
 
-    // 탭/섹션
-    const tabKeys: TabKey[] = ["select", "itinerary", "summary", "info", "schedule", "policy"];
-    const { active, refs } = useActiveSection(tabKeys);
-
     // 스크롤 시 헤더 밑 탭바 shadow 느낌
     const [tabShadow, setTabShadow] = useState(false);
     useEffect(() => {
@@ -352,10 +368,7 @@ export default function ProductDetail() {
     const m1 = useMemo(() => getMonthMatrix(calBase), [calBase]);
     const m2 = useMemo(() => getMonthMatrix(addMonths(calBase, 1)), [calBase]);
 
-    const selectedDateDepartures = useMemo(
-        () => depByDate.get(selectedDateISO) ?? [],
-        [depByDate, selectedDateISO]
-    );
+    const selectedDateDepartures = useMemo(() => depByDate.get(selectedDateISO) ?? [], [depByDate, selectedDateISO]);
 
     useEffect(() => {
         const list = selectedDateDepartures;
@@ -368,24 +381,12 @@ export default function ProductDetail() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedDateISO]);
 
-    const scrollToTab = (key: TabKey) => {
-        const el = refs.current[key];
-        if (!el) return;
-
-        // ✅ URL에 해시 반영 (뒤로가기/새로고침 시도 대비)
-        window.history.replaceState(null, "", `#${key}`);
-
-        const top = el.getBoundingClientRect().top + window.scrollY - 120;
-        window.scrollTo({ top, behavior: "smooth" });
-    };
-
     return (
         <main className="bg-white">
             <Container>
-                {/* ✅ 상단: 뒤로/상품ID (모바일 줄바꿈/노출 문제 해결) */}
+                {/* ✅ 상단: 뒤로 */}
                 <div className="pt-6">
                     <div className="flex items-center justify-between gap-3">
-                        {/* 모바일에서 글자 줄바꿈 방지 + 좁으면 오른쪽 요소가 숨겨지도록 */}
                         <button
                             type="button"
                             onClick={() => nav(-1)}
@@ -406,21 +407,19 @@ export default function ProductDetail() {
                                 ))}
                             </div>
 
-                                <h1 className="mt-4 text-2xl font-extrabold tracking-tight text-neutral-900 md:text-3xl">
+                            <h1 className="mt-4 text-2xl font-extrabold tracking-tight text-neutral-900 md:text-3xl">
                                 {baseTitle}
-                                </h1>
+                            </h1>
 
+                            {/* ✅ 여기 닫는 div 누락되면 전체가 망가짐 */}
                             <div className="mt-4 flex flex-wrap items-end gap-3">
                                 <div className="text-sm text-neutral-500">성인 1인 기준</div>
                                 <div className="text-2xl font-extrabold text-neutral-900">{heroPriceText}</div>
+                            </div>
 
                             <div className="mt-6 overflow-hidden rounded-3xl border border-neutral-200 bg-white">
                                 <div className="aspect-[16/10] w-full overflow-hidden">
-                                    <img
-                                        src={heroImg}
-                                        alt={baseTitle}
-                                        className="h-full w-full object-cover object-center"
-                                    />
+                                    <img src={heroImg} alt={baseTitle} className="h-full w-full object-cover object-center" />
                                 </div>
                             </div>
                         </div>
@@ -433,9 +432,7 @@ export default function ProductDetail() {
                                     <div className="mt-3 h-px w-full bg-neutral-200" />
 
                                     <div className="mt-4 space-y-3">
-                                        <div className="text-sm font-semibold text-neutral-900 line-clamp-2">
-                                            {baseTitle}
-                                        </div>
+                                        <div className="text-sm font-semibold text-neutral-900 line-clamp-2">{baseTitle}</div>
 
                                         <div className="flex items-center justify-between">
                                             <div className="text-xs text-neutral-500">행사금액</div>
@@ -450,9 +447,7 @@ export default function ProductDetail() {
 
                                         <div className="flex items-center justify-between">
                                             <div className="text-xs text-neutral-500">상태</div>
-                                            <div>
-                                                {selectedDeparture ? <StatusPill status={selectedDeparture.status} /> : null}
-                                            </div>
+                                            <div>{selectedDeparture ? <StatusPill status={selectedDeparture.status} /> : null}</div>
                                         </div>
 
                                         <div className="grid grid-cols-2 gap-3 pt-2">
@@ -465,7 +460,10 @@ export default function ProductDetail() {
                                             <button
                                                 type="button"
                                                 className="rounded-xl bg-neutral-800 px-4 py-3 text-sm font-extrabold text-white hover:bg-neutral-700"
-                                                onClick={() => scrollToTab("select")}
+                                                onClick={() => {
+                                                    setActive("select");
+                                                    scrollToTab("select");
+                                                }}
                                             >
                                                 다른 출발일 보기
                                             </button>
@@ -494,14 +492,10 @@ export default function ProductDetail() {
                             </div>
                         </aside>
                     </div>
-                    </div>
                 </section>
 
                 {/* 탭 바 (sticky) */}
-                <div
-                    className={`sticky top-[72px] z-30 mt-8 bg-white/95 backdrop-blur ${tabShadow ? "shadow-sm" : ""
-                    }`}
-                >
+                <div className={`sticky top-[72px] z-30 mt-8 bg-white/95 backdrop-blur ${tabShadow ? "shadow-sm" : ""}`}>
                     <div className="border-y border-neutral-200">
                         <div className="flex items-center gap-2 overflow-x-auto py-3">
                             {(
@@ -517,12 +511,13 @@ export default function ProductDetail() {
                                 <button
                                     key={key}
                                     type="button"
-                                    onClick={() => scrollToTab(key)}
+                                    onClick={() => {
+                                        setActive(key);
+                                        scrollToTab(key);
+                                    }}
                                     className={[
                                         "shrink-0 whitespace-nowrap rounded-full px-4 py-2 text-sm font-bold transition",
-                                        active === key
-                                            ? "bg-[#1C8B7B] text-white"
-                                            : "bg-neutral-100 text-neutral-700 hover:bg-neutral-200",
+                                        active === key ? "bg-[#1C8B7B] text-white" : "bg-neutral-100 text-neutral-700 hover:bg-neutral-200",
                                     ].join(" ")}
                                 >
                                     {label}
@@ -709,8 +704,8 @@ export default function ProductDetail() {
                                         <div className="text-sm font-semibold text-neutral-600">
                                             총 금액{" "}
                                             <span className="ml-2 text-2xl font-extrabold text-neutral-900">
-                                                {totalPrice === null ? "가격문의" : `${krw(totalPrice)}원`}
-                                            </span>
+                        {totalPrice === null ? "가격문의" : `${krw(totalPrice)}원`}
+                      </span>
                                         </div>
                                         <button
                                             type="button"
@@ -849,9 +844,7 @@ export default function ProductDetail() {
                                                 <div className="flex flex-wrap items-center justify-between gap-3">
                                                     <div className="text-sm font-extrabold text-neutral-900">
                                                         {day.title || `${day.dayNo}일차`}
-                                                        {day.dateText ? (
-                                                            <span className="ml-2 text-xs text-neutral-500">{day.dateText}</span>
-                                                        ) : null}
+                                                        {day.dateText ? <span className="ml-2 text-xs text-neutral-500">{day.dateText}</span> : null}
                                                     </div>
                                                     <div className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-bold text-neutral-700">
                                                         {product?.region ?? ""}
