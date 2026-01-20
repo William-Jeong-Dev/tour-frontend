@@ -1,176 +1,141 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { listThemesActive, type ThemeRow } from "../../api/themes.api";
 
-const CATS = [
-    "일본 골프",
-    "겨울 골프",
-    "특가 골프",
-    "부산 출발",
-    "동남아/중국/괌 골프",
-    "내맘대로 DIY 골프",
-    "골프여행 꿀팁",
-    "1:1 견적문의",
-];
 
 export default function Header() {
     const navigate = useNavigate();
+    const location = useLocation();
 
-    // ✅ 처음엔 활성화 없음
-    const [activeCat, setActiveCat] = useState<string | null>(null);
+    const themesQuery = useQuery({
+        queryKey: ["themes", "active"],
+        queryFn: listThemesActive,
+        staleTime: 60_000,
+    });
+
+
+    // ✅ 타입을 정확히: ThemeRow[]
+    const themes: ThemeRow[] = useMemo(() => {
+        const list = (themesQuery.data ?? []) as ThemeRow[];
+
+        // active만 + 정렬(있으면 sort_order 우선)
+        return [...list]
+            .filter((t) => t.is_active !== false)
+            .sort((a, b) => {
+                const ao = a.sort_order ?? 9999;
+                const bo = b.sort_order ?? 9999;
+                if (ao !== bo) return ao - bo;
+                return (a.name ?? "").localeCompare(b.name ?? "");
+            });
+    }, [themesQuery.data]);
+
+
+
+    const [activeTheme, setActiveTheme] = useState<string | null>(null);
     const [scrolled, setScrolled] = useState(false);
 
-    const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
-    const [q, setQ] = useState("");
-
     useEffect(() => {
-        const onScroll = () => setScrolled(window.scrollY > 6);
+        const onScroll = () => setScrolled(window.scrollY > 4);
         onScroll();
         window.addEventListener("scroll", onScroll, { passive: true });
         return () => window.removeEventListener("scroll", onScroll);
     }, []);
 
-    const headerClass = useMemo(() => {
-        return [
-            "sticky top-0 z-40 bg-[#1C8B7B] text-white",
-            scrolled ? "shadow-lg shadow-black/10" : "",
-        ].join(" ");
-    }, [scrolled]);
+    // ✅ URL이 /theme/:slug 인 경우 active 동기화
+    useEffect(() => {
+        const seg = location.pathname.split("/").filter(Boolean);
+        if (seg[0] !== "theme") {
+            setActiveTheme(null);
+            return;
+        }
+        const slug = seg[1] ?? "";
+        const found = themes.find((t) => t.slug === slug);
+        setActiveTheme(found?.slug ?? null);
+    }, [location.pathname, themes]);
 
-    const onSubmitSearch = (e: React.FormEvent) => {
-        e.preventDefault();
-        console.log("search:", q);
-        // navigate(`/search?q=${encodeURIComponent(q)}`)
-    };
-
-    const onClickCat = (t: string) => {
-        setActiveCat(t);
-        // ✅ 실제 테마 라우팅으로 연결하려면 slug 매핑 필요
-        // 지금은 예시로만 둠:
-        // navigate(`/theme/${slug}`)
+    const onClickTheme = (slug: string) => {
+        setActiveTheme(slug);
+        navigate(`/theme/${slug}`);
+        window.scrollTo({ top: 0, behavior: "smooth" });
     };
 
     return (
-        <header className={headerClass}>
-            {/* 상단 작은 메뉴 */}
+        <header className={`sticky top-0 z-50 bg-[#1C8B7B] ${scrolled ? "shadow-md" : ""}`}>
+            {/* 상단 라인 */}
             <div className="border-b border-white/15">
-                <div className="mx-auto flex w-full max-w-[1400px] items-center justify-end gap-4 px-4 py-2 text-xs text-white/90 md:px-6">
-                    <a className="hover:text-white/70" href="#event">
-                        기획전/이벤트
-                    </a>
-                    <a className="hover:text-white/70" href="#notice">
-                        공지사항
-                    </a>
-                    <a className="hover:text-white/70" href="#cs">
-                        고객센터
-                    </a>
-                    <div className="relative">
-                        <button className="hover:text-white/70" type="button">
-                            마이메뉴 ▾
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            {/* 로고 라인 */}
-            <div className="border-b border-white/15">
-                <div className="mx-auto flex w-full max-w-[1400px] items-center justify-between gap-3 px-4 py-4 md:px-6">
+                <div className="mx-auto flex max-w-[1400px] items-center justify-between px-4 py-3 md:px-6">
                     <Link to="/" className="flex items-center gap-3">
-                        <div className="h-9 w-9 rounded-full bg-white/95" />
-                        <div className="leading-tight">
-                            <div className="text-lg font-extrabold tracking-wide">비버 투어</div>
-                            <div className="text-[11px] text-white/85">비버투어 스타일 데모</div>
+                        <div className="h-10 w-10 rounded-full bg-white/95" />
+                        <div className="leading-tight text-white">
+                            <div className="text-base font-extrabold">비범 투어</div>
+                            <div className="text-xs font-semibold text-white/80">비범투어 스타일 데모</div>
                         </div>
                     </Link>
 
-                    {/* Desktop Search */}
-                    <form onSubmit={onSubmitSearch} className="hidden items-center gap-2 md:flex">
-                        <div className="flex items-center gap-2 rounded-full bg-white/15 px-3 py-2">
+                    <div className="hidden items-center gap-3 md:flex">
+                        <div className="flex items-center gap-2 rounded-full bg-white/15 px-4 py-2 text-white/90">
                             <span className="text-sm">🔍</span>
                             <input
-                                value={q}
-                                onChange={(e) => setQ(e.target.value)}
+                                className="w-[360px] bg-transparent text-sm placeholder:text-white/70 focus:outline-none"
                                 placeholder="검색어를 입력하세요"
-                                className="w-[260px] bg-transparent text-sm text-white placeholder:text-white/70 outline-none"
                             />
                         </div>
-                    </form>
 
-                    <div className="flex items-center gap-3">
-                        {/* Mobile Search Toggle */}
-                        <button
-                            className="grid h-10 w-10 place-items-center rounded-full bg-white/15 hover:bg-white/25 md:hidden"
-                            aria-label="search"
-                            type="button"
-                            onClick={() => setMobileSearchOpen((v) => !v)}
-                        >
-                            🔍
-                        </button>
-
-                        <Link
-                            to="/"
-                            className="rounded-full bg-yellow-400 px-4 py-2 text-xs font-bold text-neutral-900 hover:bg-yellow-300"
-                        >
+                        <button className="rounded-full bg-yellow-400 px-5 py-2 text-sm font-extrabold text-neutral-900 hover:bg-yellow-300">
                             상담하기
+                        </button>
+                    </div>
+
+                    <div className="hidden items-center gap-4 text-xs font-semibold text-white/90 md:flex">
+                        <Link to="/events" className="hover:text-white">
+                            기획전/이벤트
                         </Link>
+                        <Link to="/notice" className="hover:text-white">
+                            공지사항
+                        </Link>
+                        <Link to="/support" className="hover:text-white">
+                            고객센터
+                        </Link>
+                        <div className="rounded-full bg-white/10 px-3 py-1">마이메뉴 ▾</div>
                     </div>
                 </div>
-
-                {/* Mobile Search Row */}
-                {mobileSearchOpen ? (
-                    <div className="md:hidden">
-                        <div className="mx-auto w-full max-w-[1400px] px-4 pb-4 md:px-6">
-                            <form onSubmit={onSubmitSearch} className="flex gap-2">
-                                <div className="flex flex-1 items-center gap-2 rounded-2xl bg-white/15 px-3 py-3">
-                                    <span className="text-sm">🔍</span>
-                                    <input
-                                        value={q}
-                                        onChange={(e) => setQ(e.target.value)}
-                                        placeholder="검색어를 입력하세요"
-                                        className="w-full bg-transparent text-sm text-white placeholder:text-white/70 outline-none"
-                                    />
-                                </div>
-                                <button
-                                    type="submit"
-                                    className="whitespace-nowrap rounded-2xl bg-white/90 px-4 text-sm font-bold text-neutral-900"
-                                >
-                                    검색
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-                ) : null}
             </div>
 
-            {/* ✅ 카테고리 라인: 모바일에서 왼쪽이 잘리는 문제 해결 */}
+            {/* ✅ 카테고리 라인: Admin 테마 관리에서 불러온 themes로 렌더 */}
             <div className="border-b border-white/15">
                 <nav className="mx-auto w-full max-w-[1400px] px-0 md:px-6">
                     <div
                         className={[
                             "flex items-center gap-3 overflow-x-auto py-3 text-sm font-semibold",
                             "px-4 md:px-0",
-                            "justify-start md:justify-center",
-                            "scroll-px-4",
-                            "[-webkit-overflow-scrolling:touch]",
+                            "[&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]",
                         ].join(" ")}
                     >
-                        {CATS.map((t) => {
-                            const isActive = activeCat === t;
-                            return (
-                                <button
-                                    key={t}
-                                    type="button"
-                                    onClick={() => onClickCat(t)}
-                                    className={[
-                                        "whitespace-nowrap rounded-full px-3 py-1 transition",
-                                        isActive
-                                            ? "bg-white/20 text-white"
-                                            : "text-white/90 hover:text-white hover:bg-white/10",
-                                    ].join(" ")}
-                                >
-                                    {t}
-                                </button>
-                            );
-                        })}
+                        {themesQuery.isLoading ? (
+                            <div className="text-white/80 text-xs">테마 불러오는 중...</div>
+                        ) : themes.length === 0 ? (
+                            <div className="text-white/80 text-xs">
+                                활성화된 테마가 없습니다. (Admin &gt; 테마 관리에서 active 확인)
+                            </div>
+                        ) : (
+                            themes.map((t: ThemeRow) => {
+                                const active = activeTheme === t.slug;
+                                return (
+                                    <button
+                                        key={t.id}
+                                        type="button"
+                                        onClick={() => onClickTheme(t.slug)}
+                                        className={[
+                                            "shrink-0 rounded-full px-4 py-2 transition",
+                                            active ? "bg-white text-[#1C8B7B]" : "text-white/95 hover:bg-white/10",
+                                        ].join(" ")}
+                                    >
+                                        {t.name}
+                                    </button>
+                                );
+                            })
+                        )}
                     </div>
                 </nav>
             </div>
