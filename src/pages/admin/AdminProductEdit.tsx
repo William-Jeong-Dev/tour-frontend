@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+/* 🔽 AdminProductEdit 전체 소스 시작 */
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
@@ -13,7 +14,16 @@ import type {
     ProductUpsert,
 } from "../../types/product";
 
-import { createProduct, getProduct, updateProduct, uid } from "../../api/products.api";
+import {
+    createProduct,
+    getProduct,
+    updateProduct,
+    uid,
+    uploadProductThumbnail,
+    getSignedThumbnailUrl,
+} from "../../api/products.api";
+
+import { supabase } from "../../lib/supabase";
 
 /* ---------------- tabs ---------------- */
 type TabKey = "basic" | "bullets" | "itinerary" | "offers" | "assets";
@@ -66,16 +76,42 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
         else nav(`/admin/products/${id}/${next}`);
     };
 
+    /* ---------- themes ---------- */
+    type ThemeRow = { id: string; name: string; slug: string; sort_order?: number | null };
+    const [themes, setThemes] = useState<ThemeRow[]>([]);
+    const [themesLoading, setThemesLoading] = useState(false);
+
+    useEffect(() => {
+        (async () => {
+            try {
+                setThemesLoading(true);
+                const { data, error } = await supabase
+                    .from("product_themes")
+                    .select("id,name,slug,sort_order")
+                    .eq("is_active", true)
+                    .order("sort_order", { ascending: true });
+                if (error) throw error;
+                setThemes((data ?? []) as ThemeRow[]);
+            } finally {
+                setThemesLoading(false);
+            }
+        })();
+    }, []);
+
     /* ---------- form ---------- */
     const [form, setForm] = useState<ProductUpsert>({
         title: "",
         subtitle: "",
+        // ✅ theme_id
+        themeId: null as any, // (타입에 themeId가 없으면 types/product.ts에 추가해줘)
         region: "일본",
         nights: 3,
         days: 4,
         status: "DRAFT",
         description: "",
         priceText: "상담 문의",
+        // ✅ private bucket 썸네일: path + signed url
+        thumbnailPath: "",
         thumbnailUrl: "",
         images: [],
         included: [],
@@ -83,33 +119,80 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
         notices: [],
         itinerary: [],
         departures: [],
-        // ✅ theme_id 이미 들어가 있다면 유지 (네 프로젝트에 맞게)
-        // themeId: null,
     });
 
+    /* ---------- 썸네일 업로드 상태 ---------- */
+    const fileRef = useRef<HTMLInputElement | null>(null);
+    const [thumbUploading, setThumbUploading] = useState(false);
+    const [thumbPreview, setThumbPreview] = useState<string>("");
+
+    useEffect(() => {
+        // 서버에서 내려준 signed url이 있으면 그대로 미리보기 사용
+        if (form.thumbnailUrl) setThumbPreview(form.thumbnailUrl);
+    }, [form.thumbnailUrl]);
+
+    const onPickThumb = () => fileRef.current?.click();
+
+    const onChangeThumbFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        try {
+            setThumbUploading(true);
+
+            // ✅ 1) 업로드 → path 반환
+            const path = await uploadProductThumbnail(file);
+
+            // ✅ 2) 미리보기 signed url
+            const signed = await getSignedThumbnailUrl(path);
+
+            // ✅ 3) form에는 path 저장(=DB 저장값)
+            setForm((prev) => ({
+                ...prev,
+                thumbnailPath: path,
+                thumbnailUrl: signed, // UI 편의상 같이 보관
+            }));
+            setThumbPreview(signed);
+        } finally {
+            setThumbUploading(false);
+            e.target.value = "";
+        }
+    };
+
+    /* ---------- load product ---------- */
     useEffect(() => {
         if (mode === "edit") {
             (async () => {
                 const p = await getProduct(id);
                 if (!p) return;
+
                 setForm({
                     title: p.title ?? "",
                     subtitle: p.subtitle ?? "",
+                    themeId: (p as any).themeId ?? null,
                     region: p.region ?? "일본",
                     nights: p.nights ?? 3,
                     days: p.days ?? 4,
-                    status: p.status ?? "DRAFT",
+                    status: (p.status ?? "DRAFT") as ProductStatus,
                     description: p.description ?? "",
                     priceText: p.priceText ?? "",
-                    thumbnailUrl: p.thumbnailUrl ?? "",
+                    thumbnailPath: (p as any).thumbnailPath ?? "", // ✅ path
+                    thumbnailUrl: p.thumbnailUrl ?? "", // ✅ signed url
                     images: p.images ?? [],
                     included: p.included ?? [],
                     excluded: p.excluded ?? [],
                     notices: p.notices ?? [],
                     itinerary: p.itinerary ?? [],
                     departures: p.departures ?? [],
-                    // themeId: p.themeId ?? null,
                 });
+
+                // 혹시 thumbnailUrl이 비어있고 path만 있는 경우 보정
+                const path = (p as any).thumbnailPath ?? "";
+                if (!p.thumbnailUrl && path) {
+                    const signed = await getSignedThumbnailUrl(path);
+                    setThumbPreview(signed);
+                    setForm((prev) => ({ ...prev, thumbnailUrl: signed }));
+                }
             })();
         }
     }, [mode, id]);
@@ -120,15 +203,12 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
             if (mode === "create") return createProduct(form);
             return updateProduct(id, form);
         },
-        onSuccess: async () => {
-            // 리스트 캐시 무효화 + 화면도 갱신되도록
-            await qc.invalidateQueries({ queryKey: ["admin-products"] });
-
-            // ✅ 저장 후 무조건 리스트로 이동
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: ["admin-products"] });
+            // ✅ 요구사항: 저장 후 상품 리스트로 이동
             nav("/admin/products", { replace: true });
         },
     });
-
 
     /* ====================== UI ====================== */
     return (
@@ -142,8 +222,8 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
                     <div className="mt-1 text-xs text-neutral-400">모바일에서도 편집 가능합니다</div>
                 </div>
 
-                {/* ✅ PC Actions (저장/취소) */}
-                <div className="hidden md:flex items-center gap-2">
+                {/* ✅ PC 상단 액션 */}
+                <div className="hidden items-center gap-2 md:flex">
                     <button
                         type="button"
                         onClick={() => nav("/admin/products")}
@@ -162,9 +242,8 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
             </div>
 
             {/* ---------- tabs (mobile friendly) ---------- */}
-            {/* ✅ 입력 막는 문제 방지(pointer-events 처리) */}
-            <div className="sticky top-[56px] z-20 -mx-4 mt-4 bg-black/80 px-4 backdrop-blur pointer-events-none">
-                <div className="flex gap-2 overflow-x-auto py-3 pointer-events-auto">
+            <div className="sticky top-[56px] z-20 -mx-4 mt-4 bg-black/80 px-4 backdrop-blur">
+                <div className="flex gap-2 overflow-x-auto py-3">
                     {TABS.map((t) => (
                         <button
                             key={t.key}
@@ -187,7 +266,7 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
                             <input
                                 value={form.title}
                                 onChange={(e) => setForm({ ...form, title: e.target.value })}
-                                className="input"
+                                className="input w-full"
                                 placeholder="예) 오키나와 3박4일 골프 패키지"
                             />
                         </Field>
@@ -196,30 +275,110 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
                             <input
                                 value={form.subtitle}
                                 onChange={(e) => setForm({ ...form, subtitle: e.target.value })}
-                                className="input"
+                                className="input w-full"
                                 placeholder="예) #1인1실 #온천 #시내호텔"
                             />
                         </Field>
 
-                        {/* (테마 드롭다운은 이미 있다고 했으니 여기 추가 안함) */}
+                        {/* ✅ 썸네일 업로드 */}
+                        <Field label="썸네일 이미지">
+                            <div className="rounded-2xl border border-neutral-800 bg-neutral-950/40 p-3">
+                                <div className="overflow-hidden rounded-xl border border-neutral-800 bg-black/30">
+                                    <div className="aspect-[16/10] w-full">
+                                        {thumbPreview ? (
+                                            <img src={thumbPreview} alt="thumbnail" className="h-full w-full object-cover" />
+                                        ) : (
+                                            <div className="grid h-full w-full place-items-center text-sm text-neutral-400">
+                                                썸네일이 아직 없습니다.
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="mt-3 flex flex-wrap gap-2">
+                                    <input
+                                        ref={fileRef}
+                                        type="file"
+                                        accept="image/*"
+                                        className="hidden"
+                                        onChange={onChangeThumbFile}
+                                    />
+
+                                    <button
+                                        type="button"
+                                        onClick={onPickThumb}
+                                        disabled={thumbUploading}
+                                        className={`rounded-xl px-4 py-2 text-sm font-extrabold ${
+                                            thumbUploading
+                                                ? "bg-neutral-800 text-neutral-400"
+                                                : "bg-neutral-50 text-neutral-950 hover:bg-white"
+                                        }`}
+                                    >
+                                        {thumbUploading ? "업로드 중..." : "이미지 업로드"}
+                                    </button>
+
+                                    {(form.thumbnailPath || thumbPreview) && (
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setForm((prev) => ({ ...prev, thumbnailPath: "", thumbnailUrl: "" }));
+                                                setThumbPreview("");
+                                            }}
+                                            className="rounded-xl border border-neutral-800 bg-neutral-950/40 px-4 py-2 text-sm font-extrabold text-neutral-200 hover:bg-neutral-900"
+                                        >
+                                            제거
+                                        </button>
+                                    )}
+                                </div>
+
+                                <div className="mt-2 text-xs text-neutral-500">
+                                    Private bucket(product-thumbnails) / Signed URL 방식 (권장: 16:10, 최대 5MB)
+                                </div>
+                            </div>
+                        </Field>
+
+                        {/* ✅ theme */}
+                        <Field label="테마(상단 카테고리)">
+                            <select
+                                value={(form as any).themeId ?? ""}
+                                onChange={(e) =>
+                                    setForm({
+                                        ...form,
+                                        themeId: e.target.value ? e.target.value : null,
+                                    } as any)
+                                }
+                                className="input w-full"
+                            >
+                                <option value="">{themesLoading ? "불러오는 중..." : "선택 안 함"}</option>
+                                {themes.map((t) => (
+                                    <option key={t.id} value={t.id}>
+                                        {t.name}
+                                    </option>
+                                ))}
+                            </select>
+                            <div className="mt-1 text-[11px] text-neutral-500">
+                                고객 페이지 상단 메뉴 및 /theme/:slug 분류에 사용됩니다.
+                            </div>
+                        </Field>
 
                         <div className="grid grid-cols-2 gap-3">
                             <Field label="지역">
                                 <select
                                     value={form.region}
                                     onChange={(e) => setForm({ ...form, region: e.target.value })}
-                                    className="input"
+                                    className="input w-full"
                                 >
                                     {REGIONS.map((x) => (
                                         <option key={x}>{x}</option>
                                     ))}
                                 </select>
                             </Field>
+
                             <Field label="상태">
                                 <select
                                     value={form.status}
                                     onChange={(e) => setForm({ ...form, status: e.target.value as ProductStatus })}
-                                    className="input"
+                                    className="input w-full"
                                 >
                                     {STATUSES.map((s) => (
                                         <option key={s.value} value={s.value}>
@@ -236,7 +395,7 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
                                     value={form.nights}
                                     inputMode="numeric"
                                     onChange={(e) => setForm({ ...form, nights: clampInt(e.target.value) })}
-                                    className="input"
+                                    className="input w-full"
                                 />
                             </Field>
                             <Field label="일">
@@ -244,10 +403,29 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
                                     value={form.days}
                                     inputMode="numeric"
                                     onChange={(e) => setForm({ ...form, days: clampInt(e.target.value) })}
-                                    className="input"
+                                    className="input w-full"
                                 />
                             </Field>
                         </div>
+
+                        {/* ✅ PC에서 입력 편의용: 간단 설명/가격 */}
+                        <Field label="가격 문구(옵션)">
+                            <input
+                                value={form.priceText ?? ""}
+                                onChange={(e) => setForm({ ...form, priceText: e.target.value })}
+                                className="input w-full"
+                                placeholder="예) 1,059,000원~ / 상담 문의"
+                            />
+                        </Field>
+
+                        <Field label="상품 소개(옵션)">
+              <textarea
+                  value={form.description ?? ""}
+                  onChange={(e) => setForm({ ...form, description: e.target.value })}
+                  className="input w-full min-h-[120px] resize-y"
+                  placeholder="상품 소개를 입력하세요"
+              />
+                        </Field>
                     </Section>
                 )}
 
@@ -331,64 +509,36 @@ function ListEditor({
 }) {
     const [draft, setDraft] = useState("");
 
-    const addItem = () => {
-        const v = draft.trim();
-        if (!v) return;
-        onChange([...(items ?? []), v]);
-        setDraft("");
-    };
-
     return (
-        <div className="rounded-2xl border border-neutral-800 bg-neutral-950/40 p-4">
-            <div className="flex items-center justify-between gap-3">
-                <div className="text-sm font-extrabold text-neutral-200">{title}</div>
+        <div className="rounded-xl border border-neutral-800 bg-neutral-950/40 p-3">
+            <div className="text-sm font-bold text-neutral-200">{title}</div>
+
+            <div className="mt-2 flex gap-2">
+                <input value={draft} onChange={(e) => setDraft(e.target.value)} className="input flex-1" />
                 <button
-                    type="button"
-                    onClick={addItem}
-                    className="rounded-xl bg-neutral-50 px-4 py-2 text-sm font-extrabold text-neutral-950"
+                    onClick={() => {
+                        if (!draft.trim()) return;
+                        onChange([...items, draft.trim()]);
+                        setDraft("");
+                    }}
+                    className="rounded-xl bg-neutral-50 px-3 py-2 text-sm font-bold text-neutral-950"
                 >
                     추가
                 </button>
             </div>
 
-            {/* ✅ 입력칸이 안 보이던 문제 해결: 높이/배경/테두리/placeholder 강화 */}
-            <div className="mt-3">
-                <input
-                    value={draft}
-                    onChange={(e) => setDraft(e.target.value)}
-                    onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                            e.preventDefault();
-                            addItem();
-                        }
-                    }}
-                    placeholder={`${title} 항목을 입력하고 Enter 또는 '추가'를 누르세요`}
-                    className="input h-11"
-                />
-            </div>
-
-            <div className="mt-4 space-y-2">
-                {(items ?? []).length === 0 ? (
-                    <div className="rounded-xl border border-dashed border-neutral-800 bg-neutral-950/20 p-4 text-sm text-neutral-500">
-                        아직 등록된 항목이 없습니다.
+            <div className="mt-3 space-y-2">
+                {items.map((x, i) => (
+                    <div
+                        key={i}
+                        className="flex items-center justify-between rounded-lg border border-neutral-800 px-3 py-2 text-sm text-neutral-200"
+                    >
+                        <span className="min-w-0 flex-1">{x}</span>
+                        <button onClick={() => onChange(items.filter((_, idx) => idx !== i))} className="text-xs text-neutral-400">
+                            삭제
+                        </button>
                     </div>
-                ) : (
-                    (items ?? []).map((x, i) => (
-                        <div
-                            key={`${x}-${i}`}
-                            className="flex items-center justify-between gap-3 rounded-xl border border-neutral-800 bg-neutral-950/20 px-4 py-3"
-                        >
-                            <div className="min-w-0 text-sm text-neutral-200">{x}</div>
-                            <button
-                                type="button"
-                                onClick={() => onChange((items ?? []).filter((_, idx) => idx !== i))}
-                                className="shrink-0 rounded-lg border border-neutral-800 bg-neutral-950/40 px-3 py-1 text-xs font-extrabold text-neutral-200 hover:bg-neutral-900"
-                            >
-                                삭제
-                            </button>
-                        </div>
-                    ))
-                )}
+                ))}
             </div>
         </div>
     );
@@ -436,12 +586,21 @@ function OffersEditor({ items, onChange }: { items: Departure[]; onChange: (v: D
                     <div className="grid grid-cols-2 gap-3">
                         <div className="col-span-2">
                             <div className="mb-1 text-xs font-semibold text-neutral-400">출발일</div>
-                            <input type="date" value={d.dateISO ?? ""} onChange={(e) => update(i, { dateISO: e.target.value })} className="input" />
+                            <input
+                                type="date"
+                                value={d.dateISO ?? ""}
+                                onChange={(e) => update(i, { dateISO: e.target.value })}
+                                className="input"
+                            />
                         </div>
 
                         <div>
                             <div className="mb-1 text-xs font-semibold text-neutral-400">오퍼</div>
-                            <select value={d.offerType ?? "NORMAL"} onChange={(e) => update(i, { offerType: e.target.value as OfferType })} className="input">
+                            <select
+                                value={d.offerType ?? "NORMAL"}
+                                onChange={(e) => update(i, { offerType: e.target.value as OfferType })}
+                                className="input"
+                            >
                                 <option value="NORMAL">기본</option>
                                 <option value="EVENT">이벤트</option>
                                 <option value="SPECIAL">특가</option>
@@ -450,7 +609,11 @@ function OffersEditor({ items, onChange }: { items: Departure[]; onChange: (v: D
 
                         <div>
                             <div className="mb-1 text-xs font-semibold text-neutral-400">상태</div>
-                            <select value={d.status ?? "AVAILABLE"} onChange={(e) => update(i, { status: e.target.value as DepartStatus })} className="input">
+                            <select
+                                value={d.status ?? "AVAILABLE"}
+                                onChange={(e) => update(i, { status: e.target.value as DepartStatus })}
+                                className="input"
+                            >
                                 <option value="AVAILABLE">예약가능</option>
                                 <option value="CONFIRMED">출발확정</option>
                                 <option value="INQUIRY">가격문의</option>
@@ -507,7 +670,12 @@ function OffersEditor({ items, onChange }: { items: Departure[]; onChange: (v: D
 
                         <div className="col-span-2">
                             <div className="mb-1 text-xs font-semibold text-neutral-400">메모(선택)</div>
-                            <input value={d.note ?? ""} onChange={(e) => update(i, { note: e.target.value })} className="input" placeholder="예: 특가 좌석 한정, 이벤트 안내 등" />
+                            <input
+                                value={d.note ?? ""}
+                                onChange={(e) => update(i, { note: e.target.value })}
+                                className="input"
+                                placeholder="예: 특가 좌석 한정, 이벤트 안내 등"
+                            />
                         </div>
                     </div>
 
@@ -519,7 +687,11 @@ function OffersEditor({ items, onChange }: { items: Departure[]; onChange: (v: D
                 </div>
             ))}
 
-            <button type="button" onClick={add} className="w-full rounded-xl border border-neutral-800 bg-neutral-950/40 py-3 text-sm font-bold text-neutral-200">
+            <button
+                type="button"
+                onClick={add}
+                className="w-full rounded-xl border border-neutral-800 bg-neutral-950/40 py-3 text-sm font-bold text-neutral-200"
+            >
                 + 출발일 추가
             </button>
         </div>
@@ -621,7 +793,12 @@ function ItineraryEditor({ days, onChange }: { days: ItineraryDay[]; onChange: (
 
                     <div className="mt-3">
                         <div className="mb-1 text-xs font-semibold text-neutral-400">날짜 텍스트(선택)</div>
-                        <input value={d.dateText ?? ""} onChange={(e) => updateDay(di, { dateText: e.target.value })} className="input" placeholder="예: 2026-03-21, 3/21(토) 등" />
+                        <input
+                            value={d.dateText ?? ""}
+                            onChange={(e) => updateDay(di, { dateText: e.target.value })}
+                            className="input"
+                            placeholder="예: 2026-03-21, 3/21(토) 등"
+                        />
                     </div>
 
                     {/* rows */}
@@ -631,7 +808,12 @@ function ItineraryEditor({ days, onChange }: { days: ItineraryDay[]; onChange: (
                                 <div className="grid grid-cols-2 gap-2">
                                     <div className="col-span-2">
                                         <div className="mb-1 text-xs font-semibold text-neutral-400">내용</div>
-                                        <textarea value={r.content ?? ""} onChange={(e) => updateRow(di, ri, { content: e.target.value })} className="input min-h-[90px] resize-y" placeholder="일정 내용을 입력하세요" />
+                                        <textarea
+                                            value={r.content ?? ""}
+                                            onChange={(e) => updateRow(di, ri, { content: e.target.value })}
+                                            className="input min-h-[90px] resize-y"
+                                            placeholder="일정 내용을 입력하세요"
+                                        />
                                     </div>
 
                                     <div>
@@ -674,15 +856,24 @@ function ItineraryEditor({ days, onChange }: { days: ItineraryDay[]; onChange: (
                         ))}
                     </div>
 
-                    <button type="button" onClick={() => addRow(di)} className="mt-4 w-full rounded-xl border border-neutral-800 bg-neutral-950/40 py-3 text-sm font-bold text-neutral-200">
+                    <button
+                        type="button"
+                        onClick={() => addRow(di)}
+                        className="mt-4 w-full rounded-xl border border-neutral-800 bg-neutral-950/40 py-3 text-sm font-bold text-neutral-200"
+                    >
                         + 일정 추가
                     </button>
                 </div>
             ))}
 
-            <button type="button" onClick={addDay} className="w-full rounded-xl border border-neutral-800 bg-neutral-950/40 py-3 text-sm font-bold text-neutral-200">
+            <button
+                type="button"
+                onClick={addDay}
+                className="w-full rounded-xl border border-neutral-800 bg-neutral-950/40 py-3 text-sm font-bold text-neutral-200"
+            >
                 + 일차 추가
             </button>
         </div>
     );
 }
+/* 🔼 AdminProductEdit 전체 소스 끝 */

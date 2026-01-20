@@ -84,6 +84,10 @@ export default function AdminProductList() {
                     <div className="rounded-2xl border border-neutral-900 bg-neutral-950/20 p-6 text-sm text-neutral-300">
                         불러오는 중...
                     </div>
+                ) : query.isError ? (
+                    <div className="rounded-2xl border border-rose-900/40 bg-rose-950/20 p-6 text-sm text-rose-200">
+                    불러오기 실패: {(query.error as any)?.message ?? String(query.error)}
+                </div>
                 ) : items.length === 0 ? (
                     <div className="rounded-2xl border border-neutral-900 bg-neutral-950/20 p-6 text-sm text-neutral-300">
                         상품이 없습니다.

@@ -62,6 +62,9 @@ export type Product = {
 
     // 미디어
     thumbnailUrl: string;
+    thumbnail_path?: string | null;   // ✅ 추가
+
+    thumbnailPath?: string;
     images: string[];
 
     // 문서 기반 리스트
@@ -74,6 +77,8 @@ export type Product = {
 
     //  출발일 + 오퍼(특가/이벤트)
     departures: Departure[];
+
+    theme_id?: string | null;         // ✅ 추가
 
     // 여행상품 카테고리
     themeId?: string | null;
