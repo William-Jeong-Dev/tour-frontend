@@ -4,7 +4,6 @@ import { useQuery } from "@tanstack/react-query";
 import { deleteProduct, listProducts } from "../../api/products.api";
 
 function fmtUpdatedAt(iso: string) {
-    // 2026-01-19T09:12:34.000Z -> 2026-01-19 18:12 (KST 느낌으로 로컬 표시)
     try {
         const d = new Date(iso);
         const yyyy = d.getFullYear();
@@ -27,9 +26,7 @@ export default function AdminProductList() {
         queryFn: () => listProducts({ q, region }),
     });
 
-    // listProducts에서 이미 "최근 수정순" 정렬됨
     const items = query.data ?? [];
-
     const regions = useMemo(() => ["전체", "일본", "제주", "동남아", "유럽"], []);
 
     const onDelete = async (id: string) => {
@@ -40,18 +37,15 @@ export default function AdminProductList() {
 
     return (
         <div>
-            {/* Header */}
             <div className="flex flex-wrap items-end justify-between gap-3">
                 <div>
-                    <div className="text-xl font-semibold">상품 관리</div>
-                    <div className="mt-2 text-sm text-neutral-400">
-                        상품 목록 / 등록 / 수정 / 삭제 (기본 정렬: 최근 수정순)
-                    </div>
+                    <div className="text-xl font-extrabold text-neutral-100">상품 관리</div>
+                    <div className="mt-2 text-sm text-neutral-400">기본 정렬: 최근 수정순</div>
                 </div>
 
                 <Link
                     to="/admin/products/new/basic"
-                    className="rounded-xl bg-neutral-50 px-4 py-2 text-sm font-semibold text-neutral-950"
+                    className="rounded-xl bg-neutral-50 px-4 py-2 text-sm font-extrabold text-neutral-950"
                 >
                     + 새 상품 등록
                 </Link>
@@ -84,7 +78,7 @@ export default function AdminProductList() {
                 </div>
             </div>
 
-            {/* List */}
+            {/* Content */}
             <div className="mt-6">
                 {query.isLoading ? (
                     <div className="rounded-2xl border border-neutral-900 bg-neutral-950/20 p-6 text-sm text-neutral-300">
@@ -95,58 +89,106 @@ export default function AdminProductList() {
                         상품이 없습니다.
                     </div>
                 ) : (
-                    <div className="overflow-hidden rounded-2xl border border-neutral-900">
-                        <table className="w-full text-left text-sm">
-                            <thead className="bg-neutral-950/40 text-neutral-300">
-                            <tr>
-                                <th className="px-4 py-3">ID</th>
-                                <th className="px-4 py-3">제목</th>
-                                <th className="px-4 py-3">지역</th>
-                                <th className="px-4 py-3">상태</th>
-                                <th className="px-4 py-3">최근수정</th>
-                                <th className="px-4 py-3">수정</th>
-                                <th className="px-4 py-3">삭제</th>
-                            </tr>
-                            </thead>
-                            <tbody className="divide-y divide-neutral-900 bg-neutral-950/20">
+                    <>
+                        {/* ✅ Mobile: Card list */}
+                        <div className="grid gap-3 md:hidden">
                             {items.map((p) => (
-                                <tr key={p.id} className="text-neutral-200">
-                                    <td className="px-4 py-3">{p.id}</td>
-                                    <td className="px-4 py-3">
-                                        <div className="font-semibold">{p.title}</div>
-                                        <div className="mt-1 text-xs text-neutral-400 line-clamp-1">
-                                            {p.subtitle}
+                                <div key={p.id} className="rounded-2xl border border-neutral-900 bg-neutral-950/20 p-4">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div className="min-w-0">
+                                            <div className="text-xs text-neutral-400">ID {p.id}</div>
+                                            <div className="mt-1 truncate text-base font-extrabold text-neutral-100">
+                                                {p.title}
+                                            </div>
+                                            <div className="mt-1 line-clamp-2 text-sm text-neutral-400">
+                                                {p.subtitle}
+                                            </div>
                                         </div>
-                                    </td>
-                                    <td className="px-4 py-3">{p.region}</td>
-                                    <td className="px-4 py-3">
                                         <StatusBadge status={p.status} />
-                                    </td>
-                                    <td className="px-4 py-3 text-xs text-neutral-300">
-                                        {fmtUpdatedAt(p.updatedAt)}
-                                    </td>
-                                    <td className="px-4 py-3">
+                                    </div>
+
+                                    <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                                        <span className="rounded-full border border-neutral-800 bg-neutral-950/40 px-3 py-1 text-neutral-200">
+                                            {p.region}
+                                        </span>
+                                        <span className="rounded-full border border-neutral-800 bg-neutral-950/40 px-3 py-1 text-neutral-200">
+                                            최근수정 {fmtUpdatedAt(p.updatedAt)}
+                                        </span>
+                                    </div>
+
+                                    <div className="mt-4 grid grid-cols-2 gap-2">
                                         <Link
                                             to={`/admin/products/${p.id}/basic`}
-                                            className="rounded-lg border border-neutral-800 px-3 py-1 text-xs text-neutral-200 hover:bg-neutral-900"
+                                            className="rounded-xl border border-neutral-800 bg-neutral-950/40 px-3 py-2 text-center text-sm font-extrabold text-neutral-200 hover:bg-neutral-900"
                                         >
                                             수정
                                         </Link>
-                                    </td>
-                                    <td className="px-4 py-3">
                                         <button
                                             type="button"
                                             onClick={() => onDelete(p.id)}
-                                            className="rounded-lg border border-neutral-800 px-3 py-1 text-xs text-neutral-200 hover:bg-neutral-900"
+                                            className="rounded-xl border border-neutral-800 bg-neutral-950/40 px-3 py-2 text-sm font-extrabold text-neutral-200 hover:bg-neutral-900"
                                         >
                                             삭제
                                         </button>
-                                    </td>
-                                </tr>
+                                    </div>
+                                </div>
                             ))}
-                            </tbody>
-                        </table>
-                    </div>
+                        </div>
+
+                        {/* ✅ Desktop: Table */}
+                        <div className="hidden overflow-hidden rounded-2xl border border-neutral-900 md:block">
+                            <table className="w-full text-left text-sm">
+                                <thead className="bg-neutral-950/40 text-neutral-300">
+                                <tr>
+                                    <th className="px-4 py-3">ID</th>
+                                    <th className="px-4 py-3">제목</th>
+                                    <th className="px-4 py-3">지역</th>
+                                    <th className="px-4 py-3">상태</th>
+                                    <th className="px-4 py-3">최근수정</th>
+                                    <th className="px-4 py-3">수정</th>
+                                    <th className="px-4 py-3">삭제</th>
+                                </tr>
+                                </thead>
+                                <tbody className="divide-y divide-neutral-900 bg-neutral-950/20">
+                                {items.map((p) => (
+                                    <tr key={p.id} className="text-neutral-200">
+                                        <td className="px-4 py-3">{p.id}</td>
+                                        <td className="px-4 py-3">
+                                            <div className="font-extrabold">{p.title}</div>
+                                            <div className="mt-1 text-xs text-neutral-400 line-clamp-1">
+                                                {p.subtitle}
+                                            </div>
+                                        </td>
+                                        <td className="px-4 py-3">{p.region}</td>
+                                        <td className="px-4 py-3">
+                                            <StatusBadge status={p.status} />
+                                        </td>
+                                        <td className="px-4 py-3 text-xs text-neutral-300">
+                                            {fmtUpdatedAt(p.updatedAt)}
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <Link
+                                                to={`/admin/products/${p.id}/basic`}
+                                                className="rounded-lg border border-neutral-800 px-3 py-1 text-xs font-extrabold text-neutral-200 hover:bg-neutral-900"
+                                            >
+                                                수정
+                                            </Link>
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <button
+                                                type="button"
+                                                onClick={() => onDelete(p.id)}
+                                                className="rounded-lg border border-neutral-800 px-3 py-1 text-xs font-extrabold text-neutral-200 hover:bg-neutral-900"
+                                            >
+                                                삭제
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </>
                 )}
             </div>
         </div>
@@ -161,12 +203,7 @@ function StatusBadge({ status }: { status: string }) {
                 ? "bg-neutral-200 text-neutral-700"
                 : "bg-amber-50 text-amber-700";
 
-    const label =
-        status === "PUBLISHED" ? "노출" : status === "HIDDEN" ? "숨김" : "임시";
+    const label = status === "PUBLISHED" ? "노출" : status === "HIDDEN" ? "숨김" : "임시";
 
-    return (
-        <span className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${cls}`}>
-            {label}
-        </span>
-    );
+    return <span className={`inline-flex rounded-full px-3 py-1 text-xs font-extrabold ${cls}`}>{label}</span>;
 }

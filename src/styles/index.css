@@ -19,3 +19,26 @@ html {
 body {
     overflow-x: hidden;
 }
+
+/* =========================
+   PC 전용 select/option 가독성 수정
+   - 모바일에는 적용하지 않음
+   ========================= */
+@media (hover: hover) and (pointer: fine) {
+    /* 네 프로젝트에서 select에 className="input" 쓰는 패턴 기준 */
+    select.input {
+        color-scheme: dark; /* 데스크톱에서 옵션 렌더링을 다크 기준으로 */
+    }
+
+    /* 드롭다운 목록(옵션) 배경/글자색 강제 */
+    select.input option {
+        background-color: #0a0a0a;
+        color: #e5e5e5;
+    }
+
+    /* 선택된 항목 강조(환경에 따라 적용 안 될 수도 있음) */
+    select.input option:checked {
+        background-color: #1c8b7b;
+        color: #ffffff;
+    }
+}
