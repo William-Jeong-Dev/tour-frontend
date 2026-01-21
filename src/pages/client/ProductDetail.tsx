@@ -9,6 +9,7 @@ import { getThemeById } from "../../api/themes.api";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { useSession } from "../../hooks/useSession";
 import { addFavorite, removeFavorite, isFavorited } from "../../api/favorites.api";
+import { createBooking } from "../../api/bookings.api";
 
 
 type Card = {
@@ -199,6 +200,17 @@ function QtyControl({
     );
 }
 
+export function useCreateBooking(userId: string) {
+    const qc = useQueryClient();
+
+    return useMutation({
+        mutationFn: (payload: any) => createBooking(userId, payload),
+        onSuccess: async () => {
+            await qc.invalidateQueries({ queryKey: ["bookings", "me"] });
+        },
+    });
+}
+
 export default function ProductDetail() {
     const nav = useNavigate();
     const { id } = useParams();
@@ -378,6 +390,8 @@ export default function ProductDetail() {
     const [adult, setAdult] = useState(1);
     const [child, setChild] = useState(0);
     const [infant, setInfant] = useState(0);
+
+    const bookingMut = useCreateBooking(String(userId));
 
     const totalPrice = useMemo(() => {
         if (!selectedDeparture || selectedDeparture.status === "INQUIRY") return null;
@@ -746,9 +760,46 @@ export default function ProductDetail() {
                                         </div>
                                         <button
                                             type="button"
-                                            className="rounded-2xl bg-[#1C8B7B] px-6 py-3 text-sm font-extrabold text-white hover:brightness-95"
+                                            className="rounded-2xl bg-[#1C8B7B] px-6 py-3 text-sm font-extrabold text-white hover:brightness-95 disabled:opacity-60"
+                                            disabled={bookingMut.isPending}
+                                            onClick={() => {
+                                                if (!userId) {
+                                                    nav("/login", { state: { redirectTo: location.pathname } });
+                                                    return;
+                                                }
+
+                                                const peopleCount = adult + child + infant;
+
+                                                if (peopleCount <= 0) {
+                                                    alert("인원을 선택해 주세요.");
+                                                    return;
+                                                }
+
+                                                if (!selectedDateISO) {
+                                                    alert("출발일을 선택해 주세요.");
+                                                    return;
+                                                }
+
+                                                bookingMut.mutate(
+                                                    {
+                                                        product_id: String(id),
+                                                        travel_date: selectedDateISO,
+                                                        people_count: Math.max(1, peopleCount),
+                                                        memo_user: `선택 행사ID: ${selectedDepartureId || "-"} / 성인:${adult}, 아동:${child}, 유아:${infant}`,
+                                                    },
+                                                    {
+                                                        onSuccess: () => {
+                                                            alert("예약 접수가 완료되었습니다.");
+                                                            // nav("/mypage"); // 원하면 이동
+                                                        },
+                                                        onError: (e: any) => {
+                                                            alert(e?.message ?? "예약 접수에 실패했습니다.");
+                                                        },
+                                                    }
+                                                );
+                                            }}
                                         >
-                                            예약하기
+                                            {bookingMut.isPending ? "접수 중..." : "예약하기"}
                                         </button>
                                     </div>
                                 </div>

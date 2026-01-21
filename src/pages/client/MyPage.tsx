@@ -6,6 +6,7 @@ import { signOut, supabase } from "../../lib/supabase";
 
 import { useQuery } from "@tanstack/react-query";
 import { listMyFavorites, removeFavorite } from "../../api/favorites.api";
+import { getMyBookings } from "../../api/bookings.api";
 
 type Profile = {
     user_id: string;
@@ -18,6 +19,15 @@ type Profile = {
 };
 
 const BUCKET_NAME = "product-thumbnails";
+
+export function useMyBookings(userId: string) {
+    return useQuery({
+        queryKey: ["bookings", "me"],
+        queryFn: () => getMyBookings(userId),
+        enabled: !!userId,
+    });
+}
+
 
 export default function MyPage() {
     const { session, loading: sessionLoading } = useSession();
@@ -35,6 +45,19 @@ export default function MyPage() {
 
     // ✅ 찜 썸네일 signed url 저장소 (favorite row id -> signed url)
     const [thumbUrlMap, setThumbUrlMap] = useState<Record<string, string>>({});
+
+    // ✅ 예약 썸네일 signed url 저장소 (booking id -> signed url)
+    const [bookingThumbMap, setBookingThumbMap] = useState<Record<string, string>>({});
+
+    // ✅ 내 예약 목록 쿼리
+    const bookingQuery = useMyBookings(String(userId));
+
+    const STATUS_LABEL: Record<string, string> = {
+        REQUESTED: "접수",
+        CONFIRMED: "확정",
+        CANCELLED: "취소",
+        COMPLETED: "완료",
+    };
 
     const favQuery = useQuery({
         queryKey: ["myFavorites", userId],
@@ -146,10 +169,6 @@ export default function MyPage() {
                 if (!error && data?.signedUrl) {
                     next[f.id] = data.signedUrl;
                 }
-
-                if (data?.signedUrl) {
-                    next[f.id] = data.signedUrl;
-                }
             }
 
             setThumbUrlMap(next);
@@ -158,6 +177,40 @@ export default function MyPage() {
         run();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [favQuery.data]);
+
+    useEffect(() => {
+        const run = async () => {
+            const list = (bookingQuery.data ?? []) as any[];
+            if (!list.length) return;
+
+            const next: Record<string, string> = {};
+
+            for (const b of list) {
+                const rawPath = String(b.products?.thumbnail_path ?? b.products?.thumbnail_url ?? "").trim();
+                console.log("[booking] rawPath:", rawPath);
+
+                if (!rawPath) continue;
+
+                const { data, error } = await supabase.storage
+                    .from(BUCKET_NAME)
+                    .createSignedUrl(rawPath, 60 * 60);
+
+                if (error) {
+                    console.log("[booking] signed url error:", error, rawPath);
+                    continue;
+                }
+
+                if (data?.signedUrl) next[b.id] = data.signedUrl;
+            }
+
+            setBookingThumbMap(next);
+        };
+
+        run();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [bookingQuery.data]);
+
+
 
     if (sessionLoading) return null;
     if (!session) return null;
@@ -291,6 +344,75 @@ export default function MyPage() {
                                     ) : null}
                                 </div>
                             </form>
+                        )}
+                    </div>
+
+                    {/* 내 예약 현황 */}
+                    <div className="mt-8 rounded-2xl border border-neutral-200 bg-white p-6">
+                        <div className="text-base font-extrabold text-neutral-900">내 예약 현황</div>
+
+                        {bookingQuery.isLoading ? (
+                            <div className="mt-4 text-sm text-neutral-500">불러오는 중...</div>
+                        ) : bookingQuery.isError ? (
+                            <div className="mt-4 text-sm text-rose-700">
+                                {(bookingQuery.error as any)?.message ?? "예약 목록을 불러오지 못했어요."}
+                            </div>
+                        ) : (bookingQuery.data ?? []).length === 0 ? (
+                            <div className="mt-4 text-sm text-neutral-500">예약 내역이 없어요.</div>
+                        ) : (
+                            <div className="mt-4 space-y-3">
+                                {(bookingQuery.data ?? []).map((b: any) => {
+                                    const p = b.products;
+                                    const title = p?.title ?? "(상품 정보 없음)";
+                                    const region = p?.region ?? "";
+                                    const thumb = bookingThumbMap[b.id] || "";
+                                    const status = STATUS_LABEL[b.status] ?? b.status;
+
+                                    return (
+                                        <Link
+                                            key={b.id}
+                                            to={`/product/${p?.id ?? b.product_id}`}
+                                            className="flex gap-4 rounded-2xl border border-neutral-200 p-4 hover:bg-neutral-50"
+                                        >
+                                            <div className="h-16 w-24 overflow-hidden rounded-xl bg-neutral-100">
+                                                {thumb ? (
+                                                    <img
+                                                        src={thumb}
+                                                        alt={title}
+                                                        className="h-full w-full object-cover"
+                                                        onError={(e) => {
+                                                            (e.currentTarget as HTMLImageElement).style.display = "none";
+                                                        }}
+                                                    />
+                                                ) : (
+                                                    <div className="h-full w-full grid place-items-center text-[11px] font-bold text-neutral-400">
+                                                        NO IMAGE
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            <div className="min-w-0 flex-1">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="text-sm font-extrabold text-neutral-900 line-clamp-1">{title}</div>
+                                                    <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] font-extrabold text-neutral-700">
+                                                            {status}
+                                                    </span>
+                                                </div>
+
+                                                <div className="mt-1 text-xs text-neutral-500">
+                                                    {region}
+                                                    {b.people_count ? ` · 인원 ${b.people_count}명` : ""}
+                                                    {b.travel_date ? ` · 희망일 ${b.travel_date}` : ""}
+                                                </div>
+
+                                                <div className="mt-1 text-[11px] text-neutral-400">
+                                                    접수 시각: {b.created_at ? new Date(b.created_at).toLocaleString() : "-"}
+                                                </div>
+                                            </div>
+                                        </Link>
+                                    );
+                                })}
+                            </div>
                         )}
                     </div>
 
