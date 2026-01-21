@@ -2,11 +2,13 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { listThemesActive, type ThemeRow } from "../../api/themes.api";
+import { useSession } from "../../hooks/useSession";
 
 
 export default function Header() {
     const navigate = useNavigate();
     const location = useLocation();
+    const { session, loading } = useSession();
 
     const themesQuery = useQuery({
         queryKey: ["themes", "active"],
@@ -14,8 +16,6 @@ export default function Header() {
         staleTime: 60_000,
     });
 
-
-    // ✅ 타입을 정확히: ThemeRow[]
     const themes: ThemeRow[] = useMemo(() => {
         const list = (themesQuery.data ?? []) as ThemeRow[];
 
@@ -30,8 +30,6 @@ export default function Header() {
             });
     }, [themesQuery.data]);
 
-
-
     const [activeTheme, setActiveTheme] = useState<string | null>(null);
     const [scrolled, setScrolled] = useState(false);
 
@@ -42,7 +40,6 @@ export default function Header() {
         return () => window.removeEventListener("scroll", onScroll);
     }, []);
 
-    // ✅ URL이 /theme/:slug 인 경우 active 동기화
     useEffect(() => {
         const seg = location.pathname.split("/").filter(Boolean);
         if (seg[0] !== "theme") {
@@ -68,10 +65,31 @@ export default function Header() {
                     <Link to="/" className="flex items-center gap-3">
                         <div className="h-10 w-10 rounded-full bg-white/95" />
                         <div className="leading-tight text-white">
-                            <div className="text-base font-extrabold">비범 투어</div>
-                            <div className="text-xs font-semibold text-white/80">비범투어 스타일 데모</div>
+                            <div className="text-base font-extrabold">청원 여행사</div>
+                            <div className="text-xs font-semibold text-white/80">청원 여행사 스타일 데모</div>
                         </div>
                     </Link>
+
+                    {/* ✅ 모바일 액션 (md 미만에서만 보임) */}
+                    <div className="flex items-center gap-2 md:hidden">
+                        <button
+                            type="button"
+                            onClick={() => navigate("/support")}
+                            className="rounded-full bg-yellow-400 px-3 py-2 text-xs font-extrabold text-neutral-900 hover:bg-yellow-300"
+                        >
+                            상담
+                        </button>
+
+                        {session ? (
+                            <Link to="/me" className="rounded-full bg-white/10 px-3 py-2 text-xs font-bold text-white">
+                                마이
+                            </Link>
+                        ) : (
+                            <Link to="/login" className="rounded-full bg-white/10 px-3 py-2 text-xs font-bold text-white">
+                                로그인
+                            </Link>
+                        )}
+                    </div>
 
                     <div className="hidden items-center gap-3 md:flex">
                         <div className="flex items-center gap-2 rounded-full bg-white/15 px-4 py-2 text-white/90">
@@ -97,7 +115,15 @@ export default function Header() {
                         <Link to="/support" className="hover:text-white">
                             고객센터
                         </Link>
-                        <div className="rounded-full bg-white/10 px-3 py-1">마이메뉴 ▾</div>
+                        {session ? (
+                            <Link to="/me" className="rounded-full bg-white/10 px-3 py-1">
+                                마이메뉴 ▾
+                            </Link>
+                        ) : (
+                            <Link to="/login" className="rounded-full bg-white/10 px-3 py-1">
+                                로그인
+                            </Link>
+                        )}
                     </div>
                 </div>
             </div>

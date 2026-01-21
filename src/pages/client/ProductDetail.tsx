@@ -1,11 +1,15 @@
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import Container from "../../components/common/Container";
 
 import type { DepartStatus, Departure, MealType, OfferType, Product } from "../../types/product";
 import { getProduct } from "../../api/products.api";
 import { getThemeById } from "../../api/themes.api";
+
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
+import { useSession } from "../../hooks/useSession";
+import { addFavorite, removeFavorite, isFavorited } from "../../api/favorites.api";
+
 
 type Card = {
     id: string;
@@ -199,7 +203,33 @@ export default function ProductDetail() {
     const nav = useNavigate();
     const { id } = useParams();
     const location = useLocation();
+
+    const { session, loading } = useSession();
+    const qc = useQueryClient();
+    const userId = session?.user?.id ?? null;
+
     const navProduct = (location.state as { product?: Card } | null)?.product;
+
+    const favQuery = useQuery({
+        queryKey: ["favorite", { productId: id, userId }],
+        queryFn: () => isFavorited(String(id), String(userId)),
+        enabled: Boolean(id && userId), // ✅ id/userId 없으면 실행 안 함
+    });
+
+    const isFav = favQuery.data ?? false;
+
+    const toggleFav = useMutation({
+        mutationFn: async () => {
+            if (!userId) throw new Error("NOT_LOGGED_IN");
+            if (isFav) return removeFavorite(String(id), userId);
+            return addFavorite(String(id), userId);
+        },
+        onSuccess: async () => {
+            await qc.invalidateQueries({
+                queryKey: ["favorite", { productId: id, userId }],
+            });
+        },
+    });
 
     const productQuery = useQuery({
         queryKey: ["product", { id }],
@@ -454,8 +484,15 @@ export default function ProductDetail() {
                                             <button
                                                 type="button"
                                                 className="rounded-xl border border-neutral-300 bg-white px-4 py-3 text-sm font-bold text-neutral-800 hover:bg-neutral-50"
+                                                onClick={() => {
+                                                    if (!userId) {
+                                                        nav("/login", { state: { redirectTo: location.pathname } });
+                                                        return;
+                                                    }
+                                                    toggleFav.mutate();
+                                                }}
                                             >
-                                                찜하기 ♡
+                                                {session ? (isFav ? "찜취소 ♥" : "찜하기 ♡") : "찜하기 ♡"}
                                             </button>
                                             <button
                                                 type="button"

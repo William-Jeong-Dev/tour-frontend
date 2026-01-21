@@ -14,6 +14,9 @@ import AdminProductEdit from "../pages/admin/AdminProductEdit";
 import AdminThemes from "../pages/admin/AdminThemes";
 import { adminOnlyGuard } from "./guards";
 
+import ClientLogin from "../pages/client/ClientLogin";
+import MyPage from "../pages/client/MyPage";
+
 function RouteError() {
     const err = useRouteError() as any;
 
@@ -44,6 +47,10 @@ export const router = createBrowserRouter([
             { path: "/theme/:slug", element: <ThemeProductsPage />, loader: themeProductsLoader },
 
             { path: "/product/:id", element: <ProductDetail /> },
+
+            { path: "/login", element: <ClientLogin /> },
+
+            { path: "/me", element: <MyPage /> },
         ],
     },
 
