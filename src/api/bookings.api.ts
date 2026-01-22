@@ -31,16 +31,16 @@ export async function getMyBookings(user_id: string) {
         .from("bookings")
         .select(`
       id, status, travel_date, people_count, created_at,
-      products:product_id (
-        id, title, region, thumbnail_path, thumbnail_url
-      )
+      products:product_id ( id, title, region, thumbnail_path, thumbnail_url )
     `)
         .eq("user_id", user_id)
+        .neq("status", "CANCELLED")          // 취소건 제외
         .order("created_at", { ascending: false });
 
     if (error) throw error;
     return data ?? [];
 }
+
 
 // 관리자용: 전체 예약 목록
 export async function getAdminBookings(status?: BookingStatus) {
@@ -69,6 +69,19 @@ export async function updateBookingAdmin(
         .from("bookings")
         .update(patch)
         .eq("id", booking_id)
+        .select("id")
+        .single();
+
+    if (error) throw error;
+    return data;
+}
+
+export async function cancelMyBooking(bookingId: string, userId: string) {
+    const { data, error } = await supabase
+        .from("bookings")
+        .update({ status: "CANCELLED" })
+        .eq("id", bookingId)
+        .eq("user_id", userId)
         .select("id")
         .single();
 

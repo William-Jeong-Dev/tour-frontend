@@ -7,6 +7,8 @@ import { signOut, supabase } from "../../lib/supabase";
 import { useQuery } from "@tanstack/react-query";
 import { listMyFavorites, removeFavorite } from "../../api/favorites.api";
 import { getMyBookings } from "../../api/bookings.api";
+import { cancelMyBooking } from "../../api/bookings.api";
+
 
 type Profile = {
     user_id: string;
@@ -51,6 +53,9 @@ export default function MyPage() {
 
     // ✅ 내 예약 목록 쿼리
     const bookingQuery = useMyBookings(String(userId));
+
+    // (UI용 필터) 취소된 예약은 화면에서 숨김 처리
+    const visibleBookings = (bookingQuery.data ?? []).filter((b: any) => b.status !== "CANCELLED");
 
     const STATUS_LABEL: Record<string, string> = {
         REQUESTED: "접수",
@@ -210,8 +215,6 @@ export default function MyPage() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [bookingQuery.data]);
 
-
-
     if (sessionLoading) return null;
     if (!session) return null;
 
@@ -357,22 +360,24 @@ export default function MyPage() {
                             <div className="mt-4 text-sm text-rose-700">
                                 {(bookingQuery.error as any)?.message ?? "예약 목록을 불러오지 못했어요."}
                             </div>
-                        ) : (bookingQuery.data ?? []).length === 0 ? (
+                        ) : visibleBookings.length === 0 ? (   // ✅ 여기만 변경
                             <div className="mt-4 text-sm text-neutral-500">예약 내역이 없어요.</div>
                         ) : (
                             <div className="mt-4 space-y-3">
-                                {(bookingQuery.data ?? []).map((b: any) => {
+                                {visibleBookings.map((b: any) => {  // ✅ 여기만 변경
                                     const p = b.products;
                                     const title = p?.title ?? "(상품 정보 없음)";
                                     const region = p?.region ?? "";
                                     const thumb = bookingThumbMap[b.id] || "";
                                     const status = STATUS_LABEL[b.status] ?? b.status;
 
+                                    const canCancel = b.status === "REQUESTED";
+
                                     return (
                                         <Link
                                             key={b.id}
                                             to={`/product/${p?.id ?? b.product_id}`}
-                                            className="flex gap-4 rounded-2xl border border-neutral-200 p-4 hover:bg-neutral-50"
+                                            className="flex items-center gap-4 rounded-2xl border border-neutral-200 p-4 hover:bg-neutral-50"
                                         >
                                             <div className="h-16 w-24 overflow-hidden rounded-xl bg-neutral-100">
                                                 {thumb ? (
@@ -395,8 +400,8 @@ export default function MyPage() {
                                                 <div className="flex items-center gap-2">
                                                     <div className="text-sm font-extrabold text-neutral-900 line-clamp-1">{title}</div>
                                                     <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] font-extrabold text-neutral-700">
-                                                            {status}
-                                                    </span>
+                  {status}
+                </span>
                                                 </div>
 
                                                 <div className="mt-1 text-xs text-neutral-500">
@@ -408,6 +413,35 @@ export default function MyPage() {
                                                 <div className="mt-1 text-[11px] text-neutral-400">
                                                     접수 시각: {b.created_at ? new Date(b.created_at).toLocaleString() : "-"}
                                                 </div>
+                                            </div>
+
+                                            <div className="shrink-0">
+                                                {canCancel ? (
+                                                    <button
+                                                        type="button"
+                                                        className="rounded-xl border border-neutral-300 bg-white px-3 py-2 text-xs font-bold text-neutral-800 hover:bg-neutral-50"
+                                                        onClick={async (e) => {
+                                                            e.preventDefault();
+                                                            e.stopPropagation();
+
+                                                            const ok = confirm("예약을 취소할까요?");
+                                                            if (!ok) return;
+
+                                                            try {
+                                                                await cancelMyBooking(String(b.id), String(userId));
+                                                                await bookingQuery.refetch();
+                                                            } catch (err: any) {
+                                                                alert(err?.message ?? "예약 취소에 실패했습니다.");
+                                                            }
+                                                        }}
+                                                    >
+                                                        예약 취소
+                                                    </button>
+                                                ) : (
+                                                    <div className="text-[11px] font-bold text-neutral-400">
+                                                        {b.status === "CONFIRMED" ? "확정 건은 문의" : ""}
+                                                    </div>
+                                                )}
                                             </div>
                                         </Link>
                                     );
