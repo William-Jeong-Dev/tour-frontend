@@ -17,6 +17,8 @@ import { adminOnlyGuard } from "./guards";
 import ClientLogin from "../pages/client/ClientLogin";
 import MyPage from "../pages/client/MyPage";
 
+import AdminBookings from "../pages/admin/AdminBookings";
+
 function RouteError() {
     const err = useRouteError() as any;
 
@@ -63,6 +65,9 @@ export const router = createBrowserRouter([
         errorElement: <RouteError />,
         children: [
             { index: true, element: <AdminHome /> },
+
+            { path: "bookings", element: <AdminBookings /> },
+
             { path: "products", element: <AdminProductList /> },
 
             { path: "themes", element: <AdminThemes /> },

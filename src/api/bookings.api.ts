@@ -48,7 +48,8 @@ export async function getAdminBookings(status?: BookingStatus) {
         .from("bookings")
         .select(`
       id, status, travel_date, people_count,
-      contact_name, contact_phone, memo_user, memo_admin, created_at,
+      contact_name, contact_phone, memo_user, memo_admin, created_at, updated_at,
+      product_id, user_id,
       products:product_id ( id, title, region, thumbnail_path, thumbnail_url ),
       profiles:user_id ( user_id, email, name, phone )
     `)
@@ -62,13 +63,13 @@ export async function getAdminBookings(status?: BookingStatus) {
 }
 
 export async function updateBookingAdmin(
-    booking_id: string,
+    bookingId: string,
     patch: { status?: BookingStatus; memo_admin?: string | null }
 ) {
     const { data, error } = await supabase
         .from("bookings")
         .update(patch)
-        .eq("id", booking_id)
+        .eq("id", bookingId)
         .select("id")
         .single();
 
