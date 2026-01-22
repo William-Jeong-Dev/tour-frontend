@@ -11,6 +11,7 @@ const NAVS = [
     { to: "/admin/products", label: "상품 관리" },
     { to: "/admin/themes", label: "테마 관리" },
     { to: "/admin/bookings", label: "예약 현황" },
+    { to: "/admin/notices", label: "공지사항" },
 ];
 
 export default function AdminLayout() {

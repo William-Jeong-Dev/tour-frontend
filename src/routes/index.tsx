@@ -16,8 +16,17 @@ import { adminOnlyGuard } from "./guards";
 
 import ClientLogin from "../pages/client/ClientLogin";
 import MyPage from "../pages/client/MyPage";
+import SupportPage from "../pages/client/SupportPage";
+import FaqPage from "../pages/client/FaqPage";
+import InquiryPage from "../pages/client/InquiryPage";
 
 import AdminBookings from "../pages/admin/AdminBookings";
+
+import NoticesPage from "../pages/client/NoticesPage";
+import NoticeDetailPage from "../pages/client/NoticeDetailPage";
+
+import AdminNotices from "../pages/admin/AdminNotices";
+import AdminNoticeEdit from "../pages/admin/AdminNoticeEdit";
 
 function RouteError() {
     const err = useRouteError() as any;
@@ -47,12 +56,14 @@ export const router = createBrowserRouter([
             { path: "/", element: <Home /> },
 
             { path: "/theme/:slug", element: <ThemeProductsPage />, loader: themeProductsLoader },
-
             { path: "/product/:id", element: <ProductDetail /> },
-
             { path: "/login", element: <ClientLogin /> },
-
             { path: "/me", element: <MyPage /> },
+
+            { path: "/notices", element: <NoticesPage /> },
+            { path: "/notices/:id", element: <NoticeDetailPage /> },
+            { path: "/faq", element: <FaqPage /> },
+            { path: "/support", element: <SupportPage /> },
         ],
     },
 
@@ -77,6 +88,10 @@ export const router = createBrowserRouter([
 
             { path: "products/:id/:tab", element: <AdminProductEdit mode="edit" /> },
             { path: "products/:id", element: <AdminProductEdit mode="edit" /> },
+
+            { path: "notices", element: <AdminNotices /> },
+            { path: "notices/new", element: <AdminNoticeEdit mode="create" /> },
+            { path: "notices/:id", element: <AdminNoticeEdit mode="edit" /> },
         ],
     },
 ]);

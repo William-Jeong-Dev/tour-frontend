@@ -4,7 +4,6 @@ import { useQuery } from "@tanstack/react-query";
 import { listThemesActive, type ThemeRow } from "../../api/themes.api";
 import { useSession } from "../../hooks/useSession";
 
-
 export default function Header() {
     const navigate = useNavigate();
     const location = useLocation();
@@ -80,17 +79,27 @@ export default function Header() {
                             상담
                         </button>
 
+                        {/* ✅ 공지사항 바로가기 (모바일) */}
+                        <button
+                            type="button"
+                            onClick={() => navigate("/notices")}
+                            className="rounded-full bg-white/10 px-3 py-2 text-xs font-bold text-white hover:bg-white/15"
+                        >
+                            공지
+                        </button>
+
                         {session ? (
-                            <Link to="/me" className="rounded-full bg-white/10 px-3 py-2 text-xs font-bold text-white">
+                            <Link to="/me" className="rounded-full bg-white/10 px-3 py-2 text-xs font-bold text-white hover:bg-white/15">
                                 마이
                             </Link>
                         ) : (
-                            <Link to="/login" className="rounded-full bg-white/10 px-3 py-2 text-xs font-bold text-white">
+                            <Link to="/login" className="rounded-full bg-white/10 px-3 py-2 text-xs font-bold text-white hover:bg-white/15">
                                 로그인
                             </Link>
                         )}
                     </div>
 
+                    {/* ✅ PC 검색/상담 */}
                     <div className="hidden items-center gap-3 md:flex">
                         <div className="flex items-center gap-2 rounded-full bg-white/15 px-4 py-2 text-white/90">
                             <span className="text-sm">🔍</span>
@@ -105,22 +114,27 @@ export default function Header() {
                         </button>
                     </div>
 
+                    {/* ✅ PC 상단 우측 메뉴 */}
                     <div className="hidden items-center gap-4 text-xs font-semibold text-white/90 md:flex">
                         <Link to="/events" className="hover:text-white">
                             기획전/이벤트
                         </Link>
-                        <Link to="/notice" className="hover:text-white">
+
+                        {/* ✅ 여기! 기존 /notice → /notices 로 변경 */}
+                        <Link to="/notices" className="hover:text-white">
                             공지사항
                         </Link>
-                        <Link to="/support" className="hover:text-white">
+
+                        <Link to="/faq" className="hover:text-white">
                             고객센터
                         </Link>
+
                         {session ? (
-                            <Link to="/me" className="rounded-full bg-white/10 px-3 py-1">
+                            <Link to="/me" className="rounded-full bg-white/10 px-3 py-1 hover:bg-white/15">
                                 마이메뉴 ▾
                             </Link>
                         ) : (
-                            <Link to="/login" className="rounded-full bg-white/10 px-3 py-1">
+                            <Link to="/login" className="rounded-full bg-white/10 px-3 py-1 hover:bg-white/15">
                                 로그인
                             </Link>
                         )}
