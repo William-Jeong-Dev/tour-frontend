@@ -38,7 +38,7 @@ body {
 
     /* 선택된 항목 강조(환경에 따라 적용 안 될 수도 있음) */
     select.input option:checked {
-        background-color: #1c8b7b;
+        background-color: #2E97F2;
         color: #ffffff;
     }
 
@@ -64,8 +64,8 @@ body {
 
     /* 포커스 링 */
     .input:focus {
-        border-color: rgba(28, 139, 123, 1); /* #1C8B7B */
-        box-shadow: 0 0 0 3px rgba(28, 139, 123, 0.28);
+        border-color: rgba(46, 151, 242, 1);      /* #2E97F2 */
+        box-shadow: 0 0 0 3px rgba(46, 151, 242, 0.28);
     }
 
     /* textarea 높이 기본 */

@@ -568,7 +568,7 @@ export default function ProductDetail() {
                                     }}
                                     className={[
                                         "shrink-0 whitespace-nowrap rounded-full px-4 py-2 text-sm font-bold transition",
-                                        active === key ? "bg-[#1C8B7B] text-white" : "bg-neutral-100 text-neutral-700 hover:bg-neutral-200",
+                                        active === key ? "bg-[#2E97F2] text-white" : "bg-neutral-100 text-neutral-700 hover:bg-neutral-200",
                                     ].join(" ")}
                                 >
                                     {label}
@@ -656,7 +656,7 @@ export default function ProductDetail() {
                                                                 className={[
                                                                     "h-12 rounded-xl border text-left px-2 py-1 transition",
                                                                     selected
-                                                                        ? "border-[#1C8B7B] bg-[#1C8B7B]/10"
+                                                                        ? "border-[#2E97F2] bg-[#2E97F2]/10"
                                                                         : "border-transparent hover:border-neutral-200 hover:bg-neutral-50",
                                                                 ].join(" ")}
                                                             >
@@ -699,7 +699,7 @@ export default function ProductDetail() {
                                                             className={[
                                                                 "w-full rounded-2xl border p-4 text-left transition",
                                                                 isSelected
-                                                                    ? "border-[#1C8B7B] bg-[#1C8B7B]/5"
+                                                                    ? "border-[#2E97F2] bg-[#2E97F2]/5"
                                                                     : "border-neutral-200 bg-white hover:bg-neutral-50",
                                                             ].join(" ")}
                                                         >
@@ -723,7 +723,7 @@ export default function ProductDetail() {
                                                                 <div className="shrink-0 text-right">
                                                                     <div className="text-xs text-neutral-500">상품금액</div>
                                                                     <div className="mt-1 text-base font-extrabold text-neutral-900">{priceText}</div>
-                                                                    <div className="mt-3 inline-flex rounded-xl bg-[#1C8B7B] px-4 py-2 text-xs font-extrabold text-white">
+                                                                    <div className="mt-3 inline-flex rounded-xl bg-[#2E97F2] px-4 py-2 text-xs font-extrabold text-white">
                                                                         선택됨
                                                                     </div>
                                                                 </div>
@@ -760,7 +760,7 @@ export default function ProductDetail() {
                                         </div>
                                         <button
                                             type="button"
-                                            className="rounded-2xl bg-[#1C8B7B] px-6 py-3 text-sm font-extrabold text-white hover:brightness-95 disabled:opacity-60"
+                                            className="rounded-2xl bg-[#2E97F2] px-6 py-3 text-sm font-extrabold text-white hover:brightness-95 disabled:opacity-60"
                                             disabled={bookingMut.isPending}
                                             onClick={() => {
                                                 if (!userId) {

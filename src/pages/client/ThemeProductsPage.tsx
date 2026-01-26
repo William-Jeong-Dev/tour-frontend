@@ -72,7 +72,7 @@ export default function ThemeProductsPage() {
                     <h1 className="text-2xl font-extrabold">{theme.name}</h1>
                     <p className="mt-1 text-sm text-black/60">총 {products.length}개 상품</p>
                 </div>
-                <Link to="/" className="text-sm font-semibold text-[#1C8B7B] hover:underline">
+                <Link to="/" className="text-sm font-semibold text-[#2E97F2] hover:underline">
                     홈으로
                 </Link>
             </div>

@@ -44,7 +44,7 @@ export default function SupportPage() {
                                 <button
                                     type="button"
                                     onClick={onSubmit}
-                                    className="mt-5 rounded-xl bg-[#1C8B7B] px-6 py-3 text-sm font-extrabold text-white hover:brightness-95"
+                                    className="mt-5 rounded-xl bg-[#2E97F2] px-6 py-3 text-sm font-extrabold text-white hover:brightness-95"
                                 >
                                     문의 접수
                                 </button>

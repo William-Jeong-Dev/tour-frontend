@@ -31,7 +31,7 @@ export default function BannerListSection() {
                                 <div className="flex-1">
                                     <div className="flex gap-1">
                                         {x.tags.slice(0, 3).map((t) => (
-                                            <span key={t} className="rounded bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-[#1C8B7B]">
+                                            <span key={t} className="rounded bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-[#2E97F2]">
                         {t}
                       </span>
                                         ))}
@@ -44,7 +44,7 @@ export default function BannerListSection() {
                     </div>
 
                     <div className="mt-8 flex items-center gap-3">
-                        <div className="h-[2px] flex-1 bg-[#1C8B7B]/30" />
+                        <div className="h-[2px] flex-1 bg-[#2E97F2]/30" />
                         <button className="rounded border border-neutral-300 px-3 py-2 text-sm hover:bg-neutral-50">
                             ←
                         </button>

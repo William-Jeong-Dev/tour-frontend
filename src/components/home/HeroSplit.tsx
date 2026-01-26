@@ -8,11 +8,11 @@ export default function HeroSplit() {
                 <div className="bg-white flex items-center justify-center px-6 py-16">
                     <div className="max-w-md text-center">
                         <div className="inline-flex items-center gap-2 text-xs text-neutral-400">
-                            <span className="h-2 w-2 rounded-full bg-[#1C8B7B]" />
+                            <span className="h-2 w-2 rounded-full bg-[#2E97F2]" />
                             <span>프리미엄 여행 · 맞춤 컨시어지</span>
                         </div>
 
-                        <h1 className="mt-6 text-3xl font-extrabold leading-tight tracking-tight text-[#1C8B7B]">
+                        <h1 className="mt-6 text-3xl font-extrabold leading-tight tracking-tight text-[#2E97F2]">
                             추운 겨울에도 따뜻하게,
                             <br />
                             남국 겨울 골프 🎁 🏝️

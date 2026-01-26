@@ -92,7 +92,7 @@ export default function NoticesPage() {
                                 <button
                                     type="button"
                                     onClick={onSearch}
-                                    className="shrink-0 h-11 w-12 min-w-12 grid place-items-center rounded-xl bg-[#1C8B7B] text-white hover:brightness-95"
+                                    className="shrink-0 h-11 w-12 min-w-12 grid place-items-center rounded-xl bg-[#2E97F2] text-white hover:brightness-95"
                                     aria-label="검색"
                                     title="검색"
                                 >
@@ -115,7 +115,7 @@ export default function NoticesPage() {
                                             className={[
                                                 "rounded-full px-4 py-2 text-sm font-extrabold transition",
                                                 active
-                                                    ? "bg-[#1C8B7B] text-white"
+                                                    ? "bg-[#2E97F2] text-white"
                                                     : "border border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50",
                                             ].join(" ")}
                                         >
@@ -179,7 +179,7 @@ export default function NoticesPage() {
                                     이전
                                 </button>
 
-                                <button className="h-9 w-9 rounded-lg bg-[#1C8B7B] text-xs font-extrabold text-white">
+                                <button className="h-9 w-9 rounded-lg bg-[#2E97F2] text-xs font-extrabold text-white">
                                     {page}
                                 </button>
 

@@ -333,7 +333,7 @@ export default function MyPage() {
                                     <button
                                         type="submit"
                                         disabled={saving}
-                                        className="rounded-2xl bg-[#1C8B7B] px-6 py-3 text-sm font-extrabold text-white disabled:opacity-60"
+                                        className="rounded-2xl bg-[#2E97F2] px-6 py-3 text-sm font-extrabold text-white disabled:opacity-60"
                                     >
                                         {saving ? "저장 중..." : "저장하기"}
                                     </button>

@@ -21,7 +21,7 @@ export default function ProductCard({ item }: { item: CardItem }) {
                     {item.tags.slice(0, 3).map((t) => (
                         <span
                             key={t}
-                            className="rounded-md bg-[#1C8B7B] px-2 py-0.5 text-[11px] font-semibold text-white shadow-sm"
+                            className="rounded-md bg-[#2E97F2] px-2 py-0.5 text-[11px] font-semibold text-white shadow-sm"
                         >
               {t}
             </span>

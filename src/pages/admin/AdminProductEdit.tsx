@@ -259,7 +259,7 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
                     <button
                         type="button"
                         onClick={() => save.mutate()}
-                        className="rounded-xl bg-[#1C8B7B] px-4 py-2 text-sm font-extrabold text-white hover:brightness-95"
+                        className="rounded-xl bg-[#2E97F2] px-4 py-2 text-sm font-extrabold text-white hover:brightness-95"
                     >
                         저장
                     </button>
@@ -494,7 +494,7 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
                     </button>
                     <button
                         onClick={() => save.mutate()}
-                        className="rounded-xl bg-[#1C8B7B] py-3 text-sm font-extrabold text-white"
+                        className="rounded-xl bg-[#2E97F2] py-3 text-sm font-extrabold text-white"
                     >
                         저장
                     </button>

@@ -36,7 +36,7 @@ export default function InquiryPage() {
 
                 <button
                     type="button"
-                    className="rounded-xl bg-[#1C8B7B] px-5 py-3 text-sm font-extrabold text-white hover:brightness-95"
+                    className="rounded-xl bg-[#2E97F2] px-5 py-3 text-sm font-extrabold text-white hover:brightness-95"
                     onClick={onSubmit}
                 >
                     문의 접수

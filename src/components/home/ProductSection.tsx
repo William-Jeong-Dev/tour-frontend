@@ -35,7 +35,7 @@ export default function ProductSection({
                                 onClick={() => setTab(t)}
                                 className={`rounded-lg border px-3 py-1.5 text-sm font-semibold ${
                                     tab === t
-                                        ? "border-[#1C8B7B] bg-[#1C8B7B] text-white"
+                                        ? "border-[#2E97F2] bg-[#2E97F2] text-white"
                                         : "border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50"
                                 }`}
                             >

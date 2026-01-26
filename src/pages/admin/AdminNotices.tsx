@@ -92,7 +92,7 @@ export default function AdminNotices() {
 
                             <Link
                                 to="/admin/notices/new"
-                                className="rounded-xl bg-[#1C8B7B] px-4 py-2 text-sm font-extrabold text-white hover:brightness-110"
+                                className="rounded-xl bg-[#2E97F2] px-4 py-2 text-sm font-extrabold text-white hover:brightness-110"
                             >
                                 + 새 공지 작성
                             </Link>

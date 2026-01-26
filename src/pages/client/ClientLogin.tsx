@@ -98,7 +98,7 @@ export default function ClientLogin() {
                                     "leading-none",               // ✅ 높이 계산 안정화
                                     "transition",
                                     mode === "login"
-                                        ? "bg-[#1C8B7B] text-white"
+                                        ? "bg-[#2E97F2] text-white"
                                         : "bg-neutral-100 text-neutral-700 hover:bg-neutral-200",
                                 ].join(" ")}
                             >
@@ -118,7 +118,7 @@ export default function ClientLogin() {
                                     "leading-none",
                                     "transition",
                                     mode === "signup"
-                                        ? "bg-[#1C8B7B] text-white"
+                                        ? "bg-[#2E97F2] text-white"
                                         : "bg-neutral-100 text-neutral-700 hover:bg-neutral-200",
                                 ].join(" ")}
                             >
@@ -195,7 +195,7 @@ export default function ClientLogin() {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full rounded-2xl bg-[#1C8B7B] px-6 py-3 text-sm font-extrabold text-white disabled:opacity-60"
+                            className="w-full rounded-2xl bg-[#2E97F2] px-6 py-3 text-sm font-extrabold text-white disabled:opacity-60"
                         >
                             {loading ? "처리 중..." : mode === "login" ? "로그인" : "회원가입"}
                         </button>

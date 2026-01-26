@@ -6,7 +6,7 @@ export default function Footer() {
                 <div className="mx-auto flex max-w-[1400px] flex-col gap-4 px-4 sm:px-6 py-6 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <div className="text-sm font-semibold">
-                            고객센터 <span className="ml-2 text-[#1C8B7B]">070-0000-0000</span>
+                            고객센터 <span className="ml-2 text-[#2E97F2]">070-0000-0000</span>
                         </div>
                         <div className="mt-1 text-xs text-neutral-500">
                             평일 09:00 ~ 18:00 · 업무시간 외 문의는 상담 채널로 남겨주세요.

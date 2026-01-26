@@ -129,7 +129,7 @@ export default function AdminNoticeEdit({ mode }: { mode: "create" | "edit" }) {
 
                             <button
                                 type="button"
-                                className="rounded-xl bg-[#1C8B7B] px-4 py-2 text-sm font-extrabold text-white hover:brightness-110 disabled:opacity-60"
+                                className="rounded-xl bg-[#2E97F2] px-4 py-2 text-sm font-extrabold text-white hover:brightness-110 disabled:opacity-60"
                                 disabled={saveMut.isPending}
                                 onClick={() => saveMut.mutate()}
                             >

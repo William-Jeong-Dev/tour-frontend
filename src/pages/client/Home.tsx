@@ -125,7 +125,7 @@ export default function Home() {
                                 {/* LEFT */}
                                 <div className="col-span-12 md:col-span-6 flex flex-col justify-center">
                                     <div className="mx-auto w-full max-w-[520px] md:mx-0">
-                                        <h1 className="text-3xl md:text-4xl font-extrabold leading-tight tracking-tight text-[#1C8B7B]">
+                                        <h1 className="text-3xl md:text-4xl font-extrabold leading-tight tracking-tight text-[#2E97F2]">
                                             추운 겨울에도 따뜻하게,
                                             <br />
                                             남국 겨울 골프 🎁 🏝️

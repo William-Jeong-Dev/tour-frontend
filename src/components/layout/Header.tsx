@@ -57,7 +57,7 @@ export default function Header() {
     };
 
     return (
-        <header className={`sticky top-0 z-50 bg-[#1C8B7B] ${scrolled ? "shadow-md" : ""}`}>
+        <header className={`sticky top-0 z-50 bg-[#2E97F2] ${scrolled ? "shadow-md" : ""}`}>
             {/* 상단 라인 */}
             <div className="border-b border-white/15">
                 <div className="mx-auto flex max-w-[1400px] items-center justify-between px-4 py-3 md:px-6">
@@ -168,7 +168,7 @@ export default function Header() {
                                         onClick={() => onClickTheme(t.slug)}
                                         className={[
                                             "shrink-0 rounded-full px-4 py-2 transition",
-                                            active ? "bg-white text-[#1C8B7B]" : "text-white/95 hover:bg-white/10",
+                                            active ? "bg-white text-[#2E97F2]" : "text-white/95 hover:bg-white/10",
                                         ].join(" ")}
                                     >
                                         {t.name}

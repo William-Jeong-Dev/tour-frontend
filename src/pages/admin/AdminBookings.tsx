@@ -385,7 +385,7 @@ export default function AdminBookings() {
                                             <div className="shrink-0 flex flex-col gap-2">
                                                 <button
                                                     type="button"
-                                                    className="rounded-xl bg-[#1C8B7B] px-3 py-2 text-xs font-extrabold text-white hover:brightness-110 disabled:opacity-60"
+                                                    className="rounded-xl bg-[#2E97F2] px-3 py-2 text-xs font-extrabold text-white hover:brightness-110 disabled:opacity-60"
                                                     disabled={updateMut.isPending}
                                                     onClick={async () => {
                                                         try {

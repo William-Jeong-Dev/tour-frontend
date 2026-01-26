@@ -70,7 +70,7 @@ export default function AdminLogin() {
             {/* soft background */}
             <div className="relative overflow-hidden">
                 <div className="absolute inset-0">
-                    <div className="absolute -left-28 -top-28 h-72 w-72 rounded-full bg-[#1C8B7B]/10 blur-2xl" />
+                    <div className="absolute -left-28 -top-28 h-72 w-72 rounded-full bg-[#2E97F2]/10 blur-2xl" />
                     <div className="absolute -right-24 top-12 h-80 w-80 rounded-full bg-sky-200/40 blur-2xl" />
                     <div className="absolute left-1/3 top-56 h-72 w-72 rounded-full bg-emerald-200/30 blur-2xl" />
                 </div>
@@ -79,7 +79,7 @@ export default function AdminLogin() {
                     {/* Left: brand/benefits */}
                     <div className="flex flex-col justify-center">
                         <div className="inline-flex items-center gap-2">
-                            <div className="grid h-10 w-10 place-items-center rounded-2xl bg-[#1C8B7B] text-white shadow-sm">
+                            <div className="grid h-10 w-10 place-items-center rounded-2xl bg-[#2E97F2] text-white shadow-sm">
                                 A
                             </div>
                             <div>
@@ -131,7 +131,7 @@ export default function AdminLogin() {
                                         onChange={(e) => setEmail(e.target.value)}
                                         placeholder="admin@email.com"
                                         autoComplete="email"
-                                        className="w-full rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-900 outline-none transition focus:border-[#1C8B7B] focus:ring-4 focus:ring-[#1C8B7B]/10"
+                                        className="w-full rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-900 outline-none transition focus:border-[#2E97F2] focus:ring-4 focus:ring-[#2E97F2]/10"
                                     />
                                 </Field>
 
@@ -143,7 +143,7 @@ export default function AdminLogin() {
                                             onChange={(e) => setPassword(e.target.value)}
                                             placeholder="••••••••"
                                             autoComplete="current-password"
-                                            className="w-full rounded-2xl border border-neutral-200 bg-white px-4 py-3 pr-12 text-sm text-neutral-900 outline-none transition focus:border-[#1C8B7B] focus:ring-4 focus:ring-[#1C8B7B]/10"
+                                            className="w-full rounded-2xl border border-neutral-200 bg-white px-4 py-3 pr-12 text-sm text-neutral-900 outline-none transition focus:border-[#2E97F2] focus:ring-4 focus:ring-[#2E97F2]/10"
                                             onKeyDown={(e) => {
                                                 if (e.key === "Enter") signIn();
                                             }}
@@ -169,7 +169,7 @@ export default function AdminLogin() {
                                     type="button"
                                     disabled={!canSubmit}
                                     onClick={signIn}
-                                    className="w-full rounded-2xl bg-[#1C8B7B] px-4 py-3 text-sm font-extrabold text-white shadow-sm transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
+                                    className="w-full rounded-2xl bg-[#2E97F2] px-4 py-3 text-sm font-extrabold text-white shadow-sm transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
                                 >
                                     {loading ? "로그인 중..." : "로그인"}
                                 </button>
@@ -211,7 +211,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 function InfoRow({ title, desc }: { title: string; desc: string }) {
     return (
         <div className="flex gap-3 rounded-2xl border border-neutral-200 bg-white/70 p-4 shadow-sm">
-            <div className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-2xl bg-[#1C8B7B]/10 text-[#1C8B7B]">
+            <div className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-2xl bg-[#2E97F2]/10 text-[#2E97F2]">
                 ✓
             </div>
             <div className="min-w-0">
