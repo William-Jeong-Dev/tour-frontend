@@ -101,7 +101,7 @@ function ProductCard({ item }: { item: Card }) {
 }
 
 export default function Home() {
-    // ✅ Admin에서 만든 데이터가 홈에서도 보이게: mock DB(listProducts) 기반
+    // ✅ Admin에서 만든 데이터가 홈에서도 보이게: mock DB(listPublishedProducts) 기반
     // - 지금 단계에서는 PUBLISHED만 홈에 노출
     const productsQuery = useProducts();
     const published = useMemo(() => {

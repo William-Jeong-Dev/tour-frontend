@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { useQuery } from "@tanstack/react-query";
-import { listProducts } from "../api/products.api";
+import { listPublishedProducts } from "../api/products.api";
 
 type FilterState = {
     q: string;
@@ -24,6 +24,6 @@ export function useAdminProducts() {
     const { q, region } = filterStore();
     return useQuery({
         queryKey: ["admin-products", { q, region }],
-        queryFn: () => listProducts({ q, region }),
+        queryFn: () => listPublishedProducts({ q, region }),
     });
 }

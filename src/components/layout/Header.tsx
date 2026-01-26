@@ -64,7 +64,7 @@ export default function Header() {
                     <Link to="/" className="flex items-center gap-3">
                         <div className="h-10 w-10 rounded-full bg-white/95" />
                         <div className="leading-tight text-white">
-                            <div className="text-base font-extrabold">청원 여행사</div>
+                            <div className="text-base font-extrabold">청원여행사</div>
                             <div className="text-xs font-semibold text-white/80">청원 여행사 스타일 데모</div>
                         </div>
                     </Link>

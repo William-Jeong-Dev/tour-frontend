@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { deleteProduct, listProducts } from "../../api/products.api";
+import { deleteProduct, listPublishedProducts } from "../../api/products.api";
 
 function fmtUpdatedAt(iso: string) {
     try {
@@ -23,7 +23,7 @@ export default function AdminProductList() {
 
     const query = useQuery({
         queryKey: ["admin-products", { q, region }],
-        queryFn: () => listProducts({ q, region }),
+        queryFn: () => listPublishedProducts({ q, region }),
     });
 
     const items = query.data ?? [];

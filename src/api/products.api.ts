@@ -221,13 +221,27 @@ function toRow(input: ProductUpsert): Omit<ProductRow, "id" | "created_at" | "up
    ✅ API-like functions
    ========================================================= */
 
-export async function listProducts(params?: { q?: string; region?: string }) {
+export async function getProduct(id: string) {
+    assertSupabaseReady();
+
+    const { data, error } = await supabase.from("products").select("*").eq("id", id).maybeSingle();
+    if (error) throw error;
+    if (!data) return null;
+
+    return await toProduct(data as ProductRow);
+}
+
+export async function listPublishedProducts(params?: { q?: string; region?: string }) {
     assertSupabaseReady();
 
     const q = params?.q?.trim();
     const region = params?.region?.trim();
 
-    let query = supabase.from("products").select("*").order("updated_at", { ascending: false });
+    let query = supabase
+        .from("products")
+        .select("*")
+        .eq("status", "PUBLISHED")
+        .order("updated_at", { ascending: false });
 
     if (region && region !== "전체") query = query.eq("region", region);
 
@@ -243,15 +257,6 @@ export async function listProducts(params?: { q?: string; region?: string }) {
     return await Promise.all(rows.map((r) => toProduct(r)));
 }
 
-export async function getProduct(id: string) {
-    assertSupabaseReady();
-
-    const { data, error } = await supabase.from("products").select("*").eq("id", id).maybeSingle();
-    if (error) throw error;
-    if (!data) return null;
-
-    return await toProduct(data as ProductRow);
-}
 
 export async function createProduct(input: ProductUpsert) {
     assertSupabaseReady();
