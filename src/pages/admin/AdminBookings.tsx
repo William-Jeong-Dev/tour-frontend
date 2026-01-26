@@ -142,35 +142,50 @@ export default function AdminBookings() {
         return filtered;
     }, [rows, q, sortKey, localHidden]);
 
-    // 3) 썸네일 signed url 생성 (현재 페이지/검색 결과 기준)
+    // 3) 썸네일
     useEffect(() => {
         const run = async () => {
             if (!visibleRows.length) return;
 
             const next: Record<string, string> = {};
-            const targets = visibleRows.filter((b) => !thumbMap[b.id]);
 
-            if (!targets.length) return;
-
-            for (const b of targets) {
+            for (const b of visibleRows) {
                 const rawPath = String(b.products?.thumbnail_path ?? b.products?.thumbnail_url ?? "").trim();
                 if (!rawPath) continue;
 
-                const { data, error } = await supabase.storage
-                    .from(BUCKET_NAME)
-                    .createSignedUrl(rawPath, 60 * 60);
+                // 외부 URL이면 그대로
+                if (/^https?:\/\//i.test(rawPath)) {
+                    next[b.id] = rawPath;
+                    continue;
+                }
 
-                if (!error && data?.signedUrl) next[b.id] = data.signedUrl;
+                const raw = String(b.products?.thumbnail_path ?? b.products?.thumbnail_url ?? "").trim();
+                if (!raw) continue;
+
+                // raw가 URL이면 그대로, 아니면 publicUrl 생성
+                let url = "";
+                if (/^https?:\/\//i.test(raw)) {
+                    url = raw;
+                } else {
+                    // 앞 / 제거 + bucket prefix 제거
+                    let path = raw.replace(/^\/+/, "");
+                    const prefix = `${BUCKET_NAME}/`;
+                    if (path.startsWith(prefix)) path = path.slice(prefix.length);
+
+                    const { data } = supabase.storage.from(BUCKET_NAME).getPublicUrl(path);
+                    url = data?.publicUrl ?? "";
+                }
+
+                if (url) next[b.id] = url;
+
             }
 
-            if (Object.keys(next).length) {
-                setThumbMap((m) => ({ ...m, ...next }));
-            }
+            setThumbMap(next);
         };
 
         run();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [visibleRows]);
+
 
     // 4) 상태/메모 업데이트
     const updateMut = useMutation({

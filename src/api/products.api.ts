@@ -10,7 +10,7 @@ export function uid(prefix = "id") {
 /**
  * 정책:
  * - products.thumbnail_url 컬럼에는 "public url"이 아니라 "storage path"를 저장할 수 있음
- * - private bucket이면 화면에 보여줄 때 signed url로 변환해서 Product.thumbnailUrl로 내려준다.
+ * - (현재 버킷은 Public ON) => 화면에서는 getPublicUrl로 변환해서 Product.thumbnailUrl로 내려준다.
  */
 type ProductRow = {
     id: string;
@@ -26,8 +26,8 @@ type ProductRow = {
     description: string;
 
     // ✅ 썸네일 (여기엔 path OR 외부 url이 들어올 수 있음)
-    thumbnail_url: string; // 가능하면 NOT NULL 권장(없으면 "" 저장)
-    thumbnail_path: string | null; // path만 따로 저장하고 싶으면 사용
+    thumbnail_url: string;
+    thumbnail_path: string | null;
 
     images: any[];
 
@@ -64,55 +64,54 @@ function isHttpUrl(s: string) {
 }
 
 /* =========================================================
-   ✅ Storage (private bucket) helpers
+   ✅ Storage (PUBLIC bucket) helpers
    ========================================================= */
 
-const THUMB_BUCKET = "product-thumbnails";
-const SIGN_EXPIRES_SEC = 60 * 60; // 1시간
+export const THUMB_BUCKET = "product-thumbnails";
 
-// signed url 캐시(짧게)
-const signedCache = new Map<string, { url: string; expAt: number }>();
+/**
+ * DB에 저장된 값이 다음 형태로 섞여있을 수 있어서 정규화:
+ * - "thumb/xxx.png" (정상)
+ * - "/thumb/xxx.png" (앞에 / 붙은 케이스)
+ * - "product-thumbnails/thumb/xxx.png" (버킷 prefix가 들어간 케이스)
+ * - "/product-thumbnails/thumb/xxx.png"
+ *
+ * ✅ 주의: "thumb/" 폴더명은 실제 폴더일 가능성이 높으니 제거하면 안 됨.
+ */
+export function normalizeThumbPath(raw: string) {
+    const p = String(raw ?? "").trim();
+    if (!p) return "";
 
-async function getSignedUrl(path: string) {
-    const cached = signedCache.get(path);
-    const now = Date.now();
-    if (cached && cached.expAt > now) return cached.url;
+    // 1) leading slash 제거
+    let x = p.replace(/^\/+/, "");
 
-    try {
-        const { data, error } = await supabase.storage
-            .from(THUMB_BUCKET)
-            .createSignedUrl(path, SIGN_EXPIRES_SEC);
+    // 2) 버킷 prefix 제거
+    const prefix = `${THUMB_BUCKET}/`;
+    if (x.startsWith(prefix)) x = x.slice(prefix.length);
 
-        if (error || !data?.signedUrl) {
-            console.warn("createSignedUrl failed:", error);
-            return ""; // ✅ 여기서 throw 하지 않음
-        }
-
-        const url = data.signedUrl;
-        signedCache.set(path, { url, expAt: now + (SIGN_EXPIRES_SEC - 30) * 1000 });
-        return url;
-    } catch (e) {
-        console.warn("createSignedUrl exception:", e);
-        return ""; // ✅ 여기서도 throw 하지 않음
-    }
+    return x;
 }
 
+export function getPublicThumbnailUrl(pathOrUrl: string) {
+    const raw = String(pathOrUrl ?? "").trim();
+    if (!raw) return "";
 
-function safeUUID() {
-    // randomUUID 미지원 브라우저 대비
-    if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-        return (crypto as any).randomUUID();
-    }
-    return `${Date.now()}_${Math.random().toString(16).slice(2)}`;
+    // 외부 URL이면 그대로
+    if (isHttpUrl(raw)) return raw;
+
+    // storage path 정규화 후 public url 생성
+    const path = normalizeThumbPath(raw);
+    const { data } = supabase.storage.from(THUMB_BUCKET).getPublicUrl(path);
+    return data?.publicUrl ?? "";
 }
 
 /**
- * ✅ private bucket 썸네일 업로드
+ * ✅ public bucket 썸네일 업로드
  * - 반환값은 storage path (thumb/xxx.jpg)
  */
 export async function uploadProductThumbnail(file: File) {
     const ext = extOf(file.name);
-    const path = `thumb/${safeUUID()}.${ext}`;
+    const path = `thumb/${crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}_${Math.random().toString(16).slice(2)}`}.${ext}`;
 
     const { error } = await supabase.storage.from(THUMB_BUCKET).upload(path, file, {
         cacheControl: "3600",
@@ -125,34 +124,17 @@ export async function uploadProductThumbnail(file: File) {
         throw new Error(error.message);
     }
 
-    return path; // ✅ DB에는 이 path를 저장해야 함
-}
-
-export async function getSignedThumbnailUrl(path: string) {
-    if (!path) return "";
-
-    // 외부 URL이면 그대로
-    if (/^https?:\/\//i.test(path)) return path;
-
-    return await getSignedUrl(path);
+    return path; // ✅ DB에는 이 path 저장
 }
 
 /* =========================================================
    ✅ Row <-> Product mapping
    ========================================================= */
 
-async function resolveThumbUrl(row: ProductRow) {
-    const raw = (row.thumbnail_path ?? row.thumbnail_url ?? "").trim();
-    if (!raw) return "";
-    if (isHttpUrl(raw)) return raw;
-
-    const signed = await getSignedUrl(raw);
-    return signed || ""; // ✅ 실패 시 빈 값
-}
-
-
 async function toProduct(row: ProductRow): Promise<Product> {
-    const thumbUrl = await resolveThumbUrl(row);
+    // 우선순위: thumbnail_path -> thumbnail_url
+    const raw = (row.thumbnail_path ?? row.thumbnail_url ?? "").trim();
+    const thumbUrl = getPublicThumbnailUrl(raw);
 
     return {
         id: row.id,
@@ -201,10 +183,7 @@ function toRow(input: ProductUpsert): Omit<ProductRow, "id" | "created_at" | "up
         price_text: input.priceText ?? "",
         description: input.description ?? "",
 
-        // ✅ 절대 null 넣지 말자 (NOT NULL이면 특히)
         thumbnail_url: pathOrUrl,
-
-        // ✅ path 따로 쓰고 싶으면 여기 저장
         thumbnail_path: input.thumbnailPath ?? null,
 
         images: Array.isArray(input.images) ? input.images : [],
@@ -224,28 +203,16 @@ function toRow(input: ProductUpsert): Omit<ProductRow, "id" | "created_at" | "up
    ✅ API-like functions
    ========================================================= */
 
-export async function getProduct(id: string) {
-    assertSupabaseReady();
-
-    const { data, error } = await supabase.from("products").select("*").eq("id", id).maybeSingle();
-    if (error) throw error;
-    if (!data) return null;
-
-    return await toProduct(data as ProductRow);
-}
-
-export async function listPublishedProducts(params?: { q?: string; region?: string }) {
+export async function listProducts(params?: { q?: string; region?: string; status?: string }) {
     assertSupabaseReady();
 
     const q = params?.q?.trim();
     const region = params?.region?.trim();
+    const status = params?.status?.trim();
 
-    let query = supabase
-        .from("products")
-        .select("*")
-        .eq("status", "PUBLISHED")
-        .order("updated_at", { ascending: false });
+    let query = supabase.from("products").select("*").order("updated_at", { ascending: false });
 
+    if (status) query = query.eq("status", status);
     if (region && region !== "전체") query = query.eq("region", region);
 
     if (q) {
@@ -260,6 +227,20 @@ export async function listPublishedProducts(params?: { q?: string; region?: stri
     return await Promise.all(rows.map((r) => toProduct(r)));
 }
 
+/** ✅ (클라이언트 홈에서 쓰는) PUBLISHED만 */
+export async function listPublishedProducts(params?: { q?: string; region?: string }) {
+    return await listProducts({ ...params, status: "PUBLISHED" });
+}
+
+export async function getProduct(id: string) {
+    assertSupabaseReady();
+
+    const { data, error } = await supabase.from("products").select("*").eq("id", id).maybeSingle();
+    if (error) throw error;
+    if (!data) return null;
+
+    return await toProduct(data as ProductRow);
+}
 
 export async function createProduct(input: ProductUpsert) {
     assertSupabaseReady();

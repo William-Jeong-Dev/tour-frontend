@@ -20,10 +20,31 @@ import {
     updateProduct,
     uid,
     uploadProductThumbnail,
-    getSignedThumbnailUrl,
 } from "../../api/products.api";
 
 import { supabase } from "../../lib/supabase";
+
+const BUCKET_NAME = "product-thumbnails";
+
+// public bucket용 썸네일 URL 만들기
+function toPublicThumbUrl(raw: string) {
+    const v = String(raw ?? "").trim();
+    if (!v) return "";
+
+    // 외부 URL이면 그대로
+    if (/^https?:\/\//i.test(v)) return v;
+
+    // 앞 / 제거
+    let path = v.replace(/^\/+/, "");
+
+    // bucket prefix가 섞여있으면 제거 (ex: product-thumbnails/thumb/xxx.png)
+    const prefix = `${BUCKET_NAME}/`;
+    if (path.startsWith(prefix)) path = path.slice(prefix.length);
+
+    // public url 생성
+    const { data } = supabase.storage.from(BUCKET_NAME).getPublicUrl(path);
+    return data?.publicUrl ?? "";
+}
 
 /* ---------------- tabs ---------------- */
 type TabKey = "basic" | "bullets" | "itinerary" | "offers" | "assets";
@@ -127,9 +148,15 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
     const [thumbPreview, setThumbPreview] = useState<string>("");
 
     useEffect(() => {
-        // 서버에서 내려준 signed url이 있으면 그대로 미리보기 사용
-        if (form.thumbnailUrl) setThumbPreview(form.thumbnailUrl);
-    }, [form.thumbnailUrl]);
+        // thumbnailUrl(외부 URL 또는 path) / thumbnailPath 모두 처리
+        const raw = (form.thumbnailUrl || form.thumbnailPath || "").trim();
+        if (!raw) {
+            setThumbPreview("");
+            return;
+        }
+        setThumbPreview(toPublicThumbUrl(raw));
+    }, [form.thumbnailUrl, form.thumbnailPath]);
+
 
     const onPickThumb = () => fileRef.current?.click();
 
@@ -140,19 +167,19 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
         try {
             setThumbUploading(true);
 
-            // ✅ 1) 업로드 → path 반환
+            // 1) 업로드 → path 반환 (ex: thumb/xxx.png)
             const path = await uploadProductThumbnail(file);
 
-            // ✅ 2) 미리보기 signed url
-            const signed = await getSignedThumbnailUrl(path);
+            //  2) publicUrl로 미리보기 URL 생성
+            const publicUrl = toPublicThumbUrl(path);
 
-            // ✅ 3) form에는 path 저장(=DB 저장값)
+            //  3) DB에는 path 저장(권장), UI 미리보기만 publicUrl 사용
             setForm((prev) => ({
                 ...prev,
                 thumbnailPath: path,
-                thumbnailUrl: signed, // UI 편의상 같이 보관
+                thumbnailUrl: path, // 정책 유지(thumb url 칼럼에 path 저장)
             }));
-            setThumbPreview(signed);
+            setThumbPreview(publicUrl);
         } finally {
             setThumbUploading(false);
             e.target.value = "";
@@ -187,11 +214,9 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
                 });
 
                 // 혹시 thumbnailUrl이 비어있고 path만 있는 경우 보정
-                const path = (p as any).thumbnailPath ?? "";
-                if (!p.thumbnailUrl && path) {
-                    const signed = await getSignedThumbnailUrl(path);
-                    setThumbPreview(signed);
-                    setForm((prev) => ({ ...prev, thumbnailUrl: signed }));
+                const raw = String((p as any).thumbnailPath ?? p.thumbnailUrl ?? "").trim();
+                if (raw) {
+                    setThumbPreview(toPublicThumbUrl(raw));
                 }
             })();
         }
@@ -332,7 +357,7 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
                                 </div>
 
                                 <div className="mt-2 text-xs text-neutral-500">
-                                    Private bucket(product-thumbnails) / Signed URL 방식 (권장: 16:10, 최대 5MB)
+                                    Public bucket(product-thumbnails) / Public URL 방식 (권장: 16:10, 최대 5MB)
                                 </div>
                             </div>
                         </Field>

@@ -1,6 +1,8 @@
+// src/hooks/useAdminProducts.ts
 import { create } from "zustand";
 import { useQuery } from "@tanstack/react-query";
-import { listPublishedProducts } from "../api/products.api";
+import { listProducts } from "../api/products.api";
+import type { Product } from "../types/product";
 
 type FilterState = {
     q: string;
@@ -16,14 +18,19 @@ const filterStore = create<FilterState>((set) => ({
     setRegion: (v) => set({ region: v }),
 }));
 
-export function useAdminProductsFilter() {
+export function useAdminProductsFilter(): FilterState {
     return filterStore();
 }
 
+/**
+ * ✅ 어드민은 전체 상품을 봐야 하므로 listProducts 사용
+ * (PUBLISHED만 보는 훅이 필요하면 따로 만들면 됨)
+ */
 export function useAdminProducts() {
     const { q, region } = filterStore();
-    return useQuery({
+
+    return useQuery<Product[]>({
         queryKey: ["admin-products", { q, region }],
-        queryFn: () => listPublishedProducts({ q, region }),
+        queryFn: () => listProducts({ q, region }),
     });
 }

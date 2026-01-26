@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import Container from "../../components/common/Container";
 import { useSession } from "../../hooks/useSession";
@@ -6,9 +6,7 @@ import { signOut, supabase } from "../../lib/supabase";
 
 import { useQuery } from "@tanstack/react-query";
 import { listMyFavorites, removeFavorite } from "../../api/favorites.api";
-import { getMyBookings } from "../../api/bookings.api";
-import { cancelMyBooking } from "../../api/bookings.api";
-
+import { getMyBookings, cancelMyBooking } from "../../api/bookings.api";
 
 type Profile = {
     user_id: string;
@@ -30,7 +28,6 @@ export function useMyBookings(userId: string) {
     });
 }
 
-
 export default function MyPage() {
     const { session, loading: sessionLoading } = useSession();
 
@@ -45,10 +42,10 @@ export default function MyPage() {
     const [profile, setProfile] = useState<Profile | null>(null);
     const [err, setErr] = useState<string | null>(null);
 
-    // ✅ 찜 썸네일 signed url 저장소 (favorite row id -> signed url)
+    // ✅ 찜 썸네일 public url 저장소 (favorite row id -> url)
     const [thumbUrlMap, setThumbUrlMap] = useState<Record<string, string>>({});
 
-    // ✅ 예약 썸네일 signed url 저장소 (booking id -> signed url)
+    // ✅ 예약 썸네일 public url 저장소 (booking id -> url)
     const [bookingThumbMap, setBookingThumbMap] = useState<Record<string, string>>({});
 
     // ✅ 내 예약 목록 쿼리
@@ -136,44 +133,55 @@ export default function MyPage() {
         run();
     }, [session?.user?.id]);
 
-    // ✅ 썸네일 path 정리 함수:
-    // - DB에 "thumb/xxx.png"처럼 버킷 prefix가 섞여있어도 자동 제거
+    // ✅ path 정리:
+    // - 외부 URL은 그대로 사용
+    // - "/product-thumbnails/thumb/xxx.png" / "product-thumbnails/thumb/xxx.png" / "/thumb/xxx.png" / "thumb/xxx.png"
+    //   전부 "thumb/xxx.png" 형태로 정리
     const normalizeStoragePath = (raw: string) => {
-        const p = String(raw ?? "").trim();
+        let p = String(raw ?? "").trim();
         if (!p) return "";
 
-        // 1) 버킷 prefix 제거 (혹시 들어있으면)
-        const prefix1 = `${BUCKET_NAME}/`;
-        if (p.startsWith(prefix1)) return p.slice(prefix1.length);
-        if (p.startsWith(`/${prefix1}`)) return p.slice(`/${prefix1}`.length);
+        // 외부 URL이면 path normalize 하지 않음
+        if (/^https?:\/\//i.test(p)) return p;
 
-        // 2) "thumb/" 같은 폴더 prefix 제거 (DB에 그렇게 저장된 경우)
-        if (p.startsWith("thumb/")) return p.slice("thumb/".length);
-        if (p.startsWith("/thumb/")) return p.slice("/thumb/".length);
+        // 앞쪽 / 제거
+        p = p.replace(/^\/+/, "");
+
+        // bucket prefix 제거
+        const prefix = `${BUCKET_NAME}/`;
+        if (p.startsWith(prefix)) p = p.slice(prefix.length);
 
         return p;
     };
 
-    // ✅ favorites 로드되면 signed url 생성
+    const toPublicUrl = (raw: string) => {
+        const normalized = normalizeStoragePath(raw);
+        if (!normalized) return "";
+
+        // 외부 URL이면 그대로
+        if (/^https?:\/\//i.test(normalized)) return normalized;
+
+        const { data } = supabase.storage.from(BUCKET_NAME).getPublicUrl(normalized);
+        return data?.publicUrl ?? "";
+    };
+
+    // ✅ favorites 로드되면 public url 생성
     useEffect(() => {
         const run = async () => {
             const list = (favQuery.data ?? []) as any[];
-            if (!list.length) return;
+            if (!list.length) {
+                setThumbUrlMap({});
+                return;
+            }
 
             const next: Record<string, string> = {};
 
             for (const f of list) {
-                const rawPath = String(f.products?.thumbnail_path ?? f.products?.thumbnail_url ?? "").trim();
+                const raw = String(f.products?.thumbnail_path ?? f.products?.thumbnail_url ?? "").trim();
+                if (!raw) continue;
 
-                if (!rawPath) continue;
-
-                const { data, error } = await supabase.storage
-                    .from("product-thumbnails")
-                    .createSignedUrl(rawPath, 60 * 60);
-
-                if (!error && data?.signedUrl) {
-                    next[f.id] = data.signedUrl;
-                }
+                const url = toPublicUrl(raw);
+                if (url) next[f.id] = url;
             }
 
             setThumbUrlMap(next);
@@ -183,29 +191,23 @@ export default function MyPage() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [favQuery.data]);
 
+    // ✅ bookings 로드되면 public url 생성
     useEffect(() => {
         const run = async () => {
             const list = (bookingQuery.data ?? []) as any[];
-            if (!list.length) return;
+            if (!list.length) {
+                setBookingThumbMap({});
+                return;
+            }
 
             const next: Record<string, string> = {};
 
             for (const b of list) {
-                const rawPath = String(b.products?.thumbnail_path ?? b.products?.thumbnail_url ?? "").trim();
-                console.log("[booking] rawPath:", rawPath);
+                const raw = String(b.products?.thumbnail_path ?? b.products?.thumbnail_url ?? "").trim();
+                if (!raw) continue;
 
-                if (!rawPath) continue;
-
-                const { data, error } = await supabase.storage
-                    .from(BUCKET_NAME)
-                    .createSignedUrl(rawPath, 60 * 60);
-
-                if (error) {
-                    console.log("[booking] signed url error:", error, rawPath);
-                    continue;
-                }
-
-                if (data?.signedUrl) next[b.id] = data.signedUrl;
+                const url = toPublicUrl(raw);
+                if (url) next[b.id] = url;
             }
 
             setBookingThumbMap(next);
@@ -226,9 +228,7 @@ export default function MyPage() {
                     <div className="flex items-end justify-between gap-3">
                         <div>
                             <h1 className="text-2xl font-extrabold text-neutral-900">마이메뉴</h1>
-                            <p className="mt-2 text-sm text-neutral-500">
-                                {session.user.email ?? session.user.id}
-                            </p>
+                            <p className="mt-2 text-sm text-neutral-500">{session.user.email ?? session.user.id}</p>
                         </div>
 
                         <button
@@ -250,9 +250,7 @@ export default function MyPage() {
                         {profileLoading ? (
                             <div className="mt-4 text-sm text-neutral-500">불러오는 중...</div>
                         ) : err ? (
-                            <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                                {err}
-                            </div>
+                            <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{err}</div>
                         ) : !profile ? (
                             <div className="mt-4 text-sm text-neutral-500">프로필을 불러오지 못했어요.</div>
                         ) : (
@@ -357,14 +355,12 @@ export default function MyPage() {
                         {bookingQuery.isLoading ? (
                             <div className="mt-4 text-sm text-neutral-500">불러오는 중...</div>
                         ) : bookingQuery.isError ? (
-                            <div className="mt-4 text-sm text-rose-700">
-                                {(bookingQuery.error as any)?.message ?? "예약 목록을 불러오지 못했어요."}
-                            </div>
-                        ) : visibleBookings.length === 0 ? (   // ✅ 여기만 변경
+                            <div className="mt-4 text-sm text-rose-700">{(bookingQuery.error as any)?.message ?? "예약 목록을 불러오지 못했어요."}</div>
+                        ) : visibleBookings.length === 0 ? (
                             <div className="mt-4 text-sm text-neutral-500">예약 내역이 없어요.</div>
                         ) : (
                             <div className="mt-4 space-y-3">
-                                {visibleBookings.map((b: any) => {  // ✅ 여기만 변경
+                                {visibleBookings.map((b: any) => {
                                     const p = b.products;
                                     const title = p?.title ?? "(상품 정보 없음)";
                                     const region = p?.region ?? "";
@@ -390,9 +386,7 @@ export default function MyPage() {
                                                         }}
                                                     />
                                                 ) : (
-                                                    <div className="h-full w-full grid place-items-center text-[11px] font-bold text-neutral-400">
-                                                        NO IMAGE
-                                                    </div>
+                                                    <div className="h-full w-full grid place-items-center text-[11px] font-bold text-neutral-400">NO IMAGE</div>
                                                 )}
                                             </div>
 
@@ -400,8 +394,8 @@ export default function MyPage() {
                                                 <div className="flex items-center gap-2">
                                                     <div className="text-sm font-extrabold text-neutral-900 line-clamp-1">{title}</div>
                                                     <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] font-extrabold text-neutral-700">
-                  {status}
-                </span>
+                            {status}
+                          </span>
                                                 </div>
 
                                                 <div className="mt-1 text-xs text-neutral-500">
@@ -438,9 +432,7 @@ export default function MyPage() {
                                                         예약 취소
                                                     </button>
                                                 ) : (
-                                                    <div className="text-[11px] font-bold text-neutral-400">
-                                                        {b.status === "CONFIRMED" ? "확정 건은 문의" : ""}
-                                                    </div>
+                                                    <div className="text-[11px] font-bold text-neutral-400">{b.status === "CONFIRMED" ? "확정 건은 문의" : ""}</div>
                                                 )}
                                             </div>
                                         </Link>
@@ -457,9 +449,7 @@ export default function MyPage() {
                         {favQuery.isLoading ? (
                             <div className="mt-4 text-sm text-neutral-500">불러오는 중...</div>
                         ) : favQuery.isError ? (
-                            <div className="mt-4 text-sm text-rose-700">
-                                {(favQuery.error as any)?.message ?? "찜 목록을 불러오지 못했어요."}
-                            </div>
+                            <div className="mt-4 text-sm text-rose-700">{(favQuery.error as any)?.message ?? "찜 목록을 불러오지 못했어요."}</div>
                         ) : (favQuery.data ?? []).length === 0 ? (
                             <div className="mt-4 text-sm text-neutral-500">아직 찜한 상품이 없어요.</div>
                         ) : (
@@ -469,9 +459,6 @@ export default function MyPage() {
                                     const region = f.products?.region ?? "";
                                     const priceText = f.products?.price_text ?? "상담 문의";
 
-                                    // ✅ 우선순위:
-                                    // 1) DB에 thumbnail_url(완전 URL)이 있으면 그걸 사용
-                                    // 2) 없으면 signed url(map) 사용
                                     const thumb = thumbUrlMap[f.id] || "";
 
                                     return (
@@ -491,9 +478,7 @@ export default function MyPage() {
                                                         }}
                                                     />
                                                 ) : (
-                                                    <div className="h-full w-full grid place-items-center text-[11px] font-bold text-neutral-400">
-                                                        NO IMAGE
-                                                    </div>
+                                                    <div className="h-full w-full grid place-items-center text-[11px] font-bold text-neutral-400">NO IMAGE</div>
                                                 )}
                                             </div>
 
@@ -502,14 +487,7 @@ export default function MyPage() {
                                                 <div className="mt-1 text-xs text-neutral-500">
                                                     {region} · {priceText}
                                                 </div>
-                                                <div className="mt-1 text-[11px] text-neutral-400">
-                                                    찜한 시각(KST): {f.created_at_kst ?? "-"}
-                                                </div>
-
-                                                {/* ✅ 디버깅용: path 확인하고 싶으면 주석 해제 */}
-                                                {/* <div className="mt-1 text-[10px] text-neutral-300">
-                          path: {String(f.products?.thumbnail_path ?? "-")}
-                        </div> */}
+                                                <div className="mt-1 text-[11px] text-neutral-400">찜한 시각(KST): {f.created_at_kst ?? "-"}</div>
                                             </div>
 
                                             <button
