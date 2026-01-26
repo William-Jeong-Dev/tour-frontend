@@ -7,7 +7,7 @@ export default function FaqPage() {
             <Container>
                 <div className="py-10">
                     <div className="grid grid-cols-12 gap-8">
-                        <ServiceSideNav title="공지사항" />
+                        <ServiceSideNav title="고객센터" />
 
                         <section className="col-span-12 md:col-span-9">
                             <h1 className="text-2xl font-extrabold text-neutral-900">자주묻는 질문</h1>
