@@ -74,24 +74,29 @@ const SIGN_EXPIRES_SEC = 60 * 60; // 1시간
 const signedCache = new Map<string, { url: string; expAt: number }>();
 
 async function getSignedUrl(path: string) {
-    // 캐시
     const cached = signedCache.get(path);
     const now = Date.now();
     if (cached && cached.expAt > now) return cached.url;
 
-    const { data, error } = await supabase.storage
-        .from(THUMB_BUCKET)
-        .createSignedUrl(path, SIGN_EXPIRES_SEC);
+    try {
+        const { data, error } = await supabase.storage
+            .from(THUMB_BUCKET)
+            .createSignedUrl(path, SIGN_EXPIRES_SEC);
 
-    if (error) {
-        console.error("createSignedUrl error:", error);
-        throw new Error(error.message);
+        if (error || !data?.signedUrl) {
+            console.warn("createSignedUrl failed:", error);
+            return ""; // ✅ 여기서 throw 하지 않음
+        }
+
+        const url = data.signedUrl;
+        signedCache.set(path, { url, expAt: now + (SIGN_EXPIRES_SEC - 30) * 1000 });
+        return url;
+    } catch (e) {
+        console.warn("createSignedUrl exception:", e);
+        return ""; // ✅ 여기서도 throw 하지 않음
     }
-
-    const url = data.signedUrl;
-    signedCache.set(path, { url, expAt: now + (SIGN_EXPIRES_SEC - 30) * 1000 });
-    return url;
 }
+
 
 function safeUUID() {
     // randomUUID 미지원 브라우저 대비
@@ -137,16 +142,14 @@ export async function getSignedThumbnailUrl(path: string) {
    ========================================================= */
 
 async function resolveThumbUrl(row: ProductRow) {
-    // 우선순위: thumbnail_path -> thumbnail_url
     const raw = (row.thumbnail_path ?? row.thumbnail_url ?? "").trim();
     if (!raw) return "";
-
-    // 이미 외부 URL이면 그대로
     if (isHttpUrl(raw)) return raw;
 
-    // 그 외는 path로 보고 signed url 생성
-    return await getSignedUrl(raw);
+    const signed = await getSignedUrl(raw);
+    return signed || ""; // ✅ 실패 시 빈 값
 }
+
 
 async function toProduct(row: ProductRow): Promise<Product> {
     const thumbUrl = await resolveThumbUrl(row);
