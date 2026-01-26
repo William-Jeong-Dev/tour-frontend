@@ -39,7 +39,7 @@ export default function Footer() {
                     <div className="text-xs text-neutral-500">
                         <div className="font-semibold text-neutral-700">TOUR</div>
                         <div className="mt-2">공지사항 | 이용약관 | 개인정보처리방침 | 해외여행자보험</div>
-                        <div className="mt-2">상호: (회사명) · 대표: (대표명) · 주소: (주소) · 이메일: (이메일)</div>
+                        <div className="mt-2">상호: 청원여행사 · 대표: 김동현 · 주소: 부산 해운대구 해운대로 216 · 이메일: chungwon87@naver.com</div>
                     </div>
                 </div>
             </div>
