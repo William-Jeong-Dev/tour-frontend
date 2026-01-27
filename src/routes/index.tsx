@@ -28,10 +28,12 @@ import NoticeDetailPage from "../pages/client/NoticeDetailPage";
 import AdminNotices from "../pages/admin/AdminNotices";
 import AdminNoticeEdit from "../pages/admin/AdminNoticeEdit";
 
+// ✅ 추가
+import AdminBranding from "../pages/admin/AdminBranding";
+
 function RouteError() {
     const err = useRouteError() as any;
 
-    // React Router가 던지는 Response 타입 에러도 있어서 최대한 안전하게 출력
     const msg =
         err?.message ||
         err?.statusText ||
@@ -82,6 +84,9 @@ export const router = createBrowserRouter([
             { path: "products", element: <AdminProductList /> },
 
             { path: "themes", element: <AdminThemes /> },
+
+            // ✅ 추가: 브랜딩(로고) 설정
+            { path: "settings/branding", element: <AdminBranding /> },
 
             { path: "products/new/:tab", element: <AdminProductEdit mode="create" /> },
             { path: "products/new", element: <AdminProductEdit mode="create" /> },

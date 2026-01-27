@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { listThemesActive, type ThemeRow } from "../../api/themes.api";
 import { useSession } from "../../hooks/useSession";
+import { useLogoUrl, usePrimaryColor  } from "../../hooks/useSiteBranding";
 
 export default function Header() {
     const navigate = useNavigate();
@@ -14,6 +15,12 @@ export default function Header() {
         queryFn: listThemesActive,
         staleTime: 60_000,
     });
+
+    const logoQuery = useLogoUrl();
+    const logoUrl = logoQuery.data ?? "";
+
+    const primaryColorQuery = usePrimaryColor();
+    const primaryColor = primaryColorQuery.data || "#2E97F2";
 
     const themes: ThemeRow[] = useMemo(() => {
         const list = (themesQuery.data ?? []) as ThemeRow[];
@@ -57,17 +64,29 @@ export default function Header() {
     };
 
     return (
-        <header className={`sticky top-0 z-50 bg-[#2E97F2] ${scrolled ? "shadow-md" : ""}`}>
-            {/* 상단 라인 */}
+        <header className={`sticky top-0 z-50 ${scrolled ? "shadow-md" : ""}`} style={{ backgroundColor: primaryColor }}>
+        {/* 상단 라인 */}
             <div className="border-b border-white/15">
                 <div className="mx-auto flex max-w-[1400px] items-center justify-between px-4 py-3 md:px-6">
                     <Link to="/" className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-full bg-white/95" />
-                        <div className="leading-tight text-white">
-                            <div className="text-base font-extrabold">청원여행사</div>
-                            <div className="text-xs font-semibold text-white/80">청원 여행사 스타일 데모</div>
-                        </div>
+                        {logoUrl ? (
+                            <img
+                                src={logoUrl}
+                                alt="청원여행사"
+                                className="h-10 w-auto max-w-[180px] object-contain"
+                                loading="eager"
+                            />
+                        ) : (
+                            <>
+                                <div className="h-10 w-10 rounded-full bg-white/95" />
+                                <div className="leading-tight text-white">
+                                    <div className="text-base font-extrabold">청원여행사</div>
+                                    <div className="text-xs font-semibold text-white/80">청원 여행사 스타일 데모</div>
+                                </div>
+                            </>
+                        )}
                     </Link>
+
 
                     {/* ✅ 모바일 액션 (md 미만에서만 보임) */}
                     <div className="flex items-center gap-2 md:hidden">
