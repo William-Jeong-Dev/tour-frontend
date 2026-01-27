@@ -6,7 +6,7 @@ export default function Footer() {
                 <div className="mx-auto flex max-w-[1400px] flex-col gap-4 px-4 sm:px-6 py-6 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <div className="text-sm font-semibold">
-                            고객센터 <span className="ml-2 text-[#1C8B7B]">070-0000-0000</span>
+                            고객센터 <span className="ml-2 text-[#1C8B7B]">051-747-8207 , 010-8688-8810</span>
                         </div>
                         <div className="mt-1 text-xs text-neutral-500">
                             평일 09:00 ~ 18:00 · 업무시간 외 문의는 상담 채널로 남겨주세요.
@@ -39,7 +39,7 @@ export default function Footer() {
                     <div className="text-xs text-neutral-500">
                         <div className="font-semibold text-neutral-700">TOUR</div>
                         <div className="mt-2">공지사항 | 이용약관 | 개인정보처리방침 | 해외여행자보험</div>
-                        <div className="mt-2">상호: (회사명) · 대표: (대표명) · 주소: (주소) · 이메일: (이메일)</div>
+                        <div className="mt-2">상호: 청원여행사 · 대표: 김동현 · 주소: 부산 해운대구 해운대로 216 · 이메일: chungwon87@naver.com</div>
                     </div>
                 </div>
             </div>
