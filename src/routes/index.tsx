@@ -28,8 +28,10 @@ import NoticeDetailPage from "../pages/client/NoticeDetailPage";
 import AdminNotices from "../pages/admin/AdminNotices";
 import AdminNoticeEdit from "../pages/admin/AdminNoticeEdit";
 
-// ✅ 추가
 import AdminBranding from "../pages/admin/AdminBranding";
+
+import AdminUsers from "../pages/admin/AdminUsers";
+import AdminUserDetail from "../pages/admin/AdminUserDetail";
 
 function RouteError() {
     const err = useRouteError() as any;
@@ -85,8 +87,10 @@ export const router = createBrowserRouter([
 
             { path: "themes", element: <AdminThemes /> },
 
-            // ✅ 추가: 브랜딩(로고) 설정
             { path: "settings/branding", element: <AdminBranding /> },
+
+            { path: "users", element: <AdminUsers /> },
+            { path: "users/:id", element: <AdminUserDetail /> },
 
             { path: "products/new/:tab", element: <AdminProductEdit mode="create" /> },
             { path: "products/new", element: <AdminProductEdit mode="create" /> },
