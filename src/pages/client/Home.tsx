@@ -4,6 +4,7 @@ import Container from "../../components/common/Container";
 import MobileSnapCarousel from "../../components/common/MobileSnapCarousel";
 import { useProducts } from "../../hooks/useProducts";
 import type { Product } from "../../types/product";
+import { useEffect, useRef, useState } from "react";
 
 type Card = {
     id: string;
@@ -42,6 +43,41 @@ function toCard(p: Product): Card {
     };
 }
 
+type HeroSlide = {
+    id: string;
+    title: string;
+    tags: string;      // "#겨울골프 ..."
+    heroImage: string; // 오른쪽 큰 이미지
+    cards: Card[];     // 왼쪽 추천 카드들(2개 정도)
+};
+
+const heroSlides: HeroSlide[] = [
+    {
+        id: "s1",
+        title: "추운 겨울에도 따뜻하게,\n남국 겨울 골프 🎁 🏝️",
+        tags: "#겨울골프 #남국골프 #오키나와골프 #미야코지마골프",
+        heroImage:
+            "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=2400&q=80",
+        cards: heroSideCards,
+    },
+    {
+        id: "s2",
+        title: "설/삼일절 연휴 골프여행\n좌석 한정 특가 📣",
+        tags: "#연휴골프 #한정특가 #항공포함 #선착순",
+        heroImage:
+            "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=2400&q=80",
+        cards: heroSideCards,
+    },
+    {
+        id: "s3",
+        title: "온천 + 골프 조합\n힐링 완성 ♨️⛳",
+        tags: "#온천골프 #가이세키 #프리미엄",
+        heroImage:
+            "https://images.unsplash.com/photo-1500375592092-40eb2168fd21?auto=format&fit=crop&w=2400&q=80",
+        cards: heroSideCards,
+    },
+];
+
 function SectionTitle({ left, right }: { left: string; right?: string }) {
     return (
         <div className="flex items-end justify-between">
@@ -53,14 +89,9 @@ function SectionTitle({ left, right }: { left: string; right?: string }) {
 
 function ProductCard({ item }: { item: Card }) {
     return (
-        <Link
-            to={`/product/${item.id}`}
-            state={{ product: item }}
-            className="block"
-        >
+        <Link to={`/product/${item.id}`} state={{ product: item }} className="block">
             <article className="group overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm transition hover:shadow-md">
                 <div className="relative">
-                    {/* ✅ 썸네일 “짤림 느낌” 줄이기: 높이 고정 대신 aspect로 */}
                     <div className="aspect-[16/10] w-full overflow-hidden">
                         <img
                             className="h-full w-full object-cover object-center transition group-hover:scale-[1.02]"
@@ -74,7 +105,6 @@ function ProductCard({ item }: { item: Card }) {
                         type="button"
                         aria-label="like"
                         onClick={(e) => {
-                            // 카드 클릭 라우팅 막지 않도록
                             e.preventDefault();
                             e.stopPropagation();
                             alert("찜(데모)");
@@ -100,106 +130,175 @@ function ProductCard({ item }: { item: Card }) {
 }
 
 export default function Home() {
-    // ✅ Admin에서 만든 데이터가 홈에서도 보이게: mock DB(listPublishedProducts) 기반
-    // - 지금 단계에서는 PUBLISHED만 홈에 노출
     const productsQuery = useProducts();
+
     const published = useMemo(() => {
         const items = productsQuery.data ?? [];
         return items.filter((p) => p.status === "PUBLISHED");
     }, [productsQuery.data]);
 
-    // 섹션별로 4개씩 뽑아 쓰기 (원하면 region/태그 기반으로 더 세분화 가능)
     const homeCards = useMemo(() => published.map(toCard), [published]);
     const specialCards = homeCards.slice(0, 4);
     const onsenTopCards = homeCards.slice(4, 8).length ? homeCards.slice(4, 8) : homeCards.slice(0, 4);
 
+    const slides = heroSlides;
+    const [heroIndex, setHeroIndex] = useState(0);
+    const intervalRef = useRef<number | null>(null);
+
+    const goTo = (i: number) => setHeroIndex((i + slides.length) % slides.length);
+    const next = () => goTo(heroIndex + 1);
+    const prev = () => goTo(heroIndex - 1);
+
+    const active = slides[heroIndex];
+
+    const AUTO_MS = 5000;
+
+    const stopAuto = () => {
+        if (intervalRef.current) window.clearInterval(intervalRef.current);
+        intervalRef.current = null;
+    };
+
+    const startAuto = () => {
+        stopAuto();
+        intervalRef.current = window.setInterval(() => {
+            setHeroIndex((v) => (v + 1) % slides.length);
+        }, AUTO_MS);
+    };
+
+    useEffect(() => {
+        if (slides.length <= 1) return;
+        startAuto();
+        return stopAuto;
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [slides.length]);
+
     return (
         <main className="bg-white">
-            <Container>
-                {/* HERO */}
-                <section className="py-7 md:py-9">
-                <div className="-mx-6">
-                        <div className="px-6">
-                            <div className="grid grid-cols-12 items-stretch gap-4 md:gap-6">
-                                {/* LEFT */}
-                                <div className="col-span-12 md:col-span-5 flex flex-col justify-center">
-                                    <div className="mx-auto w-full max-w-[580px] md:mx-0">
+            {/* ✅ HERO: 첫 화면을 좌/우로 “화면 꽉” 채우는 방식 */}
+            <section className="w-screen bg-white -mt-px overflow-hidden">
+                <div className="grid grid-cols-12 items-stretch gap-0 min-h-[calc(92vh-var(--header-h,140px)+12px)]">
+                {/* LEFT */}
+                    <div className="col-span-12 md:col-span-5 flex justify-end">
+                        <div
+                            className="w-full max-w-[1400px] px-6"
+                        >
+                            <div className="h-full flex items-center">
+                                <div className="w-full max-w-[580px] ml-0 md:ml-16 lg:ml-24 xl:ml-28 flex flex-col justify-center items-end text-right">
+                                    {/* ✅ 슬라이드 타이틀 */}
                                     <h1 className="text-3xl md:text-4xl font-extrabold leading-tight tracking-tight text-[#2E97F2]">
-                                            추운 겨울에도 따뜻하게,
-                                            <br />
-                                            남국 겨울 골프 🎁 🏝️
-                                        </h1>
+                                        {active.title.split("\n").map((line, idx) => (
+                                            <span key={idx}>
+                  {line}
+                                                <br />
+                </span>
+                                        ))}
+                                    </h1>
 
-                                        <p className="mt-3 text-sm md:text-base text-neutral-500">
-                                            #겨울골프 #남국골프 #오키나와골프 #미야코지마골프
-                                        </p>
+                                    {/* ✅ 슬라이드 태그 */}
+                                    <p className="mt-3 text-sm md:text-base text-neutral-500">{active.tags}</p>
 
-                                        <div className="mt-6 space-y-3">
-                                            {heroSideCards.map((c) => (
-                                                <div
-                                                    key={c.id}
-                                                    className="flex items-center gap-4 rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm hover:shadow-md"
-                                                >
-                                                    <div className="w-20 overflow-hidden rounded-xl">
-                                                        <div className="aspect-[16/10] w-full overflow-hidden">
-                                                            <img src={c.img} alt={c.title} className="h-full w-full object-cover object-center" />
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="min-w-0">
-                                                        <div className="flex flex-wrap items-center gap-2">
-                                                            {c.badge ? (
-                                                                <span className="rounded-md bg-emerald-50 px-2 py-1 text-xs md:text-sm font-bold text-emerald-700">
-                                                                  {c.badge}
-                                                                </span>
-                                                            ) : null}
-                                                            <span className="rounded-md bg-sky-50 px-2 py-1 text-xs md:text-sm font-bold text-sky-700">
-                                                              시내호텔
-                                                            </span>
-                                                            <span className="rounded-md bg-neutral-100 px-2 py-1 text-xs md:text-sm font-bold text-neutral-700">
-                                                              다색골프
-                                                            </span>
-                                                        </div>
-                                                        <div className="mt-2 line-clamp-1 text-sm font-semibold text-neutral-900">{c.title}</div>
-                                                        <div className="mt-1 text-sm font-extrabold text-neutral-900">{c.price}</div>
+                                    {/* ✅ 슬라이드 카드들 */}
+                                    <div className="mt-6 space-y-3 w-full flex flex-col items-end">
+                                        {active.cards.map((c) => (
+                                            <div
+                                                key={c.id}
+                                                className="w-full max-w-[520px] flex items-center gap-4 rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm hover:shadow-md"
+                                            >
+                                                <div className="w-20 overflow-hidden rounded-xl">
+                                                    <div className="aspect-[16/10] w-full overflow-hidden">
+                                                        <img
+                                                            src={c.img}
+                                                            alt={c.title}
+                                                            className="h-full w-full object-cover object-center"
+                                                        />
                                                     </div>
                                                 </div>
-                                            ))}
-                                        </div>
 
-                                        <div className="mt-6 flex items-center gap-2 text-sm text-neutral-500">
-                                            <span className="font-semibold">01 / 03</span>
-                                            <button
-                                                className="grid h-8 w-8 place-items-center rounded-lg border border-neutral-200 bg-white hover:bg-neutral-50"
-                                                type="button"
-                                            >
-                                                ‹
-                                            </button>
-                                            <button
-                                                className="grid h-8 w-8 place-items-center rounded-lg border border-neutral-200 bg-white hover:bg-neutral-50"
-                                                type="button"
-                                            >
-                                                ›
-                                            </button>
-                                        </div>
+                                                <div className="min-w-0 text-right">
+                                                    <div className="flex flex-wrap items-center gap-2 justify-end">
+                                                        {c.badge ? (
+                                                            <span className="rounded-md bg-emerald-50 px-2 py-1 text-xs md:text-sm font-bold text-emerald-700">
+                          {c.badge}
+                        </span>
+                                                        ) : null}
+                                                        <span className="rounded-md bg-sky-50 px-2 py-1 text-xs md:text-sm font-bold text-sky-700">
+                        시내호텔
+                      </span>
+                                                        <span className="rounded-md bg-neutral-100 px-2 py-1 text-xs md:text-sm font-bold text-neutral-700">
+                        다색골프
+                      </span>
+                                                    </div>
+
+                                                    <div className="mt-2 line-clamp-1 text-sm font-semibold text-neutral-900">{c.title}</div>
+                                                    <div className="mt-1 text-sm font-extrabold text-neutral-900">{c.price}</div>
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
-                                </div>
 
-                                {/* RIGHT */}
-                                <div className="col-span-12 md:col-span-7">
-                                    <div className="h-[300px] md:h-[560px] w-full overflow-hidden rounded-3xl">
-                                    <img
-                                            className="h-full w-full object-cover"
-                                            src="https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=1800&q=80"
-                                            alt="hero"
-                                        />
+                                    {/* ✅ 01 / 03 + 버튼 동작 */}
+                                    <div className="mt-6 flex items-center gap-2 text-sm text-neutral-500">
+              <span className="font-semibold">
+                {String(heroIndex + 1).padStart(2, "0")} / {String(slides.length).padStart(2, "0")}
+              </span>
+
+                                        <button
+                                            className="grid h-8 w-8 place-items-center rounded-lg border border-neutral-200 bg-white hover:bg-neutral-50"
+                                            type="button"
+                                            aria-label="prev"
+                                            onClick={() => {
+                                                stopAuto();
+                                                prev();
+                                                startAuto();
+                                            }}
+                                        >
+                                            ‹
+                                        </button>
+
+                                        <button
+                                            className="grid h-8 w-8 place-items-center rounded-lg border border-neutral-200 bg-white hover:bg-neutral-50"
+                                            type="button"
+                                            aria-label="next"
+                                            onClick={() => {
+                                                stopAuto();
+                                                next();
+                                                startAuto();
+                                            }}
+                                        >
+                                            ›
+                                        </button>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </section>
 
+                    {/* RIGHT */}
+                    <div className="col-span-12 md:col-span-7">
+                        <div
+                            className="relative h-full w-full overflow-hidden rounded-none"
+                            onMouseEnter={stopAuto}
+                            onMouseLeave={startAuto}
+                        >
+                            {slides.map((s, i) => (
+                                <img
+                                    key={s.id}
+                                    className={[
+                                        "absolute inset-0 h-full w-full object-cover transition-opacity duration-700",
+                                        i === heroIndex ? "opacity-100" : "opacity-0",
+                                    ].join(" ")}
+                                    src={s.heroImage}
+                                    alt={s.title}
+                                    draggable={false}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* ✅ HERO 아래부터는 기존처럼 Container 유지 */}
+            <Container>
                 {/* SPECIAL */}
                 <section className="py-7 md:py-9">
                     <SectionTitle left="특가 🔥 얼리버드 골프" />
@@ -214,14 +313,12 @@ export default function Home() {
                         </div>
                     ) : (
                         <>
-                            {/* Desktop grid */}
                             <div className="mt-6 hidden md:grid md:grid-cols-4 md:gap-6">
                                 {specialCards.map((p) => (
                                     <ProductCard key={p.id} item={p} />
                                 ))}
                             </div>
 
-                            {/* Mobile carousel */}
                             <div className="mt-6 md:hidden">
                                 <MobileSnapCarousel items={specialCards} renderItem={(p) => <ProductCard item={p} />} />
                             </div>
@@ -231,7 +328,7 @@ export default function Home() {
 
                 {/* ONSEN */}
                 <section className="py-7 md:py-9">
-                <div className="flex items-center justify-center gap-2">
+                    <div className="flex items-center justify-center gap-2">
                         <h3 className="text-lg md:text-xl font-extrabold text-neutral-900">
                             골프여행, 고르기 어려울 땐 🤔 ?
                         </h3>
@@ -249,19 +346,14 @@ export default function Home() {
                         ))}
                     </div>
 
-                    {/* Desktop grid */}
                     <div className="mt-8 hidden md:grid md:grid-cols-4 md:gap-6">
                         {onsenTopCards.map((p) => (
                             <ProductCard key={p.id} item={p} />
                         ))}
                     </div>
 
-                    {/* Mobile carousel + dots */}
                     <div className="mt-8 md:hidden">
-                        <MobileSnapCarousel
-                            items={onsenTopCards}
-                            renderItem={(p) => <ProductCard item={p} />}
-                        />
+                        <MobileSnapCarousel items={onsenTopCards} renderItem={(p) => <ProductCard item={p} />} />
                     </div>
                 </section>
 
@@ -286,12 +378,7 @@ export default function Home() {
 
                             <div className="mt-6 space-y-4">
                                 {onsenTopCards.slice(0, 2).map((c) => (
-                                    <Link
-                                        key={c.id}
-                                        to={`/product/${c.id}`}
-                                        state={{ product: c }}
-                                        className="block"
-                                    >
+                                    <Link key={c.id} to={`/product/${c.id}`} state={{ product: c }} className="block">
                                         <div className="flex items-center gap-4 rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm hover:shadow-md">
                                             <div className="w-20 overflow-hidden rounded-xl">
                                                 <div className="aspect-[16/10] w-full overflow-hidden">
@@ -301,12 +388,12 @@ export default function Home() {
 
                                             <div className="min-w-0">
                                                 <div className="flex items-center gap-2">
-                                                  <span className="rounded-md bg-emerald-50 px-2 py-1 text-xs md:text-sm font-bold text-emerald-700">
-                                                  {c.badge ?? "추천"}
-                                                  </span>
+                          <span className="rounded-md bg-emerald-50 px-2 py-1 text-xs md:text-sm font-bold text-emerald-700">
+                            {c.badge ?? "추천"}
+                          </span>
                                                     <span className="rounded-md bg-sky-50 px-2 py-1 text-xs md:text-sm font-bold text-sky-700">
-                                                      상품
-                                                    </span>
+                            상품
+                          </span>
                                                 </div>
                                                 <div className="mt-2 line-clamp-1 text-base font-semibold text-neutral-900">{c.title}</div>
                                                 <div className="mt-1 text-base font-extrabold text-neutral-900">{c.price}</div>
