@@ -8,6 +8,7 @@ function cx(...arr: Array<string | false | null | undefined>) {
 
 const NAVS = [
     { to: "/admin", label: "대시보드", end: true },
+    { to: "/admin/hero-slides", label: "히어로 슬라이드" }, // ✅ 추가
     { to: "/admin/products", label: "상품 관리" },
     { to: "/admin/themes", label: "테마 관리" },
     { to: "/admin/bookings", label: "예약 현황" },
@@ -22,7 +23,9 @@ export default function AdminLayout() {
     const [open, setOpen] = useState(false);
 
     const activeLabel = useMemo(() => {
-        const hit = NAVS.find((x) => (x.end ? loc.pathname === x.to : loc.pathname.startsWith(x.to)));
+        const hit = NAVS.find((x) =>
+            x.end ? loc.pathname === x.to : loc.pathname.startsWith(x.to)
+        );
         return hit?.label ?? "Admin";
     }, [loc.pathname]);
 
@@ -62,12 +65,18 @@ export default function AdminLayout() {
             {/* ✅ Mobile Drawer Sidebar */}
             {open ? (
                 <div className="fixed inset-0 z-50 lg:hidden">
-                    <div className="absolute inset-0 bg-black/60" onClick={() => setOpen(false)} aria-hidden="true" />
+                    <div
+                        className="absolute inset-0 bg-black/60"
+                        onClick={() => setOpen(false)}
+                        aria-hidden="true"
+                    />
                     <aside className="absolute left-0 top-0 h-full w-[86%] max-w-[320px] border-r border-neutral-900 bg-neutral-950 p-4">
                         <div className="flex items-start justify-between gap-3">
                             <div className="px-1">
                                 <div className="text-sm font-extrabold text-neutral-100">Admin</div>
-                                <div className="mt-1 text-xs text-neutral-400">상품/콘텐츠 데이터를 관리합니다</div>
+                                <div className="mt-1 text-xs text-neutral-400">
+                                    상품/콘텐츠 데이터를 관리합니다
+                                </div>
                             </div>
                             <button
                                 type="button"
@@ -110,7 +119,9 @@ export default function AdminLayout() {
                     <aside className="hidden rounded-2xl border border-neutral-900 bg-neutral-950/40 p-4 lg:block">
                         <div className="px-2 pb-3">
                             <div className="text-sm font-extrabold text-neutral-200">Admin</div>
-                            <div className="mt-1 text-xs text-neutral-400">상품/콘텐츠 데이터를 관리합니다</div>
+                            <div className="mt-1 text-xs text-neutral-400">
+                                상품/콘텐츠 데이터를 관리합니다
+                            </div>
                         </div>
 
                         <nav className="mt-2 space-y-2">
@@ -159,7 +170,9 @@ function MenuLink({
             className={({ isActive }) =>
                 cx(
                     "flex items-center justify-between rounded-xl px-4 py-3 text-sm font-extrabold transition",
-                    isActive ? "bg-neutral-50 text-neutral-950" : "bg-neutral-950/40 text-neutral-200 hover:bg-neutral-900"
+                    isActive
+                        ? "bg-neutral-50 text-neutral-950"
+                        : "bg-neutral-950/40 text-neutral-200 hover:bg-neutral-900"
                 )
             }
         >

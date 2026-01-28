@@ -1,10 +1,12 @@
 import { Link } from "react-router-dom";
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Container from "../../components/common/Container";
 import MobileSnapCarousel from "../../components/common/MobileSnapCarousel";
 import { useProducts } from "../../hooks/useProducts";
 import type { Product } from "../../types/product";
-import { useEffect, useRef, useState } from "react";
+
+import { useHeroSlides } from "../../hooks/useHeroSlides";
+import { defaultHeroSlides } from "./HomeHeroDefaults";
 
 type Card = {
     id: string;
@@ -13,23 +15,6 @@ type Card = {
     img: string;
     badge?: string;
 };
-
-const heroSideCards: Card[] = [
-    {
-        id: "hero-1",
-        title: "[얼리버드] 오키나와 실속 호텔+골프",
-        price: "979,000원~",
-        img: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=600&q=80",
-        badge: "오키나와",
-    },
-    {
-        id: "hero-2",
-        title: "[얼리버드] 미야코지마 브릿지베이",
-        price: "1,059,000원~",
-        img: "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=600&q=80",
-        badge: "미야코지마",
-    },
-];
 
 function toCard(p: Product): Card {
     return {
@@ -42,41 +27,6 @@ function toCard(p: Product): Card {
         badge: p.region || undefined,
     };
 }
-
-type HeroSlide = {
-    id: string;
-    title: string;
-    tags: string;      // "#겨울골프 ..."
-    heroImage: string; // 오른쪽 큰 이미지
-    cards: Card[];     // 왼쪽 추천 카드들(2개 정도)
-};
-
-const heroSlides: HeroSlide[] = [
-    {
-        id: "s1",
-        title: "추운 겨울에도 따뜻하게,\n남국 겨울 골프 🎁 🏝️",
-        tags: "#겨울골프 #남국골프 #오키나와골프 #미야코지마골프",
-        heroImage:
-            "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=2400&q=80",
-        cards: heroSideCards,
-    },
-    {
-        id: "s2",
-        title: "설/삼일절 연휴 골프여행\n좌석 한정 특가 📣",
-        tags: "#연휴골프 #한정특가 #항공포함 #선착순",
-        heroImage:
-            "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=2400&q=80",
-        cards: heroSideCards,
-    },
-    {
-        id: "s3",
-        title: "온천 + 골프 조합\n힐링 완성 ♨️⛳",
-        tags: "#온천골프 #가이세키 #프리미엄",
-        heroImage:
-            "https://images.unsplash.com/photo-1500375592092-40eb2168fd21?auto=format&fit=crop&w=2400&q=80",
-        cards: heroSideCards,
-    },
-];
 
 function SectionTitle({ left, right }: { left: string; right?: string }) {
     return (
@@ -141,15 +91,27 @@ export default function Home() {
     const specialCards = homeCards.slice(0, 4);
     const onsenTopCards = homeCards.slice(4, 8).length ? homeCards.slice(4, 8) : homeCards.slice(0, 4);
 
-    const slides = heroSlides;
+    // ✅ HERO 슬라이드: DB에서 읽고 없으면 defaultHeroSlides 사용
+    const heroQuery = useHeroSlides(defaultHeroSlides);
+    const slides = heroQuery.slides ?? defaultHeroSlides; // 안전장치
+
     const [heroIndex, setHeroIndex] = useState(0);
     const intervalRef = useRef<number | null>(null);
 
-    const goTo = (i: number) => setHeroIndex((i + slides.length) % slides.length);
+    // slides 길이가 바뀌면 index가 범위 밖으로 나가지 않게 보정
+    useEffect(() => {
+        if (!slides.length) return;
+        setHeroIndex((v) => Math.min(v, slides.length - 1));
+    }, [slides.length]);
+
+    const goTo = (i: number) => {
+        if (!slides.length) return;
+        setHeroIndex((i + slides.length) % slides.length);
+    };
     const next = () => goTo(heroIndex + 1);
     const prev = () => goTo(heroIndex - 1);
 
-    const active = slides[heroIndex];
+    const active = slides.length ? slides[heroIndex] : defaultHeroSlides[0];
 
     const AUTO_MS = 5000;
 
@@ -160,13 +122,14 @@ export default function Home() {
 
     const startAuto = () => {
         stopAuto();
+        if (slides.length <= 1) return;
+
         intervalRef.current = window.setInterval(() => {
             setHeroIndex((v) => (v + 1) % slides.length);
         }, AUTO_MS);
     };
 
     useEffect(() => {
-        if (slides.length <= 1) return;
         startAuto();
         return stopAuto;
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -174,59 +137,50 @@ export default function Home() {
 
     return (
         <main className="bg-white">
-            {/* ✅ HERO: 첫 화면을 좌/우로 “화면 꽉” 채우는 방식 */}
+            {/* ✅ HERO */}
             <section className="w-screen bg-white -mt-px overflow-hidden">
                 <div className="grid grid-cols-12 items-stretch gap-0 min-h-[calc(92vh-var(--header-h,140px)+12px)]">
-                {/* LEFT */}
+                    {/* LEFT */}
                     <div className="col-span-12 md:col-span-5 flex justify-end">
-                        <div
-                            className="w-full max-w-[1400px] px-6"
-                        >
+                        <div className="w-full max-w-[1400px] px-6">
                             <div className="h-full flex items-center">
-                                <div className="w-full max-w-[580px] ml-0 md:ml-16 lg:ml-24 xl:ml-28 flex flex-col justify-center items-end text-right">
-                                    {/* ✅ 슬라이드 타이틀 */}
-                                    <h1 className="text-3xl md:text-4xl font-extrabold leading-tight tracking-tight text-[#2E97F2]">
+                                <div className="w-full max-w-[580px] ml-0 md:ml-16 lg:ml-24 xl:ml-28 flex flex-col justify-center items-start text-left">
+                                <h1 className="text-3xl md:text-4xl font-extrabold leading-tight tracking-tight text-[#2E97F2]">
                                         {active.title.split("\n").map((line, idx) => (
                                             <span key={idx}>
-                  {line}
+                        {line}
                                                 <br />
-                </span>
+                      </span>
                                         ))}
                                     </h1>
 
-                                    {/* ✅ 슬라이드 태그 */}
                                     <p className="mt-3 text-sm md:text-base text-neutral-500">{active.tags}</p>
 
-                                    {/* ✅ 슬라이드 카드들 */}
-                                    <div className="mt-6 space-y-3 w-full flex flex-col items-end">
-                                        {active.cards.map((c) => (
+                                    <div className="mt-6 space-y-3 w-full flex flex-col items-start">
+                                    {active.cards.map((c) => (
                                             <div
                                                 key={c.id}
                                                 className="w-full max-w-[520px] flex items-center gap-4 rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm hover:shadow-md"
                                             >
                                                 <div className="w-20 overflow-hidden rounded-xl">
                                                     <div className="aspect-[16/10] w-full overflow-hidden">
-                                                        <img
-                                                            src={c.img}
-                                                            alt={c.title}
-                                                            className="h-full w-full object-cover object-center"
-                                                        />
+                                                        <img src={c.img} alt={c.title} className="h-full w-full object-cover object-center" />
                                                     </div>
                                                 </div>
 
-                                                <div className="min-w-0 text-right">
-                                                    <div className="flex flex-wrap items-center gap-2 justify-end">
-                                                        {c.badge ? (
+                                                <div className="min-w-0 text-left">
+                                                    <div className="flex flex-wrap items-center gap-2 justify-start">
+                                                    {c.badge ? (
                                                             <span className="rounded-md bg-emerald-50 px-2 py-1 text-xs md:text-sm font-bold text-emerald-700">
-                          {c.badge}
-                        </span>
+                                {c.badge}
+                              </span>
                                                         ) : null}
                                                         <span className="rounded-md bg-sky-50 px-2 py-1 text-xs md:text-sm font-bold text-sky-700">
-                        시내호텔
-                      </span>
+                              시내호텔
+                            </span>
                                                         <span className="rounded-md bg-neutral-100 px-2 py-1 text-xs md:text-sm font-bold text-neutral-700">
-                        다색골프
-                      </span>
+                              다색골프
+                            </span>
                                                     </div>
 
                                                     <div className="mt-2 line-clamp-1 text-sm font-semibold text-neutral-900">{c.title}</div>
@@ -236,11 +190,10 @@ export default function Home() {
                                         ))}
                                     </div>
 
-                                    {/* ✅ 01 / 03 + 버튼 동작 */}
                                     <div className="mt-6 flex items-center gap-2 text-sm text-neutral-500">
-              <span className="font-semibold">
-                {String(heroIndex + 1).padStart(2, "0")} / {String(slides.length).padStart(2, "0")}
-              </span>
+                    <span className="font-semibold">
+                      {String(heroIndex + 1).padStart(2, "0")} / {String(slides.length).padStart(2, "0")}
+                    </span>
 
                                         <button
                                             className="grid h-8 w-8 place-items-center rounded-lg border border-neutral-200 bg-white hover:bg-neutral-50"
@@ -275,11 +228,7 @@ export default function Home() {
 
                     {/* RIGHT */}
                     <div className="col-span-12 md:col-span-7">
-                        <div
-                            className="relative h-full w-full overflow-hidden rounded-none"
-                            onMouseEnter={stopAuto}
-                            onMouseLeave={startAuto}
-                        >
+                        <div className="relative h-full w-full overflow-hidden rounded-none">
                             {slides.map((s, i) => (
                                 <img
                                     key={s.id}
@@ -297,7 +246,7 @@ export default function Home() {
                 </div>
             </section>
 
-            {/* ✅ HERO 아래부터는 기존처럼 Container 유지 */}
+            {/* ✅ HERO 아래부터는 Container */}
             <Container>
                 {/* SPECIAL */}
                 <section className="py-7 md:py-9">
@@ -329,9 +278,7 @@ export default function Home() {
                 {/* ONSEN */}
                 <section className="py-7 md:py-9">
                     <div className="flex items-center justify-center gap-2">
-                        <h3 className="text-lg md:text-xl font-extrabold text-neutral-900">
-                            골프여행, 고르기 어려울 땐 🤔 ?
-                        </h3>
+                        <h3 className="text-lg md:text-xl font-extrabold text-neutral-900">골프여행, 고르기 어려울 땐 🤔 ?</h3>
                     </div>
 
                     <div className="mt-3 flex items-center justify-center gap-2">
@@ -372,9 +319,7 @@ export default function Home() {
 
                         <div className="col-span-12 md:col-span-6">
                             <h3 className="text-2xl font-extrabold text-neutral-900">따끈따끈 온천 골프 ⛳️</h3>
-                            <p className="mt-2 text-base text-neutral-500">
-                                따뜻한 온천욕과 가이세키 코스 요리로 온천골프 만끽 🥰
-                            </p>
+                            <p className="mt-2 text-base text-neutral-500">따뜻한 온천욕과 가이세키 코스 요리로 온천골프 만끽 🥰</p>
 
                             <div className="mt-6 space-y-4">
                                 {onsenTopCards.slice(0, 2).map((c) => (
@@ -422,11 +367,8 @@ export default function Home() {
                 </section>
             </Container>
 
-            {/* Footer 컴포넌트 쓰면 이건 삭제 가능 */}
             <div className="border-t border-neutral-200 bg-neutral-50">
-                <div className="mx-auto max-w-[1400px] px-6 py-10 text-sm text-neutral-500">
-                    하단 영역은 Footer 컴포넌트에서 대체하면 됩니다.
-                </div>
+                <div className="mx-auto max-w-[1400px] px-6 py-10 text-sm text-neutral-500">하단 영역은 Footer 컴포넌트에서 대체하면 됩니다.</div>
             </div>
         </main>
     );

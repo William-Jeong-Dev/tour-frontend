@@ -18,7 +18,6 @@ import ClientLogin from "../pages/client/ClientLogin";
 import MyPage from "../pages/client/MyPage";
 import SupportPage from "../pages/client/SupportPage";
 import FaqPage from "../pages/client/FaqPage";
-import InquiryPage from "../pages/client/InquiryPage";
 
 import AdminBookings from "../pages/admin/AdminBookings";
 
@@ -32,6 +31,8 @@ import AdminBranding from "../pages/admin/AdminBranding";
 
 import AdminUsers from "../pages/admin/AdminUsers";
 import AdminUserDetail from "../pages/admin/AdminUserDetail";
+
+import HeroSlideAdminPage from "../pages/admin/HeroSlidesAdminPage";
 
 function RouteError() {
     const err = useRouteError() as any;
@@ -84,8 +85,10 @@ export const router = createBrowserRouter([
             { path: "bookings", element: <AdminBookings /> },
 
             { path: "products", element: <AdminProductList /> },
-
             { path: "themes", element: <AdminThemes /> },
+
+            // ✅ HERO 슬라이드 관리 라우트
+            { path: "hero-slides", element: <HeroSlideAdminPage /> },
 
             { path: "settings/branding", element: <AdminBranding /> },
 
