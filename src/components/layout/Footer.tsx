@@ -5,19 +5,19 @@ export default function Footer() {
             <div id="cs" className="border-t border-b border-neutral-200">
                 <div className="mx-auto flex max-w-[1400px] flex-col gap-4 px-4 sm:px-6 py-6 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <div className="text-sm font-semibold">
+                        <div className="text-base font-semibold">
                             고객센터 <span className="ml-2 text-[#1C8B7B]">051-747-8207 , 010-8688-8810</span>
                         </div>
-                        <div className="mt-1 text-xs text-neutral-500">
+                        <div className="mt-1 text-sm text-neutral-500">
                             평일 09:00 ~ 18:00 · 업무시간 외 문의는 상담 채널로 남겨주세요.
                         </div>
                     </div>
 
                     <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-                        <button className="w-full sm:w-auto rounded-lg bg-yellow-400 px-4 py-2 text-sm font-bold text-neutral-900 hover:bg-yellow-300">
+                        <button className="w-full sm:w-auto rounded-lg bg-yellow-400 px-4 py-2 text-base font-bold text-neutral-900 hover:bg-yellow-300">
                             상담하기
                         </button>
-                        <button className="w-full sm:w-auto rounded-lg border border-neutral-300 bg-white px-4 py-2 text-sm font-semibold hover:bg-neutral-100">
+                        <button className="w-full sm:w-auto rounded-lg border border-neutral-300 bg-white px-4 py-2 text-base font-semibold hover:bg-neutral-100">
                             FAQ/문의하기
                         </button>
                     </div>
@@ -36,7 +36,7 @@ export default function Footer() {
             {/* 하단 정보 */}
             <div className="border-t border-neutral-200">
                 <div className="mx-auto max-w-[1400px] px-4 sm:px-6 py-8">
-                    <div className="text-xs text-neutral-500">
+                    <div className="text-sm text-neutral-500">
                         <div className="font-semibold text-neutral-700">TOUR</div>
                         <div className="mt-2">공지사항 | 이용약관 | 개인정보처리방침 | 해외여행자보험</div>
                         <div className="mt-2">상호: 청원여행사 · 대표: 김동현 · 주소: 부산 해운대구 해운대로 216 · 이메일: chungwon87@naver.com</div>
@@ -50,8 +50,8 @@ export default function Footer() {
 function Col({ title, items }: { title: string; items: string[] }) {
     return (
         <div>
-            <div className="text-sm font-semibold text-neutral-800">{title}</div>
-            <ul className="mt-3 space-y-2 text-sm text-neutral-600">
+            <div className="text-base font-semibold text-neutral-800">{title}</div>
+            <ul className="mt-3 space-y-2 text-base text-neutral-600">
                 {items.map((x) => (
                     <li key={x}>
                         <a className="hover:text-neutral-900" href="#">

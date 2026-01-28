@@ -66,11 +66,103 @@ export default function Header() {
     };
 
     return (
-        <header className={`sticky top-0 z-50 ${scrolled ? "shadow-md" : ""}`} style={{ backgroundColor: primaryColor }}>
-            {/* ✅ Topbar: 2줄 (윗줄 메뉴 + 로고줄(우측 카카오)) */}
+        <header
+            className={`sticky top-0 z-50 ${scrolled ? "shadow-md" : ""}`}
+            style={{ backgroundColor: primaryColor }}
+        >
             <div className="mx-auto w-full max-w-[1400px] px-4 md:px-6">
-                {/* ✅ (PC만) 로고 위 공간: 우측 정렬 메뉴 */}
-                <div className="hidden md:flex items-center justify-end gap-4 pt-3 pb-2 text-xs font-semibold text-white/90">
+                {/* =======================
+            (모바일) 1줄: 상담/공지/로그인 + SNS
+           ======================= */}
+                <div className="flex items-center justify-between pt-3 pb-2 md:hidden">
+                    {/* 좌측: 상담/공지 */}
+                    <div className="flex items-center gap-2">
+                        <button
+                            type="button"
+                            onClick={() => navigate("/support")}
+                            className="whitespace-nowrap rounded-full bg-yellow-400 px-3 py-2 text-xs font-extrabold text-neutral-900 hover:bg-yellow-300"
+                        >
+                            상담
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={() => navigate("/notices")}
+                            className="whitespace-nowrap rounded-full bg-white/10 px-3 py-2 text-xs font-bold text-white hover:bg-white/15"
+                        >
+                            공지
+                        </button>
+                    </div>
+
+                    {/* 우측: SNS + 로그인/마이 */}
+                    <div className="flex items-center gap-2">
+                        <a
+                            href="#"
+                            onClick={(e) => e.preventDefault()}
+                            aria-label="카카오톡"
+                            title="카카오톡"
+                            className="inline-flex h-9 w-9 items-center justify-center"
+                        >
+                            <img
+                                src={KakaoLogo}
+                                alt="KakaoTalk"
+                                className="h-6 w-6 object-contain opacity-95"
+                                loading="eager"
+                            />
+                        </a>
+
+                        <a
+                            href="#"
+                            onClick={(e) => e.preventDefault()}
+                            aria-label="인스타그램"
+                            title="인스타그램"
+                            className="inline-flex h-9 w-9 items-center justify-center"
+                        >
+                            <img
+                                src={InstaIcon}
+                                alt="Instagram"
+                                className="h-6 w-6 object-contain opacity-95"
+                                loading="eager"
+                            />
+                        </a>
+
+                        <a
+                            href="#"
+                            onClick={(e) => e.preventDefault()}
+                            aria-label="블로그"
+                            title="블로그"
+                            className="inline-flex h-9 w-9 items-center justify-center"
+                        >
+                            <img
+                                src={BlogIcon}
+                                alt="Blog"
+                                className="h-6 w-6 object-contain opacity-95"
+                                loading="eager"
+                            />
+                        </a>
+
+                        {session ? (
+                            <Link
+                                to="/me"
+                                className="whitespace-nowrap rounded-full bg-white/10 px-3 py-2 text-xs font-bold text-white hover:bg-white/15"
+                            >
+                                마이
+                            </Link>
+                        ) : (
+                            <Link
+                                to="/login"
+                                className="whitespace-nowrap rounded-full bg-white/10 px-3 py-2 text-xs font-bold text-white hover:bg-white/15"
+                            >
+                                로그인
+                            </Link>
+                        )}
+                    </div>
+                </div>
+
+                {/* =======================
+            (PC) 1줄: 로고 위 우측 메뉴 (현재 안 보이던 부분)
+           ======================= */}
+                <div className="hidden md:flex items-center justify-end gap-4 pt-3 pb-2 text-sm font-semibold text-white/90">
                     <Link to="/events" className="hover:text-white">
                         기획전/이벤트
                     </Link>
@@ -92,16 +184,24 @@ export default function Header() {
                     )}
                 </div>
 
-                {/* ✅ 로고 줄: 가운데 메인 로고 + (PC) 우측 카카오 로고 + (모바일) 우측 액션 */}
-                <div className="relative flex items-center justify-between pt-4 pb-6 md:pt-4 md:pb-10">
-                {/* 좌측 스페이서(PC에서 중앙정렬 안정화) */}
+                {/* =======================
+            2줄: 로고 영역
+            - 모바일: 가운데 정렬(absolute 사용 X) => 겹침 방지
+            - PC: absolute center + 좌/우 스페이서
+           ======================= */}
+                <div className="relative flex items-center justify-between pt-3 pb-6 md:pt-4 md:pb-10">
+                    {/* PC 좌측 스페이서 */}
                     <div className="hidden md:block w-[260px]" aria-hidden="true" />
 
-                    {/* ✅ 가운데 로고 (absolute center) */}
+                    {/* 로고 */}
                     <Link
                         to="/"
-                        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center"
                         aria-label="홈으로"
+                        className={[
+                            "flex items-center justify-center",
+                            "md:absolute md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2",
+                            "w-full md:w-auto",
+                        ].join(" ")}
                     >
                         {logoUrl ? (
                             <img
@@ -118,10 +218,9 @@ export default function Header() {
                         )}
                     </Link>
 
-                    {/* ✅ (PC만) 로고 줄 우측: SNS 아이콘 (우측 정렬) */}
-                    <div className="hidden md:flex w-[260px] items-center justify-end">
+                    {/* PC 우측: SNS 아이콘 (오른쪽 여백 추가 pr-2) */}
+                    <div className="hidden md:flex w-[260px] items-center justify-end pr-2">
                         <div className="flex items-center gap-3">
-                            {/* Kakao */}
                             <a
                                 href="#"
                                 onClick={(e) => e.preventDefault()}
@@ -129,10 +228,14 @@ export default function Header() {
                                 aria-label="카카오톡"
                                 title="카카오톡"
                             >
-                                <img src={KakaoLogo} alt="KakaoTalk" className="h-7 w-auto opacity-90 hover:opacity-100" loading="eager" />
+                                <img
+                                    src={KakaoLogo}
+                                    alt="KakaoTalk"
+                                    className="h-7 w-7 object-contain opacity-90 hover:opacity-100"
+                                    loading="eager"
+                                />
                             </a>
 
-                            {/* Instagram */}
                             <a
                                 href="#"
                                 onClick={(e) => e.preventDefault()}
@@ -140,10 +243,14 @@ export default function Header() {
                                 aria-label="인스타그램"
                                 title="인스타그램"
                             >
-                                <img src={InstaIcon} alt="Instagram" className="h-7 w-7 object-contain opacity-90 hover:opacity-100" loading="eager" />
+                                <img
+                                    src={InstaIcon}
+                                    alt="Instagram"
+                                    className="h-7 w-7 object-contain opacity-90 hover:opacity-100"
+                                    loading="eager"
+                                />
                             </a>
 
-                            {/* Blog */}
                             <a
                                 href="#"
                                 onClick={(e) => e.preventDefault()}
@@ -151,57 +258,39 @@ export default function Header() {
                                 aria-label="블로그"
                                 title="블로그"
                             >
-                                <img src={BlogIcon} alt="Blog" className="h-7 w-7 object-contain opacity-90 hover:opacity-100" loading="eager" />
+                                <img
+                                    src={BlogIcon}
+                                    alt="Blog"
+                                    className="h-7 w-7 object-contain opacity-90 hover:opacity-100"
+                                    loading="eager"
+                                />
                             </a>
                         </div>
                     </div>
 
-                    {/* ✅ 모바일 액션 (우측) */}
-                    <div className="flex items-center gap-2 md:hidden">
-                        <button
-                            type="button"
-                            onClick={() => navigate("/support")}
-                            className="whitespace-nowrap rounded-full bg-yellow-400 px-3 py-2 text-xs font-extrabold text-neutral-900 hover:bg-yellow-300"
-                        >
-                            상담
-                        </button>
-
-                        <button
-                            type="button"
-                            onClick={() => navigate("/notices")}
-                            className="whitespace-nowrap rounded-full bg-white/10 px-3 py-2 text-xs font-bold text-white hover:bg-white/15"
-                        >
-                            공지
-                        </button>
-
-                        {session ? (
-                            <Link to="/me" className="whitespace-nowrap rounded-full bg-white/10 px-3 py-2 text-xs font-bold text-white hover:bg-white/15">
-                                마이
-                            </Link>
-                        ) : (
-                            <Link to="/login" className="whitespace-nowrap rounded-full bg-white/10 px-3 py-2 text-xs font-bold text-white hover:bg-white/15">
-                                로그인
-                            </Link>
-                        )}
-                    </div>
+                    {/* 모바일에서는 로고 줄 좌/우 요소 제거(겹침 방지) */}
+                    <div className="md:hidden w-0" aria-hidden="true" />
                 </div>
             </div>
 
-            {/* ✅ Category bar (왼쪽 카테고리 + 우측 검색/상담(PC)) */}
+            {/* =======================
+          3줄: 카테고리 + (PC) 검색/상담
+         ======================= */}
             <div>
                 <nav className="mx-auto w-full max-w-[1400px] px-4 md:px-6">
-                    <div className="flex items-center gap-4 pt-5 pb-3">
-                    {/* 왼쪽: 카테고리 (남는 공간을 먹게) */}
+                    <div className="flex items-center gap-4 pt-4 pb-3 md:pt-5">
+                        {/* 카테고리 */}
                         <div
                             className={[
-                                "min-w-0 flex-1 flex items-center gap-3 overflow-x-auto text-sm font-semibold",
+                                "min-w-0 flex-1 flex items-center gap-3 overflow-x-auto",
+                                "text-base md:text-sm font-semibold", // 모바일 글자 좀 더 큼
                                 "[&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]",
                             ].join(" ")}
                         >
                             {themesQuery.isLoading ? (
-                                <div className="text-white/80 text-xs">테마 불러오는 중...</div>
+                                <div className="text-white/80 text-sm">테마 불러오는 중...</div>
                             ) : themes.length === 0 ? (
-                                <div className="text-white/80 text-xs">
+                                <div className="text-white/80 text-sm">
                                     활성화된 테마가 없습니다. (Admin &gt; 테마 관리에서 active 확인)
                                 </div>
                             ) : (
@@ -224,7 +313,7 @@ export default function Header() {
                             )}
                         </div>
 
-                        {/* 오른쪽: 검색 + 상담 (우측 끝으로 밀기) */}
+                        {/* PC 검색/상담 */}
                         <div className="hidden md:flex items-center gap-3 shrink-0 ml-auto justify-end">
                             <div className="flex items-center gap-2 rounded-full bg-white/15 px-4 py-2 text-white/90">
                                 <span className="text-sm">🔍</span>

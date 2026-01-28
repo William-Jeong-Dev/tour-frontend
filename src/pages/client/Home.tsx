@@ -4,7 +4,6 @@ import Container from "../../components/common/Container";
 import MobileSnapCarousel from "../../components/common/MobileSnapCarousel";
 import { useProducts } from "../../hooks/useProducts";
 import type { Product } from "../../types/product";
-import HScroll from "../../components/common/HScroll";
 
 type Card = {
     id: string;
@@ -46,8 +45,8 @@ function toCard(p: Product): Card {
 function SectionTitle({ left, right }: { left: string; right?: string }) {
     return (
         <div className="flex items-end justify-between">
-            <h2 className="text-xl font-extrabold tracking-tight text-neutral-900">{left}</h2>
-            {right ? <p className="text-sm text-neutral-500">{right}</p> : null}
+            <h2 className="text-2xl font-extrabold tracking-tight text-neutral-900">{left}</h2>
+            {right ? <p className="text-base text-neutral-500">{right}</p> : null}
         </div>
     );
 }
@@ -92,8 +91,8 @@ function ProductCard({ item }: { item: Card }) {
                 </div>
 
                 <div className="p-4">
-                    <div className="line-clamp-2 text-sm font-semibold text-neutral-900">{item.title}</div>
-                    <div className="mt-2 text-sm font-extrabold text-neutral-900">{item.price}</div>
+                    <div className="line-clamp-2 text-base font-semibold text-neutral-900">{item.title}</div>
+                    <div className="mt-2 text-base font-extrabold text-neutral-900">{item.price}</div>
                 </div>
             </article>
         </Link>
@@ -131,7 +130,7 @@ export default function Home() {
                                             남국 겨울 골프 🎁 🏝️
                                         </h1>
 
-                                        <p className="mt-3 text-sm text-neutral-500">
+                                        <p className="mt-3 text-sm md:text-base text-neutral-500">
                                             #겨울골프 #남국골프 #오키나와골프 #미야코지마골프
                                         </p>
 
@@ -150,18 +149,17 @@ export default function Home() {
                                                     <div className="min-w-0">
                                                         <div className="flex flex-wrap items-center gap-2">
                                                             {c.badge ? (
-                                                                <span className="rounded-md bg-emerald-50 px-2 py-1 text-[11px] font-bold text-emerald-700">
-                                  {c.badge}
-                                </span>
+                                                                <span className="rounded-md bg-emerald-50 px-2 py-1 text-xs md:text-sm font-bold text-emerald-700">
+                                                                  {c.badge}
+                                                                </span>
                                                             ) : null}
-                                                            <span className="rounded-md bg-sky-50 px-2 py-1 text-[11px] font-bold text-sky-700">
-                                시내호텔
-                              </span>
-                                                            <span className="rounded-md bg-neutral-100 px-2 py-1 text-[11px] font-bold text-neutral-700">
-                                다색골프
-                              </span>
+                                                            <span className="rounded-md bg-sky-50 px-2 py-1 text-xs md:text-sm font-bold text-sky-700">
+                                                              시내호텔
+                                                            </span>
+                                                            <span className="rounded-md bg-neutral-100 px-2 py-1 text-xs md:text-sm font-bold text-neutral-700">
+                                                              다색골프
+                                                            </span>
                                                         </div>
-
                                                         <div className="mt-2 line-clamp-1 text-sm font-semibold text-neutral-900">{c.title}</div>
                                                         <div className="mt-1 text-sm font-extrabold text-neutral-900">{c.price}</div>
                                                     </div>
@@ -169,7 +167,7 @@ export default function Home() {
                                             ))}
                                         </div>
 
-                                        <div className="mt-6 flex items-center gap-2 text-xs text-neutral-500">
+                                        <div className="mt-6 flex items-center gap-2 text-sm text-neutral-500">
                                             <span className="font-semibold">01 / 03</span>
                                             <button
                                                 className="grid h-8 w-8 place-items-center rounded-lg border border-neutral-200 bg-white hover:bg-neutral-50"
@@ -234,7 +232,9 @@ export default function Home() {
                 {/* ONSEN */}
                 <section className="py-8 md:py-10">
                     <div className="flex items-center justify-center gap-2">
-                        <h3 className="text-base font-extrabold text-neutral-900">골프여행, 고르기 어려울 땐 🤔 ?</h3>
+                        <h3 className="text-lg md:text-xl font-extrabold text-neutral-900">
+                            골프여행, 고르기 어려울 땐 🤔 ?
+                        </h3>
                     </div>
 
                     <div className="mt-3 flex items-center justify-center gap-2">
@@ -242,7 +242,7 @@ export default function Home() {
                             <button
                                 key={t}
                                 type="button"
-                                className="rounded-full border border-neutral-200 bg-white px-3 py-1 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
+                                className="rounded-full border border-neutral-200 bg-white px-3 py-1 text-sm font-semibold text-neutral-700 hover:bg-neutral-50"
                             >
                                 {t}
                             </button>
@@ -280,7 +280,7 @@ export default function Home() {
 
                         <div className="col-span-12 md:col-span-6">
                             <h3 className="text-2xl font-extrabold text-neutral-900">따끈따끈 온천 골프 ⛳️</h3>
-                            <p className="mt-2 text-sm text-neutral-500">
+                            <p className="mt-2 text-base text-neutral-500">
                                 따뜻한 온천욕과 가이세키 코스 요리로 온천골프 만끽 🥰
                             </p>
 
@@ -301,15 +301,15 @@ export default function Home() {
 
                                             <div className="min-w-0">
                                                 <div className="flex items-center gap-2">
-                          <span className="rounded-md bg-emerald-50 px-2 py-1 text-[11px] font-bold text-emerald-700">
-                            {c.badge ?? "추천"}
-                          </span>
-                                                    <span className="rounded-md bg-sky-50 px-2 py-1 text-[11px] font-bold text-sky-700">
-                            상품
-                          </span>
+                                                  <span className="rounded-md bg-emerald-50 px-2 py-1 text-xs md:text-sm font-bold text-emerald-700">
+                                                  {c.badge ?? "추천"}
+                                                  </span>
+                                                    <span className="rounded-md bg-sky-50 px-2 py-1 text-xs md:text-sm font-bold text-sky-700">
+                                                      상품
+                                                    </span>
                                                 </div>
-                                                <div className="mt-2 line-clamp-1 text-sm font-semibold text-neutral-900">{c.title}</div>
-                                                <div className="mt-1 text-sm font-extrabold text-neutral-900">{c.price}</div>
+                                                <div className="mt-2 line-clamp-1 text-base font-semibold text-neutral-900">{c.title}</div>
+                                                <div className="mt-1 text-base font-extrabold text-neutral-900">{c.price}</div>
                                             </div>
                                         </div>
                                     </Link>
