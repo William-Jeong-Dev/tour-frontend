@@ -7,8 +7,6 @@ function uid(prefix = "id") {
     return `${prefix}_${Math.random().toString(36).slice(2, 9)}_${Date.now()}`;
 }
 
-type HeroCard = HeroSlide["cards"][number];
-
 export default function HeroSlidesAdminPage() {
     const { slides, setSlides, loading } = useHeroSlides(defaultHeroSlides);
     const [saving, setSaving] = useState(false);
@@ -22,8 +20,8 @@ export default function HeroSlidesAdminPage() {
 
     const moveSlide = (from: number, to: number) => {
         setSlides((prev) => {
-            if (to < 0 || to >= prev.length) return prev;
             const next = [...prev];
+            if (to < 0 || to >= next.length) return next;
             const [item] = next.splice(from, 1);
             next.splice(to, 0, item);
             return next;
@@ -63,7 +61,7 @@ export default function HeroSlidesAdminPage() {
         setSlides((prev) => prev.filter((_, i) => i !== index));
     };
 
-    const updateCard = (slideIndex: number, cardIndex: number, patch: Partial<HeroCard>) => {
+    const updateCard = (slideIndex: number, cardIndex: number, patch: any) => {
         setSlides((prev) =>
             prev.map((s, si) => {
                 if (si !== slideIndex) return s;
@@ -108,12 +106,8 @@ export default function HeroSlidesAdminPage() {
         if (!canSave) return;
 
         for (const s of slides) {
-            if (!s.title?.trim() || !s.heroImage?.trim()) {
+            if (!s.title.trim() || !s.heroImage.trim()) {
                 setMsg("슬라이드 제목/대표이미지는 필수입니다.");
-                return;
-            }
-            if (!Array.isArray(s.cards) || s.cards.length === 0) {
-                setMsg("각 슬라이드에 최소 1개의 카드를 넣어주세요.");
                 return;
             }
         }
@@ -130,21 +124,23 @@ export default function HeroSlidesAdminPage() {
     };
 
     return (
-        <main className="bg-white">
+        // ✅ AdminLayout이 이미 다크 배경이지만, 이 페이지 자체도 다크로 통일
+        <main className="min-h-screen bg-neutral-950 text-neutral-100">
             <Container>
-                <div className="py-8 md:py-10 text-neutral-900">
+                <div className="py-8 md:py-10">
                     {/* Header */}
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>
-                            <h1 className="text-2xl font-extrabold tracking-tight text-neutral-900">HERO 슬라이드 관리</h1>
-                            <p className="mt-1 text-sm text-neutral-600">
+                            <h1 className="text-2xl font-extrabold tracking-tight text-neutral-100">
+                                HERO 슬라이드 관리
+                            </h1>
+                            <p className="mt-1 text-sm text-neutral-400">
                                 홈 상단 HERO 영역의 슬라이드(제목/태그/이미지/카드)를 관리합니다.
                             </p>
-                            {loading ? <p className="mt-1 text-xs text-neutral-500">불러오는 중…</p> : null}
                             {msg ? (
-                                <p className="mt-2 text-sm font-semibold text-neutral-800">
+                                <div className="mt-3 rounded-xl border border-neutral-800 bg-neutral-900/40 px-4 py-3 text-sm text-neutral-200">
                                     {msg}
-                                </p>
+                                </div>
                             ) : null}
                         </div>
 
@@ -155,9 +151,9 @@ export default function HeroSlidesAdminPage() {
                                 disabled={saving}
                                 className="
                   inline-flex items-center gap-2 rounded-xl
-                  border border-neutral-300 bg-white px-4 py-2
-                  text-sm font-extrabold text-neutral-900
-                  hover:bg-neutral-50
+                  border border-neutral-800 bg-neutral-900/40 px-4 py-2
+                  text-sm font-extrabold text-neutral-100
+                  hover:bg-neutral-900
                   disabled:cursor-not-allowed disabled:opacity-60
                 "
                             >
@@ -167,36 +163,45 @@ export default function HeroSlidesAdminPage() {
                             <button
                                 type="button"
                                 onClick={onSave}
-                                disabled={saving || !canSave}
+                                disabled={saving}
                                 className="
                   inline-flex items-center gap-2 rounded-xl
-                  bg-neutral-900 px-4 py-2
-                  text-sm font-extrabold text-white
-                  hover:bg-neutral-800
+                  bg-white px-4 py-2
+                  text-sm font-extrabold text-neutral-950
+                  hover:bg-neutral-100
                   disabled:cursor-not-allowed disabled:opacity-70
                 "
                             >
-                                {saving ? "저장 중..." : "저장"}
+                                {saving ? "저장중..." : "저장"}
                             </button>
                         </div>
                     </div>
 
                     {/* Body */}
                     <div className="mt-6 space-y-6">
+                        {loading ? (
+                            <div className="rounded-2xl border border-neutral-800 bg-neutral-900/30 p-6 text-sm text-neutral-300">
+                                불러오는 중...
+                            </div>
+                        ) : null}
+
                         {slides.length === 0 ? (
-                            <div className="rounded-2xl border border-dashed border-neutral-300 bg-white p-6 text-sm text-neutral-600">
+                            <div className="rounded-2xl border border-dashed border-neutral-800 bg-neutral-900/20 p-6 text-sm text-neutral-300">
                                 아직 슬라이드가 없습니다.{" "}
-                                <span className="font-semibold text-neutral-900">+ 슬라이드 추가</span>를 눌러 시작하세요.
+                                <span className="font-semibold text-white">+ 슬라이드 추가</span>를 눌러 시작하세요.
                             </div>
                         ) : null}
 
                         {slides.map((s, idx) => (
-                            <section key={s.id} className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
+                            <section
+                                key={s.id}
+                                className="rounded-2xl border border-neutral-800 bg-neutral-900/30 p-5 shadow-sm"
+                            >
                                 {/* Slide header row */}
                                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                                     <div>
-                                        <div className="text-lg font-extrabold text-neutral-900">슬라이드 {idx + 1}</div>
-                                        <div className="mt-1 text-xs text-neutral-500">id: {s.id}</div>
+                                        <div className="text-lg font-extrabold text-white">슬라이드 {idx + 1}</div>
+                                        <div className="mt-1 text-xs text-neutral-400">id: {s.id}</div>
                                     </div>
 
                                     <div className="flex items-center gap-2">
@@ -205,8 +210,8 @@ export default function HeroSlidesAdminPage() {
                                             onClick={() => moveSlide(idx, idx - 1)}
                                             disabled={idx === 0 || saving}
                                             className="
-                        rounded-xl border border-neutral-300 bg-white px-3 py-2
-                        text-sm font-extrabold text-neutral-900 hover:bg-neutral-50
+                        rounded-xl border border-neutral-800 bg-neutral-900/40 px-3 py-2
+                        text-sm font-extrabold text-neutral-100 hover:bg-neutral-900
                         disabled:cursor-not-allowed disabled:opacity-50
                       "
                                             aria-label="위로"
@@ -214,14 +219,13 @@ export default function HeroSlidesAdminPage() {
                                         >
                                             ↑
                                         </button>
-
                                         <button
                                             type="button"
                                             onClick={() => moveSlide(idx, idx + 1)}
                                             disabled={idx === slides.length - 1 || saving}
                                             className="
-                        rounded-xl border border-neutral-300 bg-white px-3 py-2
-                        text-sm font-extrabold text-neutral-900 hover:bg-neutral-50
+                        rounded-xl border border-neutral-800 bg-neutral-900/40 px-3 py-2
+                        text-sm font-extrabold text-neutral-100 hover:bg-neutral-900
                         disabled:cursor-not-allowed disabled:opacity-50
                       "
                                             aria-label="아래로"
@@ -235,8 +239,8 @@ export default function HeroSlidesAdminPage() {
                                             onClick={() => deleteSlide(idx)}
                                             disabled={saving}
                                             className="
-                        rounded-xl border border-red-200 bg-white px-3 py-2
-                        text-sm font-extrabold text-red-600 hover:bg-red-50
+                        rounded-xl border border-red-900/40 bg-red-950/30 px-3 py-2
+                        text-sm font-extrabold text-red-200 hover:bg-red-950/50
                         disabled:cursor-not-allowed disabled:opacity-60
                       "
                                         >
@@ -250,62 +254,68 @@ export default function HeroSlidesAdminPage() {
                                     <div className="space-y-5">
                                         {/* Title */}
                                         <div>
-                                            <label className="text-sm font-semibold text-neutral-700">제목 (줄바꿈은 \n)</label>
+                                            <label className="text-sm font-semibold text-neutral-200">
+                                                제목 (줄바꿈은 \n)
+                                            </label>
                                             <textarea
                                                 value={s.title}
                                                 onChange={(e) => updateSlide(idx, { title: e.target.value })}
                                                 placeholder={"예)\n추운 겨울에도 따뜻하게,\n남국 겨울 골프 🎁 🏝️"}
                                                 className="
                           mt-2 w-full min-h-[96px] rounded-xl
-                          border border-neutral-300 bg-white px-3 py-2
-                          text-sm text-neutral-900 placeholder:text-neutral-500
-                          focus:outline-none focus:ring-2 focus:ring-black/10
+                          border border-neutral-800 bg-neutral-950 px-3 py-2
+                          text-sm text-neutral-100 placeholder:text-neutral-500
+                          focus:outline-none focus:ring-2 focus:ring-white/10
                         "
                                             />
-                                            <p className="mt-1 text-xs text-neutral-600">
-                                                실제 렌더링에서 <span className="font-semibold text-neutral-900">\\n</span> 기준으로 줄바꿈 처리됩니다.
+                                            <p className="mt-1 text-xs text-neutral-400">
+                                                실제 렌더링에서 <span className="font-semibold text-white">\\n</span> 기준으로 줄바꿈 처리됩니다.
                                             </p>
                                         </div>
 
                                         {/* Tags */}
                                         <div>
-                                            <label className="text-sm font-semibold text-neutral-700">태그</label>
+                                            <label className="text-sm font-semibold text-neutral-200">태그</label>
                                             <input
                                                 value={s.tags}
                                                 onChange={(e) => updateSlide(idx, { tags: e.target.value })}
                                                 placeholder="#겨울골프 #남국골프 #오키나와골프"
                                                 className="
                           mt-2 w-full rounded-xl
-                          border border-neutral-300 bg-white px-3 py-2
-                          text-sm text-neutral-900 placeholder:text-neutral-500
-                          focus:outline-none focus:ring-2 focus:ring-black/10
+                          border border-neutral-800 bg-neutral-950 px-3 py-2
+                          text-sm text-neutral-100 placeholder:text-neutral-500
+                          focus:outline-none focus:ring-2 focus:ring-white/10
                         "
                                             />
                                         </div>
 
                                         {/* Hero image */}
                                         <div>
-                                            <label className="text-sm font-semibold text-neutral-700">오른쪽 대표 이미지 URL</label>
+                                            <label className="text-sm font-semibold text-neutral-200">
+                                                오른쪽 대표 이미지 URL
+                                            </label>
                                             <input
                                                 value={s.heroImage}
                                                 onChange={(e) => updateSlide(idx, { heroImage: e.target.value })}
                                                 placeholder="https://images.unsplash.com/..."
                                                 className="
                           mt-2 w-full rounded-xl
-                          border border-neutral-300 bg-white px-3 py-2
-                          text-sm text-neutral-900 placeholder:text-neutral-500
-                          focus:outline-none focus:ring-2 focus:ring-black/10
+                          border border-neutral-800 bg-neutral-950 px-3 py-2
+                          text-sm text-neutral-100 placeholder:text-neutral-500
+                          focus:outline-none focus:ring-2 focus:ring-white/10
                         "
                                             />
-                                            <p className="mt-1 text-xs text-neutral-600">권장: 가로가 큰 이미지(예: 2400px 이상)</p>
+                                            <p className="mt-1 text-xs text-neutral-400">권장: 가로가 큰 이미지(예: 2400px 이상)</p>
                                         </div>
 
                                         {/* Cards */}
                                         <div className="pt-2">
                                             <div className="flex items-center justify-between">
                                                 <div>
-                                                    <div className="text-sm font-extrabold text-neutral-900">왼쪽 카드</div>
-                                                    <div className="mt-1 text-xs text-neutral-600">1~2개를 추천합니다. (너무 많으면 UI가 복잡해져요)</div>
+                                                    <div className="text-sm font-extrabold text-white">왼쪽 카드</div>
+                                                    <div className="mt-1 text-xs text-neutral-400">
+                                                        1~2개를 추천합니다. (너무 많으면 UI가 복잡해져요)
+                                                    </div>
                                                 </div>
 
                                                 <button
@@ -313,8 +323,8 @@ export default function HeroSlidesAdminPage() {
                                                     onClick={() => addCard(idx)}
                                                     disabled={saving}
                                                     className="
-                            rounded-xl border border-neutral-300 bg-white px-3 py-2
-                            text-sm font-extrabold text-neutral-900 hover:bg-neutral-50
+                            rounded-xl border border-neutral-800 bg-neutral-900/40 px-3 py-2
+                            text-sm font-extrabold text-neutral-100 hover:bg-neutral-900
                             disabled:cursor-not-allowed disabled:opacity-60
                           "
                                                 >
@@ -324,11 +334,16 @@ export default function HeroSlidesAdminPage() {
 
                                             <div className="mt-4 grid gap-4 md:grid-cols-2">
                                                 {s.cards.map((c, cardIdx) => (
-                                                    <div key={c.id} className="rounded-2xl border border-neutral-200 bg-white p-4">
+                                                    <div
+                                                        key={c.id}
+                                                        className="rounded-2xl border border-neutral-800 bg-neutral-950/40 p-4"
+                                                    >
                                                         <div className="flex items-start justify-between gap-3">
                                                             <div>
-                                                                <div className="text-sm font-extrabold text-neutral-900">카드 {cardIdx + 1}</div>
-                                                                <div className="mt-1 text-xs text-neutral-500">id: {c.id}</div>
+                                                                <div className="text-sm font-extrabold text-white">
+                                                                    카드 {cardIdx + 1}
+                                                                </div>
+                                                                <div className="mt-1 text-xs text-neutral-400">id: {c.id}</div>
                                                             </div>
 
                                                             <button
@@ -336,8 +351,8 @@ export default function HeroSlidesAdminPage() {
                                                                 onClick={() => deleteCard(idx, cardIdx)}
                                                                 disabled={saving}
                                                                 className="
-                                  rounded-xl border border-red-200 bg-white px-3 py-2
-                                  text-sm font-extrabold text-red-600 hover:bg-red-50
+                                  rounded-xl border border-red-900/40 bg-red-950/30 px-3 py-2
+                                  text-sm font-extrabold text-red-200 hover:bg-red-950/50
                                   disabled:cursor-not-allowed disabled:opacity-60
                                 "
                                                             >
@@ -347,70 +362,70 @@ export default function HeroSlidesAdminPage() {
 
                                                         <div className="mt-4 space-y-3">
                                                             <div>
-                                                                <label className="text-xs font-semibold text-neutral-700">제목</label>
+                                                                <label className="text-xs font-semibold text-neutral-200">제목</label>
                                                                 <input
                                                                     value={c.title}
                                                                     onChange={(e) => updateCard(idx, cardIdx, { title: e.target.value })}
                                                                     placeholder="[얼리버드] 오키나와 실속 호텔+골프"
                                                                     className="
                                     mt-1 w-full rounded-xl
-                                    border border-neutral-300 bg-white px-3 py-2
-                                    text-sm text-neutral-900 placeholder:text-neutral-500
-                                    focus:outline-none focus:ring-2 focus:ring-black/10
+                                    border border-neutral-800 bg-neutral-950 px-3 py-2
+                                    text-sm text-neutral-100 placeholder:text-neutral-500
+                                    focus:outline-none focus:ring-2 focus:ring-white/10
                                   "
                                                                 />
                                                             </div>
 
                                                             <div className="grid gap-3 sm:grid-cols-2">
                                                                 <div>
-                                                                    <label className="text-xs font-semibold text-neutral-700">가격</label>
+                                                                    <label className="text-xs font-semibold text-neutral-200">가격</label>
                                                                     <input
                                                                         value={c.price}
                                                                         onChange={(e) => updateCard(idx, cardIdx, { price: e.target.value })}
                                                                         placeholder="979,000원~"
                                                                         className="
                                       mt-1 w-full rounded-xl
-                                      border border-neutral-300 bg-white px-3 py-2
-                                      text-sm text-neutral-900 placeholder:text-neutral-500
-                                      focus:outline-none focus:ring-2 focus:ring-black/10
+                                      border border-neutral-800 bg-neutral-950 px-3 py-2
+                                      text-sm text-neutral-100 placeholder:text-neutral-500
+                                      focus:outline-none focus:ring-2 focus:ring-white/10
                                     "
                                                                     />
                                                                 </div>
 
                                                                 <div>
-                                                                    <label className="text-xs font-semibold text-neutral-700">뱃지</label>
+                                                                    <label className="text-xs font-semibold text-neutral-200">뱃지</label>
                                                                     <input
                                                                         value={c.badge ?? ""}
                                                                         onChange={(e) => updateCard(idx, cardIdx, { badge: e.target.value })}
                                                                         placeholder="오키나와"
                                                                         className="
                                       mt-1 w-full rounded-xl
-                                      border border-neutral-300 bg-white px-3 py-2
-                                      text-sm text-neutral-900 placeholder:text-neutral-500
-                                      focus:outline-none focus:ring-2 focus:ring-black/10
+                                      border border-neutral-800 bg-neutral-950 px-3 py-2
+                                      text-sm text-neutral-100 placeholder:text-neutral-500
+                                      focus:outline-none focus:ring-2 focus:ring-white/10
                                     "
                                                                     />
                                                                 </div>
                                                             </div>
 
                                                             <div>
-                                                                <label className="text-xs font-semibold text-neutral-700">이미지 URL</label>
+                                                                <label className="text-xs font-semibold text-neutral-200">이미지 URL</label>
                                                                 <input
                                                                     value={c.img}
                                                                     onChange={(e) => updateCard(idx, cardIdx, { img: e.target.value })}
                                                                     placeholder="https://images.unsplash.com/..."
                                                                     className="
                                     mt-1 w-full rounded-xl
-                                    border border-neutral-300 bg-white px-3 py-2
-                                    text-sm text-neutral-900 placeholder:text-neutral-500
-                                    focus:outline-none focus:ring-2 focus:ring-black/10
+                                    border border-neutral-800 bg-neutral-950 px-3 py-2
+                                    text-sm text-neutral-100 placeholder:text-neutral-500
+                                    focus:outline-none focus:ring-2 focus:ring-white/10
                                   "
                                                                 />
                                                             </div>
 
                                                             {/* Card preview image */}
-                                                            <div className="mt-3 overflow-hidden rounded-2xl border border-neutral-200">
-                                                                <div className="aspect-[16/9] w-full bg-neutral-100">
+                                                            <div className="mt-3 overflow-hidden rounded-2xl border border-neutral-800">
+                                                                <div className="aspect-[16/9] w-full bg-neutral-900">
                                                                     {c.img ? (
                                                                         <img
                                                                             src={c.img}
@@ -432,10 +447,10 @@ export default function HeroSlidesAdminPage() {
 
                                     {/* Right preview */}
                                     <aside>
-                                        <div className="text-sm font-extrabold text-neutral-800">미리보기</div>
+                                        <div className="text-sm font-extrabold text-neutral-200">미리보기</div>
 
-                                        <div className="mt-2 overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm">
-                                            <div className="aspect-[16/9] w-full bg-neutral-100">
+                                        <div className="mt-2 overflow-hidden rounded-2xl border border-neutral-800 bg-neutral-950/40 shadow-sm">
+                                            <div className="aspect-[16/9] w-full bg-neutral-900">
                                                 {s.heroImage ? (
                                                     <img
                                                         src={s.heroImage}
@@ -449,14 +464,16 @@ export default function HeroSlidesAdminPage() {
                                             </div>
 
                                             <div className="p-4">
-                                                <div className="text-sm font-extrabold text-neutral-900 whitespace-pre-line">{s.title}</div>
-                                                <div className="mt-1 text-xs text-neutral-600">{s.tags}</div>
+                                                <div className="text-sm font-extrabold text-white whitespace-pre-line">
+                                                    {s.title}
+                                                </div>
+                                                <div className="mt-1 text-xs text-neutral-400">{s.tags}</div>
                                             </div>
                                         </div>
 
-                                        <div className="mt-3 rounded-2xl border border-neutral-200 bg-white p-4">
-                                            <div className="text-xs font-semibold text-neutral-700">팁</div>
-                                            <ul className="mt-2 list-disc space-y-1 pl-5 text-xs text-neutral-600">
+                                        <div className="mt-3 rounded-2xl border border-neutral-800 bg-neutral-950/40 p-4">
+                                            <div className="text-xs font-semibold text-neutral-200">팁</div>
+                                            <ul className="mt-2 list-disc space-y-1 pl-5 text-xs text-neutral-400">
                                                 <li>이미지가 안 보이면 URL이 올바른지 확인하세요.</li>
                                                 <li>제목은 \\n으로 줄바꿈을 넣을 수 있어요.</li>
                                                 <li>카드는 1~2개가 가장 보기 좋아요.</li>
