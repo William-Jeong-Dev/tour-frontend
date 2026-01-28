@@ -74,7 +74,7 @@ export default function Header() {
                 {/* =======================
             (모바일) 1줄: 상담/공지/로그인 + SNS
            ======================= */}
-                <div className="flex items-center justify-between pt-3 pb-2 md:hidden">
+                <div className="relative z-30 flex items-center justify-between pt-3 pb-2 md:hidden">
                     {/* 좌측: 상담/공지 */}
                     <div className="flex items-center gap-2">
                         <button
@@ -96,6 +96,7 @@ export default function Header() {
 
                     {/* 우측: SNS + 로그인/마이 */}
                     <div className="flex items-center gap-2">
+                        {/* Kakao (링크 생기면 href만 교체) */}
                         <a
                             href="#"
                             onClick={(e) => e.preventDefault()}
@@ -111,9 +112,11 @@ export default function Header() {
                             />
                         </a>
 
+                        {/* Instagram ✅ */}
                         <a
-                            href="#"
-                            onClick={(e) => e.preventDefault()}
+                            href="https://www.instagram.com/chungwon.tour/"
+                            target="_blank"
+                            rel="noopener noreferrer"
                             aria-label="인스타그램"
                             title="인스타그램"
                             className="inline-flex h-9 w-9 items-center justify-center"
@@ -126,9 +129,11 @@ export default function Header() {
                             />
                         </a>
 
+                        {/* Blog ✅ */}
                         <a
-                            href="#"
-                            onClick={(e) => e.preventDefault()}
+                            href="https://blog.naver.com/chungwon87"
+                            target="_blank"
+                            rel="noopener noreferrer"
                             aria-label="블로그"
                             title="블로그"
                             className="inline-flex h-9 w-9 items-center justify-center"
@@ -199,8 +204,9 @@ export default function Header() {
                         aria-label="홈으로"
                         className={[
                             "flex items-center justify-center",
+                            "w-auto",
                             "md:absolute md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2",
-                            "w-full md:w-auto",
+                            "md:pointer-events-auto pointer-events-none",
                         ].join(" ")}
                     >
                         {logoUrl ? (
@@ -237,8 +243,9 @@ export default function Header() {
                             </a>
 
                             <a
-                                href="#"
-                                onClick={(e) => e.preventDefault()}
+                                href="https://www.instagram.com/chungwon.tour/"
+                                target="_blank"
+                                rel="noopener noreferrer"
                                 className="inline-flex items-center justify-center"
                                 aria-label="인스타그램"
                                 title="인스타그램"
@@ -252,8 +259,9 @@ export default function Header() {
                             </a>
 
                             <a
-                                href="#"
-                                onClick={(e) => e.preventDefault()}
+                                href="https://blog.naver.com/chungwon87"
+                                target="_blank"
+                                rel="noopener noreferrer"
                                 className="inline-flex items-center justify-center"
                                 aria-label="블로그"
                                 title="블로그"
