@@ -283,11 +283,11 @@ export default function Header() {
                         <div
                             className={[
                                 "min-w-0 flex-1 flex items-center gap-3 overflow-x-auto",
-                                "text-base md:text-sm font-semibold", // 모바일 글자 좀 더 큼
+                                "text-[15px] sm:text-base md:text-[16px] font-semibold", // ✅ 글씨 키움
                                 "[&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]",
                             ].join(" ")}
                         >
-                            {themesQuery.isLoading ? (
+                        {themesQuery.isLoading ? (
                                 <div className="text-white/80 text-sm">테마 불러오는 중...</div>
                             ) : themes.length === 0 ? (
                                 <div className="text-white/80 text-sm">
@@ -302,7 +302,9 @@ export default function Header() {
                                             type="button"
                                             onClick={() => onClickTheme(t.slug)}
                                             className={[
-                                                "shrink-0 rounded-full px-4 py-2 transition",
+                                                "shrink-0 rounded-full transition",
+                                                "px-5 py-2.5 md:px-6 md:py-3",           // ✅ 버튼 자체 크기 업
+                                                "text-[15px] sm:text-base md:text-[16px]", // ✅ 버튼 글씨 업
                                                 active ? "bg-white text-[#2E97F2]" : "text-white/95 hover:bg-white/10",
                                             ].join(" ")}
                                         >
