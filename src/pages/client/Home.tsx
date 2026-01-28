@@ -117,14 +117,14 @@ export default function Home() {
         <main className="bg-white">
             <Container>
                 {/* HERO */}
-                <section className="py-8 md:py-10">
-                    <div className="-mx-6">
+                <section className="py-7 md:py-9">
+                <div className="-mx-6">
                         <div className="px-6">
-                            <div className="grid grid-cols-12 items-stretch gap-6 md:gap-10">
+                            <div className="grid grid-cols-12 items-stretch gap-4 md:gap-6">
                                 {/* LEFT */}
-                                <div className="col-span-12 md:col-span-6 flex flex-col justify-center">
-                                    <div className="mx-auto w-full max-w-[520px] md:mx-0">
-                                        <h1 className="text-3xl md:text-4xl font-extrabold leading-tight tracking-tight text-[#2E97F2]">
+                                <div className="col-span-12 md:col-span-5 flex flex-col justify-center">
+                                    <div className="mx-auto w-full max-w-[580px] md:mx-0">
+                                    <h1 className="text-3xl md:text-4xl font-extrabold leading-tight tracking-tight text-[#2E97F2]">
                                             추운 겨울에도 따뜻하게,
                                             <br />
                                             남국 겨울 골프 🎁 🏝️
@@ -186,9 +186,9 @@ export default function Home() {
                                 </div>
 
                                 {/* RIGHT */}
-                                <div className="col-span-12 md:col-span-6">
-                                    <div className="h-[280px] md:h-[520px] w-full overflow-hidden rounded-3xl">
-                                        <img
+                                <div className="col-span-12 md:col-span-7">
+                                    <div className="h-[300px] md:h-[560px] w-full overflow-hidden rounded-3xl">
+                                    <img
                                             className="h-full w-full object-cover"
                                             src="https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=1800&q=80"
                                             alt="hero"
@@ -201,7 +201,7 @@ export default function Home() {
                 </section>
 
                 {/* SPECIAL */}
-                <section className="py-8 md:py-10">
+                <section className="py-7 md:py-9">
                     <SectionTitle left="특가 🔥 얼리버드 골프" />
 
                     {productsQuery.isLoading ? (
@@ -230,8 +230,8 @@ export default function Home() {
                 </section>
 
                 {/* ONSEN */}
-                <section className="py-8 md:py-10">
-                    <div className="flex items-center justify-center gap-2">
+                <section className="py-7 md:py-9">
+                <div className="flex items-center justify-center gap-2">
                         <h3 className="text-lg md:text-xl font-extrabold text-neutral-900">
                             골프여행, 고르기 어려울 땐 🤔 ?
                         </h3>
