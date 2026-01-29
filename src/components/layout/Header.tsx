@@ -1,4 +1,4 @@
-import { Link, useLocation, useNavigate, useSearchParams  } from "react-router-dom";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { listThemesActive, type ThemeRow } from "../../api/themes.api";
@@ -25,7 +25,6 @@ export default function Header() {
 
     const goSearch = () => {
         const keyword = q.trim();
-        // 빈 값이면 search 페이지로만 이동 or 무시 (선택)
         navigate(keyword ? `/search?q=${encodeURIComponent(keyword)}` : `/search`);
     };
 
@@ -79,6 +78,8 @@ export default function Header() {
         navigate(`/theme/${slug}`);
         window.scrollTo({ top: 0, behavior: "smooth" });
     };
+
+    const disabledSearch = !q.trim();
 
     return (
         <header
@@ -206,8 +207,6 @@ export default function Header() {
 
                 {/* =======================
             2줄: 로고 영역
-            - 모바일: 가운데 정렬(absolute 사용 X) => 겹침 방지
-            - PC: absolute center + 좌/우 스페이서
            ======================= */}
                 <div className="relative flex items-center justify-between pt-3 pb-6 md:pt-4 md:pb-10">
                     {/* PC 좌측 스페이서 */}
@@ -239,7 +238,7 @@ export default function Header() {
                         )}
                     </Link>
 
-                    {/* PC 우측: SNS 아이콘 (오른쪽 여백 추가 pr-2) */}
+                    {/* PC 우측: SNS */}
                     <div className="hidden md:flex w-[260px] items-center justify-end pr-2">
                         <div className="flex items-center gap-3">
                             <a
@@ -291,26 +290,26 @@ export default function Header() {
                         </div>
                     </div>
 
-                    {/* 모바일에서는 로고 줄 좌/우 요소 제거(겹침 방지) */}
                     <div className="md:hidden w-0" aria-hidden="true" />
                 </div>
             </div>
 
             {/* =======================
           3줄: 카테고리 + (PC) 검색/상담
+          + (모바일) 검색/버튼 추가 ✅
          ======================= */}
             <div>
                 <nav className="mx-auto w-full max-w-[1400px] px-4 md:px-6">
-                    <div className="flex items-center gap-4 pt-4 pb-3 md:pt-5">
+                    <div className="flex flex-col gap-3 pt-4 pb-3 md:flex-row md:items-center md:gap-4 md:pt-5">
                         {/* 카테고리 */}
                         <div
                             className={[
                                 "min-w-0 flex-1 flex items-center gap-3 overflow-x-auto",
-                                "text-[15px] sm:text-base md:text-[16px] font-semibold", // ✅ 글씨 키움
+                                "text-[15px] sm:text-base md:text-[16px] font-semibold",
                                 "[&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]",
                             ].join(" ")}
                         >
-                        {themesQuery.isLoading ? (
+                            {themesQuery.isLoading ? (
                                 <div className="text-white/80 text-sm">테마 불러오는 중...</div>
                             ) : themes.length === 0 ? (
                                 <div className="text-white/80 text-sm">
@@ -326,8 +325,8 @@ export default function Header() {
                                             onClick={() => onClickTheme(t.slug)}
                                             className={[
                                                 "shrink-0 rounded-full transition",
-                                                "px-5 py-2.5 md:px-6 md:py-3",           // ✅ 버튼 자체 크기 업
-                                                "text-[15px] sm:text-base md:text-[16px]", // ✅ 버튼 글씨 업
+                                                "px-5 py-2.5 md:px-6 md:py-3",
+                                                "text-[15px] sm:text-base md:text-[16px]",
                                                 active ? "bg-white text-[#2E97F2]" : "text-white/95 hover:bg-white/10",
                                             ].join(" ")}
                                         >
@@ -338,7 +337,7 @@ export default function Header() {
                             )}
                         </div>
 
-                        {/* PC 검색/상담 */}
+                        {/* ✅ PC 검색/상담 */}
                         <div className="hidden md:flex items-center gap-3 shrink-0 ml-auto justify-end">
                             <div className="flex items-center gap-2 rounded-full bg-white/15 px-4 py-2 text-white/90">
                                 <span className="text-sm">🔍</span>
@@ -347,13 +346,60 @@ export default function Header() {
                                     onChange={(e) => setQ(e.target.value)}
                                     className="w-[300px] bg-transparent text-sm placeholder:text-white/70 focus:outline-none"
                                     placeholder="검색어를 입력하세요"
+                                    inputMode="search"
+                                    enterKeyHint="search"
                                     onKeyDown={(e) => {
                                         if (e.key === "Enter") goSearch();
                                     }}
                                 />
                             </div>
 
-                            <button className="whitespace-nowrap rounded-full bg-yellow-400 px-5 py-2 text-sm font-extrabold text-neutral-900 hover:bg-yellow-300">
+                            <button
+                                type="button"
+                                className="whitespace-nowrap rounded-full bg-yellow-400 px-5 py-2 text-sm font-extrabold text-neutral-900 hover:bg-yellow-300"
+                                onClick={() => navigate("/support")}
+                            >
+                                상담하기
+                            </button>
+                        </div>
+
+                        {/* ✅ 모바일 검색/상담 (버튼 포함) */}
+                        <div className="flex md:hidden items-center gap-2">
+                            <div className="flex flex-1 items-center gap-2 rounded-full bg-white/15 px-4 py-2 text-white/90">
+                                <span className="text-sm">🔍</span>
+                                <input
+                                    value={q}
+                                    onChange={(e) => setQ(e.target.value)}
+                                    className="min-w-0 flex-1 bg-transparent text-sm placeholder:text-white/70 focus:outline-none"
+                                    placeholder="검색어를 입력하세요"
+                                    inputMode="search"
+                                    enterKeyHint="search"
+                                    onKeyDown={(e) => {
+                                        if (e.key === "Enter") goSearch();
+                                    }}
+                                />
+
+                                {/* ✅ 모바일 전용 검색 버튼 */}
+                                <button
+                                    type="button"
+                                    onClick={goSearch}
+                                    disabled={disabledSearch}
+                                    aria-label="검색"
+                                    className={[
+                                        "grid h-8 w-8 place-items-center rounded-full",
+                                        "bg-white/20 text-white hover:bg-white/30 active:scale-[0.98]",
+                                        disabledSearch ? "opacity-50 cursor-not-allowed" : "",
+                                    ].join(" ")}
+                                >
+                                    🔎
+                                </button>
+                            </div>
+
+                            <button
+                                type="button"
+                                className="whitespace-nowrap rounded-full bg-yellow-400 px-4 py-2 text-sm font-extrabold text-neutral-900 hover:bg-yellow-300"
+                                onClick={() => navigate("/support")}
+                            >
                                 상담하기
                             </button>
                         </div>
