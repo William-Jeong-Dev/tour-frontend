@@ -109,23 +109,20 @@ export function getPublicThumbnailUrl(pathOrUrl: string) {
  * ✅ public bucket 썸네일 업로드
  * - 반환값은 storage path (thumb/xxx.jpg)
  */
-export async function uploadProductThumbnail(file: File) {
-    const ext = extOf(file.name);
-    const path = `thumb/${crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}_${Math.random().toString(16).slice(2)}`}.${ext}`;
+export async function uploadProductThumbnail(file: File): Promise<string> {
+    const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+    const safeExt = ["png", "jpg", "jpeg", "webp"].includes(ext) ? ext : "jpg";
 
-    const { error } = await supabase.storage.from(THUMB_BUCKET).upload(path, file, {
-        cacheControl: "3600",
-        upsert: false,
-        contentType: file.type || "image/jpeg",
-    });
+    const filename = `thumb/${crypto.randomUUID()}.${safeExt}`;
 
-    if (error) {
-        console.error("uploadProductThumbnail error:", error);
-        throw new Error(error.message);
-    }
+    const { error } = await supabase.storage
+        .from("product-thumbnails")
+        .upload(filename, file, { cacheControl: "3600", upsert: false, contentType: file.type || undefined });
 
-    return path; // ✅ DB에는 이 path 저장
+    if (error) throw error;
+    return filename; // "thumb/uuid.jpg"
 }
+
 
 /* =========================================================
    ✅ Row <-> Product mapping
@@ -271,4 +268,42 @@ export async function deleteProduct(id: string) {
     if (error) throw error;
 
     return true;
+}
+
+export async function searchPublishedProducts(q: string, limit = 50): Promise<Product[]> {
+    const keyword = (q ?? "").trim();
+    if (!keyword) return [];
+
+    const or = [
+        `title.ilike.%${keyword}%`,
+        `subtitle.ilike.%${keyword}%`,
+        `region.ilike.%${keyword}%`,
+        `description.ilike.%${keyword}%`,
+    ].join(",");
+
+    const { data, error } = await supabase
+        .from("products")
+        .select("id,title,subtitle,region,status,price_text,thumbnail_url,thumbnail_path,created_at")
+        .eq("status", "PUBLISHED")
+        .or(or)
+        .order("created_at", { ascending: false })
+        .limit(limit);
+
+    if (error) throw error;
+
+    const rows = data ?? [];
+
+    // ✅ 기존 Product 타입으로 camelCase 매핑
+    return rows.map((r: any) => ({
+        id: r.id,
+        title: r.title,
+        subtitle: r.subtitle ?? "",
+        region: r.region ?? "",
+        status: r.status ?? "DRAFT",
+        priceText: r.price_text ?? "",
+        thumbnailUrl: r.thumbnail_url ?? "",
+        thumbnailPath: r.thumbnail_path ?? null,
+        createdAt: r.created_at,
+        // 나머지 Product 필드가 더 있으면 여기도 맞춰줘야 함
+    })) as Product[];
 }

@@ -1,4 +1,4 @@
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate, useSearchParams  } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { listThemesActive, type ThemeRow } from "../../api/themes.api";
@@ -13,6 +13,21 @@ export default function Header() {
     const navigate = useNavigate();
     const location = useLocation();
     const { session } = useSession();
+
+    const [params] = useSearchParams();
+    const initialQ = params.get("q") ?? "";
+
+    const [q, setQ] = useState(initialQ);
+
+    useEffect(() => {
+        setQ(initialQ);
+    }, [initialQ]);
+
+    const goSearch = () => {
+        const keyword = q.trim();
+        // 빈 값이면 search 페이지로만 이동 or 무시 (선택)
+        navigate(keyword ? `/search?q=${encodeURIComponent(keyword)}` : `/search`);
+    };
 
     const themesQuery = useQuery({
         queryKey: ["themes", "active"],
@@ -328,8 +343,13 @@ export default function Header() {
                             <div className="flex items-center gap-2 rounded-full bg-white/15 px-4 py-2 text-white/90">
                                 <span className="text-sm">🔍</span>
                                 <input
+                                    value={q}
+                                    onChange={(e) => setQ(e.target.value)}
                                     className="w-[300px] bg-transparent text-sm placeholder:text-white/70 focus:outline-none"
                                     placeholder="검색어를 입력하세요"
+                                    onKeyDown={(e) => {
+                                        if (e.key === "Enter") goSearch();
+                                    }}
                                 />
                             </div>
 

@@ -34,6 +34,8 @@ import AdminUserDetail from "../pages/admin/AdminUserDetail";
 
 import HeroSlideAdminPage from "../pages/admin/HeroSlidesAdminPage";
 
+import SearchPage from "../pages/client/SearchPage";
+
 function RouteError() {
     const err = useRouteError() as any;
 
@@ -69,6 +71,7 @@ export const router = createBrowserRouter([
             { path: "/notices/:id", element: <NoticeDetailPage /> },
             { path: "/faq", element: <FaqPage /> },
             { path: "/support", element: <SupportPage /> },
+            { path: "/search", element: <SearchPage /> },
         ],
     },
 
