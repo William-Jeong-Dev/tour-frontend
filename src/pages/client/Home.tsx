@@ -257,7 +257,7 @@ export default function Home() {
                                     className={[
                                         "absolute inset-0 w-full h-full transition-opacity duration-700",
                                         i === heroIndex ? "opacity-100" : "opacity-0",
-                                        "object-contain md:object-cover",  // ✅ 모바일: 전체 보이기 / 데스크탑: 꽉 채우기
+                                        "object-cover object-[50%_35%] md:object-center",
                                         "object-center",
                                     ].join(" ")}
                                     src={getPublicSiteAssetUrl(s.heroImage)}
