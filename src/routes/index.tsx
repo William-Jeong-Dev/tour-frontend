@@ -36,6 +36,8 @@ import HeroSlideAdminPage from "../pages/admin/HeroSlidesAdminPage";
 
 import SearchPage from "../pages/client/SearchPage";
 
+import  InquiriesAdminPage from "../pages/admin/InquiriesAdminPage";
+
 function RouteError() {
     const err = useRouteError() as any;
 
@@ -107,6 +109,8 @@ export const router = createBrowserRouter([
             { path: "notices", element: <AdminNotices /> },
             { path: "notices/new", element: <AdminNoticeEdit mode="create" /> },
             { path: "notices/:id", element: <AdminNoticeEdit mode="edit" /> },
+
+            { path: "/admin/inquiries", element: <InquiriesAdminPage /> }
         ],
     },
 ]);

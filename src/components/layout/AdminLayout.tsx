@@ -8,13 +8,14 @@ function cx(...arr: Array<string | false | null | undefined>) {
 
 const NAVS = [
     { to: "/admin", label: "대시보드", end: true },
-    { to: "/admin/hero-slides", label: "히어로 슬라이드" }, // ✅ 추가
-    { to: "/admin/products", label: "상품 관리" },
-    { to: "/admin/themes", label: "테마 관리" },
-    { to: "/admin/bookings", label: "예약 현황" },
-    { to: "/admin/notices", label: "공지사항" },
     { to: "/admin/settings/branding", label: "브랜딩(로고)" },
+    { to: "/admin/hero-slides", label: "히어로 슬라이드" },
+    { to: "/admin/themes", label: "카테고리(테마) 관리" },
+    { to: "/admin/products", label: "상품 관리" },
+    { to: "/admin/notices", label: "공지사항" },
     { to: "/admin/users", label: "회원 현황" },
+    { to: "/admin/bookings", label: "예약 현황" },
+    { to: "/admin/inquiries", label: "문의 현황" },
 ];
 
 export default function AdminLayout() {
