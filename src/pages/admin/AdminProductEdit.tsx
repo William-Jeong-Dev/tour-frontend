@@ -1,7 +1,7 @@
-/* 🔽 AdminProductEdit 전체 소스 시작 */
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
+import { listAreasByTheme, type AreaRow } from "../../api/areas.api";
 
 import type {
     Departure,
@@ -125,13 +125,15 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
         subtitle: "",
         // ✅ theme_id
         themeId: null as any, // (타입에 themeId가 없으면 types/product.ts에 추가해줘)
+        // ✅ area_id (하위 지역)
+        areaId: null as any,  // (타입에 areaId도 없으면 추가 권장)
         region: "일본",
         nights: 3,
         days: 4,
         status: "DRAFT",
         description: "",
         priceText: "상담 문의",
-        // ✅ private bucket 썸네일: path + signed url
+        // ✅ public bucket 썸네일: path 저장
         thumbnailPath: "",
         thumbnailUrl: "",
         images: [],
@@ -141,6 +143,27 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
         itinerary: [],
         departures: [],
     });
+
+    /* ✅ themeId 기반 area 목록 로딩 */
+    const themeId = String((form as any).themeId ?? "").trim();
+
+    const areasQuery = useQuery({
+        queryKey: ["admin", "areas", themeId],
+        queryFn: () => listAreasByTheme(themeId),
+        enabled: !!themeId,
+        staleTime: 60_000,
+    });
+
+    const areas: AreaRow[] = (areasQuery.data ?? []) as AreaRow[];
+
+    const onChangeTheme = (nextThemeId: string) => {
+        // ✅ 테마 바뀌면 areaId는 초기화(null)하는 게 안전
+        setForm((prev: any) => ({
+            ...prev,
+            themeId: nextThemeId ? nextThemeId : null,
+            areaId: null,
+        }));
+    };
 
     /* ---------- 썸네일 업로드 상태 ---------- */
     const fileRef = useRef<HTMLInputElement | null>(null);
@@ -157,7 +180,6 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
         setThumbPreview(toPublicThumbUrl(raw));
     }, [form.thumbnailUrl, form.thumbnailPath]);
 
-
     const onPickThumb = () => fileRef.current?.click();
 
     const onChangeThumbFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -170,10 +192,10 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
             // 1) 업로드 → path 반환 (ex: thumb/xxx.png)
             const path = await uploadProductThumbnail(file);
 
-            //  2) publicUrl로 미리보기 URL 생성
+            // 2) publicUrl로 미리보기 URL 생성
             const publicUrl = toPublicThumbUrl(path);
 
-            //  3) DB에는 path 저장(권장), UI 미리보기만 publicUrl 사용
+            // 3) DB에는 path 저장(권장), UI 미리보기만 publicUrl 사용
             setForm((prev) => ({
                 ...prev,
                 thumbnailPath: path,
@@ -197,6 +219,7 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
                     title: p.title ?? "",
                     subtitle: p.subtitle ?? "",
                     themeId: (p as any).themeId ?? null,
+                    areaId: (p as any).areaId ?? null, // ✅ 추가
                     region: p.region ?? "일본",
                     nights: p.nights ?? 3,
                     days: p.days ?? 4,
@@ -204,14 +227,14 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
                     description: p.description ?? "",
                     priceText: p.priceText ?? "",
                     thumbnailPath: (p as any).thumbnailPath ?? "", // ✅ path
-                    thumbnailUrl: p.thumbnailUrl ?? "", // ✅ signed url
+                    thumbnailUrl: p.thumbnailUrl ?? "",
                     images: p.images ?? [],
                     included: p.included ?? [],
                     excluded: p.excluded ?? [],
                     notices: p.notices ?? [],
                     itinerary: p.itinerary ?? [],
                     departures: p.departures ?? [],
-                });
+                } as any);
 
                 // 혹시 thumbnailUrl이 비어있고 path만 있는 경우 보정
                 const raw = String((p as any).thumbnailPath ?? p.thumbnailUrl ?? "").trim();
@@ -225,12 +248,12 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
     /* ---------- save ---------- */
     const save = useMutation({
         mutationFn: async () => {
+            // ✅ form에 areaId가 들어있으니 create/update에서 그대로 저장되도록 구성
             if (mode === "create") return createProduct(form);
             return updateProduct(id, form);
         },
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ["admin-products"] });
-            // ✅ 요구사항: 저장 후 상품 리스트로 이동
             nav("/admin/products", { replace: true });
         },
     });
@@ -366,12 +389,7 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
                         <Field label="테마(상단 카테고리)">
                             <select
                                 value={(form as any).themeId ?? ""}
-                                onChange={(e) =>
-                                    setForm({
-                                        ...form,
-                                        themeId: e.target.value ? e.target.value : null,
-                                    } as any)
-                                }
+                                onChange={(e) => onChangeTheme(e.target.value)}
                                 className="input w-full"
                             >
                                 <option value="">{themesLoading ? "불러오는 중..." : "선택 안 함"}</option>
@@ -386,8 +404,43 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
                             </div>
                         </Field>
 
+                        {/* ✅ product_area (하위 지역) */}
+                        <Field label="지역(하위, product_area)">
+                            <select
+                                value={(form as any).areaId ?? ""}
+                                onChange={(e) =>
+                                    setForm((prev: any) => ({
+                                        ...prev,
+                                        areaId: e.target.value ? e.target.value : null,
+                                    }))
+                                }
+                                disabled={!themeId || areasQuery.isLoading}
+                                className="input w-full disabled:opacity-60"
+                            >
+                                <option value="">
+                                    {!themeId
+                                        ? "테마를 먼저 선택하세요"
+                                        : areasQuery.isLoading
+                                            ? "불러오는 중..."
+                                            : "전체/미지정"}
+                                </option>
+
+                                {areas.map((a) => (
+                                    <option key={a.id} value={a.id}>
+                                        {a.name}
+                                    </option>
+                                ))}
+                            </select>
+
+                            {themeId && !areasQuery.isLoading && areas.length === 0 ? (
+                                <div className="mt-1 text-[11px] text-neutral-500">
+                                    이 테마에 활성화된 지역(product_area)이 없습니다. 먼저 지역을 등록하세요.
+                                </div>
+                            ) : null}
+                        </Field>
+
                         <div className="grid grid-cols-2 gap-3">
-                            <Field label="지역">
+                            <Field label="지역(레거시 region)">
                                 <select
                                     value={form.region}
                                     onChange={(e) => setForm({ ...form, region: e.target.value })}
@@ -433,7 +486,6 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
                             </Field>
                         </div>
 
-                        {/* ✅ PC에서 입력 편의용: 간단 설명/가격 */}
                         <Field label="가격 문구(옵션)">
                             <input
                                 value={form.priceText ?? ""}
@@ -809,7 +861,11 @@ function ItineraryEditor({ days, onChange }: { days: ItineraryDay[]; onChange: (
                     <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0 flex-1">
                             <div className="mb-1 text-xs font-semibold text-neutral-400">일차 제목</div>
-                            <input value={d.title ?? `${d.dayNo}일차`} onChange={(e) => updateDay(di, { title: e.target.value })} className="input" />
+                            <input
+                                value={d.title ?? `${d.dayNo}일차`}
+                                onChange={(e) => updateDay(di, { title: e.target.value })}
+                                className="input"
+                            />
                         </div>
                         <button onClick={() => removeDay(di)} className="mt-6 text-xs font-bold text-rose-400">
                             삭제
@@ -843,17 +899,30 @@ function ItineraryEditor({ days, onChange }: { days: ItineraryDay[]; onChange: (
 
                                     <div>
                                         <div className="mb-1 text-xs font-semibold text-neutral-400">장소</div>
-                                        <input value={r.place ?? ""} onChange={(e) => updateRow(di, ri, { place: e.target.value })} className="input" />
+                                        <input
+                                            value={r.place ?? ""}
+                                            onChange={(e) => updateRow(di, ri, { place: e.target.value })}
+                                            className="input"
+                                        />
                                     </div>
 
                                     <div>
                                         <div className="mb-1 text-xs font-semibold text-neutral-400">교통</div>
-                                        <input value={r.transport ?? ""} onChange={(e) => updateRow(di, ri, { transport: e.target.value })} className="input" />
+                                        <input
+                                            value={r.transport ?? ""}
+                                            onChange={(e) => updateRow(di, ri, { transport: e.target.value })}
+                                            className="input"
+                                        />
                                     </div>
 
                                     <div>
                                         <div className="mb-1 text-xs font-semibold text-neutral-400">시간</div>
-                                        <input value={r.time ?? ""} onChange={(e) => updateRow(di, ri, { time: e.target.value })} className="input" placeholder="예: 10:30" />
+                                        <input
+                                            value={r.time ?? ""}
+                                            onChange={(e) => updateRow(di, ri, { time: e.target.value })}
+                                            className="input"
+                                            placeholder="예: 10:30"
+                                        />
                                     </div>
 
                                     <div>
@@ -901,4 +970,3 @@ function ItineraryEditor({ days, onChange }: { days: ItineraryDay[]; onChange: (
         </div>
     );
 }
-/* 🔼 AdminProductEdit 전체 소스 끝 */

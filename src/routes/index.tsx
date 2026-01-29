@@ -38,6 +38,8 @@ import SearchPage from "../pages/client/SearchPage";
 
 import  InquiriesAdminPage from "../pages/admin/InquiriesAdminPage";
 
+import AdminAreas from "../pages/admin/AdminAreas";
+
 function RouteError() {
     const err = useRouteError() as any;
 
@@ -110,7 +112,9 @@ export const router = createBrowserRouter([
             { path: "notices/new", element: <AdminNoticeEdit mode="create" /> },
             { path: "notices/:id", element: <AdminNoticeEdit mode="edit" /> },
 
-            { path: "/admin/inquiries", element: <InquiriesAdminPage /> }
+            { path: "/admin/inquiries", element: <InquiriesAdminPage /> },
+
+            { path: "areas", element: <AdminAreas /> },
         ],
     },
 ]);

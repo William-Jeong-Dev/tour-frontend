@@ -82,6 +82,7 @@ export type Product = {
 
     // 여행상품 카테고리
     themeId?: string | null;
+    areaId: string | null;
 
     createdAt: string;
     updatedAt: string;

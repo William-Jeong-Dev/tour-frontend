@@ -11,6 +11,7 @@ const NAVS = [
     { to: "/admin/settings/branding", label: "브랜딩(로고)" },
     { to: "/admin/hero-slides", label: "히어로 슬라이드" },
     { to: "/admin/themes", label: "카테고리(테마) 관리" },
+    { to: "/admin/areas", label: "지역 관리" },
     { to: "/admin/products", label: "상품 관리" },
     { to: "/admin/notices", label: "공지사항" },
     { to: "/admin/users", label: "회원 현황" },

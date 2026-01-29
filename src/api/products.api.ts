@@ -39,6 +39,7 @@ type ProductRow = {
     departures: any[];
 
     theme_id: string | null;
+    area_id: string | null;
 
     created_at: string;
     updated_at: string;
@@ -159,6 +160,7 @@ async function toProduct(row: ProductRow): Promise<Product> {
         departures: Array.isArray(row.departures) ? row.departures : [],
 
         themeId: row.theme_id ?? null,
+        areaId: row.area_id ?? null,
 
         createdAt: row.created_at ?? nowIso(),
         updatedAt: row.updated_at ?? nowIso(),
@@ -193,6 +195,7 @@ function toRow(input: ProductUpsert): Omit<ProductRow, "id" | "created_at" | "up
         departures: Array.isArray(input.departures) ? input.departures : [],
 
         theme_id: input.themeId ?? null,
+        area_id: (input as any).areaId ?? null,
     };
 }
 
@@ -283,7 +286,7 @@ export async function searchPublishedProducts(q: string, limit = 50): Promise<Pr
 
     const { data, error } = await supabase
         .from("products")
-        .select("id,title,subtitle,region,status,price_text,thumbnail_url,thumbnail_path,created_at")
+        .select("id,title,subtitle,region,status,price_text,thumbnail_url,thumbnail_path,created_at,area_id")
         .eq("status", "PUBLISHED")
         .or(or)
         .order("created_at", { ascending: false })
@@ -294,16 +297,35 @@ export async function searchPublishedProducts(q: string, limit = 50): Promise<Pr
     const rows = data ?? [];
 
     // ✅ 기존 Product 타입으로 camelCase 매핑
-    return rows.map((r: any) => ({
-        id: r.id,
-        title: r.title,
-        subtitle: r.subtitle ?? "",
-        region: r.region ?? "",
-        status: r.status ?? "DRAFT",
-        priceText: r.price_text ?? "",
-        thumbnailUrl: r.thumbnail_url ?? "",
-        thumbnailPath: r.thumbnail_path ?? null,
-        createdAt: r.created_at,
-        // 나머지 Product 필드가 더 있으면 여기도 맞춰줘야 함
-    })) as Product[];
+    return rows.map((r: any) => {
+        const raw = (r.thumbnail_path ?? r.thumbnail_url ?? "").trim();
+        return {
+            id: r.id,
+            title: r.title,
+            subtitle: r.subtitle ?? "",
+            region: r.region ?? "",
+            status: r.status ?? "DRAFT",
+            priceText: r.price_text ?? "",
+            thumbnailUrl: getPublicThumbnailUrl(raw),   // ✅ 여기도 통일
+            thumbnailPath: r.thumbnail_path ?? null,
+            areaId: r.area_id ?? null,                  // ✅ 추가
+            createdAt: r.created_at,
+        };
+    }) as Product[];
 }
+
+export async function listProductsByTheme(themeId: string, areaId?: string | null) {
+    let q = supabase
+        .from("products")
+        .select("*")
+        .eq("theme_id", themeId)
+        .eq("status", "PUBLISHED")
+        .order("created_at", { ascending: false });
+
+    if (areaId) q = q.eq("area_id", areaId);
+
+    const { data, error } = await q;
+    if (error) throw error;
+    return data ?? [];
+}
+
