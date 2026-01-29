@@ -163,30 +163,19 @@ export default function ThemeProductsPage() {
                 </Link>
             </div>
 
-            {/* ✅ 상단 area 필터 UI */}
+            {/* ✅ 상단 area 필터 UI (모바일도 chips로 통일) */}
             <div className="mt-6">
-                {/* 모바일: select */}
-                <div className="md:hidden">
-                    <label className="block text-xs font-semibold text-neutral-600 mb-2">지역 선택</label>
-                    <select
-                        value={currentAreaSlug || ""}
-                        onChange={(e) => {
-                            const v = e.target.value;
-                            goArea(v ? v : undefined);
-                        }}
-                        className="w-full h-11 rounded-xl border border-neutral-200 bg-white px-3 text-sm font-semibold text-neutral-800 outline-none focus:border-neutral-400"
-                    >
-                        <option value="">전체</option>
-                        {areas.map((a) => (
-                            <option key={a.id} value={a.slug}>
-                                {a.name}
-                            </option>
-                        ))}
-                    </select>
-                </div>
+                <div className="text-xs font-semibold text-neutral-600 mb-2">지역 선택</div>
 
-                {/* PC/태블릿: chips */}
-                <div className="hidden md:flex items-center gap-2 overflow-x-auto pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                <div
+                    className={[
+                        "flex items-center gap-2",
+                        "flex-wrap", // ✅ 모바일에서 줄바꿈
+                        // 아래는 선택: 지역이 많으면 스크롤이 편하면 유지, 싫으면 제거해도 됨
+                        "overflow-x-auto pb-2",
+                        "[&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]",
+                    ].join(" ")}
+                >
                     <button
                         type="button"
                         onClick={() => goArea(undefined)}
