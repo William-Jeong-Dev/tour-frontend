@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import KakaoEmoji from "../../assets/kakao.png";
+import PhoneIcon from "../../assets/phone.png";
 
 export default function KakaoFloating() {
     const [showTop, setShowTop] = useState(false);
@@ -10,7 +11,6 @@ export default function KakaoFloating() {
 
         const io = new IntersectionObserver(
             ([entry]) => {
-                // ✅ sentinel이 화면에 안 보이면(= 아래로 내려감) 화살표 표시
                 setShowTop(!entry.isIntersecting);
             },
             { threshold: 0 }
@@ -26,30 +26,12 @@ export default function KakaoFloating() {
         setShowTop(false);
     };
 
-    function getScrollContainer(): HTMLElement | null {
-        // 가장 흔한 케이스: main이 overflow로 스크롤 되는 경우
-        const main = document.querySelector("main");
-        if (main instanceof HTMLElement) {
-            const st = getComputedStyle(main);
-            if ((st.overflowY === "auto" || st.overflowY === "scroll") && main.scrollHeight > main.clientHeight) {
-                return main;
-            }
-        }
-
-        // 그 외: 스크롤 가능한 엘리먼트 탐색
-        const all = Array.from(document.querySelectorAll("body *"));
-        for (const el of all) {
-            if (!(el instanceof HTMLElement)) continue;
-            const st = getComputedStyle(el);
-            if ((st.overflowY === "auto" || st.overflowY === "scroll") && el.scrollHeight > el.clientHeight) {
-                return el;
-            }
-        }
-        return null;
-    }
+    // ✅ 여기에 실제 카카오 상담 링크가 있으면 바꿔줘
+    const kakaoLink = "https://pf.kakao.com/";
 
     return (
         <div className="fixed bottom-6 right-6 z-[99999] flex flex-col items-center gap-3">
+            {/* 맨 위로 */}
             <button
                 type="button"
                 onClick={goTop}
@@ -64,13 +46,31 @@ export default function KakaoFloating() {
                 <span className="text-xl font-extrabold text-neutral-800">↑</span>
             </button>
 
-            <button
-                type="button"
+            {/* 카카오 */}
+            <a
+                href={kakaoLink}
+                target="_blank"
+                rel="noreferrer"
                 aria-label="카카오 상담"
-                className="h-14 w-14 rounded-full bg-[#FEE500] shadow-lg ring-1 ring-black/10 hover:brightness-95 active:scale-[0.98] transition"
+                className="h-14 w-14 rounded-full bg-[#FEE500] shadow-lg ring-1 ring-black/10 hover:brightness-95 active:scale-[0.98] transition flex items-center justify-center"
             >
-                <img src={KakaoEmoji} alt="Kakao" className="mx-auto h-9 w-9 object-contain" />
-            </button>
+                <img src={KakaoEmoji} alt="Kakao" className="h-9 w-9 object-contain" />
+            </a>
+
+            {/* 📞 전화 (동그라미 겹침 방지: 버튼 배경/링 제거, 이미지가 원형이면 그대로 예쁨) */}
+            {/* 📞 전화 - 배경/쉐도우 없이, 크기만 카카오와 동일 */}
+            <a
+                href="tel:01086888810"
+                aria-label="전화 상담"
+                className="h-24 w-24 flex items-center justify-center active:scale-[0.98] transition"
+            >
+                <img
+                    src={PhoneIcon}
+                    alt="Phone"
+                    className="h-24 w-24 object-contain"
+                    draggable={false}
+                />
+            </a>
         </div>
     );
 }

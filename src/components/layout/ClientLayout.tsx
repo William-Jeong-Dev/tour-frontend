@@ -1,7 +1,7 @@
 import { Outlet } from "react-router-dom";
 import Header from "./Header";
 import Footer from "./Footer";
-import KakaoFloating from "../common/KakaoFloating";
+import FloatingActions from "../common/FloatingActions";
 import ScrollToTop from "../common/ScrollToTop";
 
 export default function ClientLayout() {
@@ -14,7 +14,7 @@ export default function ClientLayout() {
                 <div id="top-sentinel" className="h-px w-full" />
                 <Outlet />
             </main>
-            <KakaoFloating />
+            <FloatingActions />
             <Footer />
         </div>
     );
