@@ -42,6 +42,9 @@ import AdminAreas from "../pages/admin/AdminAreas";
 
 import AdminPopups from "../pages/admin/AdminPopupsPage";
 
+import AdminThumbnailCleanupPage from "../pages/admin/AdminThumbnailCleanupPage";
+
+
 function RouteError() {
     const err = useRouteError() as any;
 
@@ -119,6 +122,8 @@ export const router = createBrowserRouter([
             { path: "areas", element: <AdminAreas /> },
 
             { path: "popups", element: <AdminPopups /> },
+
+            { path: "cleanup",  element: <AdminThumbnailCleanupPage /> },
         ],
     },
 ]);

@@ -7,6 +7,7 @@ function cx(...arr: Array<string | false | null | undefined>) {
 }
 
 const NAVS = [
+    { to: "/admin/cleanup", label: "썸네일 스토리지 정리" },
     { to: "/admin", label: "대시보드", end: true },
     { to: "/admin/popups", label: "팝업 관리" },
     { to: "/admin/settings/branding", label: "브랜딩(로고)" },
