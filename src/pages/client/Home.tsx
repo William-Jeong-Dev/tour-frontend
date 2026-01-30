@@ -174,10 +174,10 @@ export default function Home() {
                 <SitePopup
                     id={currentPopup.id}
                     title={currentPopup.title}
-                    leftPx={currentPopup.left_px}
-                    topPx={currentPopup.top_px}
-                    widthPx={currentPopup.width_px}
-                    contentHtml={currentPopup.content_html}
+                    leftPx={currentPopup.left_px ?? 0}
+                    topPx={currentPopup.top_px ?? 0}
+                    widthPx={currentPopup.width_px ?? 400}
+                    contentHtml={currentPopup.content_html ?? ""}
                     onClose={() => {
                         // ✅ 닫으면 다음 팝업으로 (없으면 종료)
                         setPopupIdx((i) => i + 1);
