@@ -8,6 +8,7 @@ function cx(...arr: Array<string | false | null | undefined>) {
 
 const NAVS = [
     { to: "/admin", label: "대시보드", end: true },
+    { to: "/admin/popups", label: "팝업 관리" },
     { to: "/admin/settings/branding", label: "브랜딩(로고)" },
     { to: "/admin/hero-slides", label: "히어로 슬라이드" },
     { to: "/admin/themes", label: "카테고리(테마) 관리" },
