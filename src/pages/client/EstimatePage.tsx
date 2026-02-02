@@ -17,8 +17,11 @@ export default function EstimatePage() {
     const navigate = useNavigate();
     const [submitting, setSubmitting] = useState(false);
 
-    // ✅ 추가: 통화 가능 시간
+    // ✅ 통화 가능 시간
     const [callTime, setCallTime] = useState("");
+
+    // ✅ 원하는 여행지(복수선택) - form.region과 분리
+    const [travelRegions, setTravelRegions] = useState<string[]>([]);
 
     const [form, setForm] = useState<EstimatePayload>({
         name: "",
@@ -26,7 +29,7 @@ export default function EstimatePage() {
         email: "",
         depart_date: "",
         people_count: 1,
-        region: "",
+        region: "", // ✅ 이제 "희망 지역/테마" 자유입력 전용으로만 사용
         budget: "",
         memo: "",
     });
@@ -36,30 +39,15 @@ export default function EstimatePage() {
         if (!form.phone.trim()) return false;
         if (!form.depart_date.trim()) return false;
         if (!form.people_count || form.people_count < 1) return false;
-        // 통화 가능 시간은 "필수"로 보이니 여기서 체크
         if (!callTime.trim()) return false;
         return true;
     }, [form, callTime]);
 
-    const toggleRegion = (value: string) => {
-        setForm((prev) => {
-            const current = prev.region
-                ? prev.region.split(",").map((v) => v.trim()).filter(Boolean)
-                : [];
-
-            const next = current.includes(value)
-                ? current.filter((v) => v !== value)
-                : [...current, value];
-
-            return { ...prev, region: next.join(", ") };
-        });
+    const toggleTravelRegion = (value: string) => {
+        setTravelRegions((prev) =>
+            prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]
+        );
     };
-
-    const selectedRegions = useMemo(() => {
-        return form.region
-            ? form.region.split(",").map((v) => v.trim()).filter(Boolean)
-            : [];
-    }, [form.region]);
 
     return (
         <main className="bg-white">
@@ -135,7 +123,7 @@ export default function EstimatePage() {
                                     />
                                 </div>
 
-                                {/* ✅ 2. 원하는 여행지(복수선택) */}
+                                {/* ✅ 원하는 여행지(복수선택) */}
                                 <div className="md:col-span-2">
                                     <label className="text-sm font-bold text-neutral-800">
                                         2. 원하는 여행지 (복수 선택)
@@ -143,7 +131,7 @@ export default function EstimatePage() {
 
                                     <div className="mt-3 space-y-2">
                                         {REGION_OPTIONS.map((opt) => {
-                                            const checked = selectedRegions.includes(opt);
+                                            const checked = travelRegions.includes(opt);
                                             return (
                                                 <label
                                                     key={opt}
@@ -157,7 +145,7 @@ export default function EstimatePage() {
                                                     <input
                                                         type="checkbox"
                                                         checked={checked}
-                                                        onChange={() => toggleRegion(opt)}
+                                                        onChange={() => toggleTravelRegion(opt)}
                                                         className="h-4 w-4 accent-blue-500"
                                                     />
                                                     {opt}
@@ -165,13 +153,9 @@ export default function EstimatePage() {
                                             );
                                         })}
                                     </div>
-
-                                    <div className="mt-2 text-xs text-neutral-400">
-                                        복수 선택 가능해요. 아래 입력칸에 지역/테마를 더 자유롭게 적어도 됩니다.
-                                    </div>
                                 </div>
 
-                                {/* 지역/테마 */}
+                                {/* ✅ 희망 지역/테마 (선택) - 완전 자유입력 */}
                                 <div className="md:col-span-2">
                                     <label className="text-sm font-bold text-neutral-800">희망 지역/테마 (선택)</label>
                                     <input
@@ -180,9 +164,12 @@ export default function EstimatePage() {
                                         value={form.region ?? ""}
                                         onChange={(e) => setForm((p) => ({ ...p, region: e.target.value }))}
                                     />
+                                    <div className="mt-2 text-xs text-neutral-400">
+                                        위 ‘원하는 여행지’ 선택과 무관하게 자유롭게 적어주세요.
+                                    </div>
                                 </div>
 
-                                {/* ✅ 통화 가능 시간 (필수) */}
+                                {/* 통화 가능 시간 (필수) */}
                                 <div className="md:col-span-2">
                                     <label className="text-sm font-bold text-neutral-800">통화 가능 시간 (필수)</label>
                                     <input
@@ -231,7 +218,7 @@ export default function EstimatePage() {
                                         try {
                                             setSubmitting(true);
 
-                                            // ✅ memo에 통화 가능 시간을 합쳐서 보냄 (서버/Edge Function 수정 없이도 전달됨)
+                                            // ✅ (1) 통화 가능 시간은 memo에 합침
                                             const mergedMemo = [
                                                 callTime.trim() ? `통화 가능 시간: ${callTime.trim()}` : null,
                                                 form.memo?.trim() ? form.memo.trim() : null,
@@ -239,13 +226,21 @@ export default function EstimatePage() {
                                                 .filter(Boolean)
                                                 .join("\n\n");
 
+                                            // ✅ (2) region은 "원하는 여행지(선택)" + "희망 지역/테마(자유입력)"를 합쳐서 보냄
+                                            const mergedRegion = [
+                                                travelRegions.length ? `원하는 여행지: ${travelRegions.join(", ")}` : null,
+                                                form.region?.trim() ? `희망 지역/테마: ${form.region.trim()}` : null,
+                                            ]
+                                                .filter(Boolean)
+                                                .join(" / ");
+
                                             const payload: EstimatePayload = {
                                                 name: form.name.trim(),
                                                 phone: form.phone.trim(),
                                                 email: form.email?.trim() ? form.email.trim() : null,
                                                 depart_date: form.depart_date,
                                                 people_count: Number(form.people_count || 1),
-                                                region: form.region?.trim() ? form.region.trim() : null,
+                                                region: mergedRegion ? mergedRegion : null,
                                                 budget: form.budget?.trim() ? form.budget.trim() : null,
                                                 memo: mergedMemo ? mergedMemo : null,
                                             };
@@ -266,6 +261,7 @@ export default function EstimatePage() {
                                                 memo: "",
                                             });
                                             setCallTime("");
+                                            setTravelRegions([]);
                                         } catch (e: any) {
                                             alert(e?.message ?? "요청 접수에 실패했습니다.");
                                         } finally {
