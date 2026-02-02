@@ -15,7 +15,7 @@ export default function Hero() {
 
                     <div className="mt-6 flex flex-wrap gap-2">
                         <button className="rounded-full bg-neutral-50 px-5 py-2 text-sm font-semibold text-neutral-950">
-                            상담하기
+                            1:1 맞춤견적
                         </button>
                         <button className="rounded-full border border-neutral-800 px-5 py-2 text-sm text-neutral-200 hover:bg-neutral-900">
                             상품 보기

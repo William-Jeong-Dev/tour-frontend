@@ -44,6 +44,8 @@ import AdminPopups from "../pages/admin/AdminPopupsPage";
 
 import AdminThumbnailCleanupPage from "../pages/admin/AdminThumbnailCleanupPage";
 
+import EstimatePage from "../pages/client/EstimatePage";
+
 
 function RouteError() {
     const err = useRouteError() as any;
@@ -81,6 +83,8 @@ export const router = createBrowserRouter([
             { path: "/faq", element: <FaqPage /> },
             { path: "/support", element: <SupportPage /> },
             { path: "/search", element: <SearchPage /> },
+
+            { path: "/estimate", element: <EstimatePage /> },
         ],
     },
 

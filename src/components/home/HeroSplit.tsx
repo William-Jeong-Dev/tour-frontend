@@ -24,7 +24,7 @@ export default function HeroSplit() {
 
                         <div className="mt-7 flex justify-center gap-2">
                             <button className="rounded-lg bg-yellow-400 px-4 py-2 text-sm font-bold text-neutral-900 hover:bg-yellow-300">
-                                상담하기
+                                1:1 맞춤견적
                             </button>
                             <Link
                                 to="#"

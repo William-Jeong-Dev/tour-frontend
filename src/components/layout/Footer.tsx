@@ -15,7 +15,7 @@ export default function Footer() {
 
                     <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
                         <button className="w-full sm:w-auto rounded-lg bg-yellow-400 px-4 py-2 text-base font-bold text-neutral-900 hover:bg-yellow-300">
-                            상담하기
+                            1:1 맞춤견적
                         </button>
                         <button className="w-full sm:w-auto rounded-lg border border-neutral-300 bg-white px-4 py-2 text-base font-semibold hover:bg-neutral-100">
                             FAQ/문의하기

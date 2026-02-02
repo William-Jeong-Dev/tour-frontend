@@ -531,7 +531,7 @@ export default function ProductDetail() {
                                         type="button"
                                         className="rounded-2xl bg-yellow-400 px-4 py-3 text-sm font-extrabold text-neutral-900 hover:bg-yellow-300"
                                     >
-                                        상담하기
+                                        1:1 맞춤견적
                                     </button>
                                     <button
                                         type="button"

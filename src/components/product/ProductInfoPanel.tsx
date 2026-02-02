@@ -11,7 +11,7 @@ export default function ProductInfoPanel({ product }: { product: Product }) {
             <div className="mt-6 flex items-center justify-between">
                 <div className="text-sm text-neutral-200">{product.priceText}</div>
                 <button className="rounded-full bg-neutral-50 px-5 py-2 text-sm font-semibold text-neutral-950">
-                    상담하기
+                    1:1 맞춤견적
                 </button>
             </div>
 

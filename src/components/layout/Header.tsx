@@ -357,9 +357,9 @@ export default function Header() {
                             <button
                                 type="button"
                                 className="whitespace-nowrap rounded-full bg-yellow-400 px-5 py-2 text-sm font-extrabold text-neutral-900 hover:bg-yellow-300"
-                                onClick={() => navigate("/support")}
+                                onClick={() => navigate("/estimate")}
                             >
-                                상담하기
+                                1:1 맞춤견적
                             </button>
                         </div>
 
@@ -400,7 +400,7 @@ export default function Header() {
                                 className="whitespace-nowrap rounded-full bg-yellow-400 px-4 py-2 text-sm font-extrabold text-neutral-900 hover:bg-yellow-300"
                                 onClick={() => navigate("/support")}
                             >
-                                상담하기
+                                1:1 맞춤견적
                             </button>
                         </div>
                     </div>
