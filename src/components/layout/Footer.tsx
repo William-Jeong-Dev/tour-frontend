@@ -33,13 +33,41 @@ export default function Footer() {
                 <Col title="1:1 견적문의" items={["견적문의"]} />
             </div>
 
-            {/* 하단 정보 */}
+            {/* 하단 정보 (2번째 이미지 스타일) */}
             <div className="border-t border-neutral-200">
-                <div className="mx-auto max-w-[1400px] px-4 sm:px-6 py-8">
+                <div className="mx-auto max-w-[1400px] px-4 sm:px-6 py-10">
                     <div className="text-sm text-neutral-500">
-                        <div className="font-semibold text-neutral-700">TOUR</div>
-                        <div className="mt-2">공지사항 | 이용약관 | 개인정보처리방침 | 해외여행자보험</div>
-                        <div className="mt-2">상호: 청원여행사 · 대표: 김동현 · 주소: 부산 해운대구 해운대로 216 · 이메일: chungwon87@naver.com</div>
+                        {/* 로고 */}
+                        <img src="/card_thumbnail.svg" alt="TOUR" className="h-20 w-auto" />
+
+                        {/* 링크 (bold) */}
+                        <div className="mt-3 font-semibold text-neutral-700">
+                            <a className="hover:text-neutral-900" href="/notices">공지사항</a>
+                            <span className="mx-2 text-neutral-300">|</span>
+                            <a className="hover:text-neutral-900" href="/terms">이용약관</a>
+                            <span className="mx-2 text-neutral-300">|</span>
+                            <a className="hover:text-neutral-900" href="/privacy">개인정보처리방침</a>
+                            <span className="mx-2 text-neutral-300">|</span>
+                            <a className="hover:text-neutral-900" href="/insurance">해외여행자보험</a>
+                        </div>
+
+                        {/* 사업자 정보: 지정한 줄 구성 */}
+                        <div className="mt-5 space-y-1 leading-relaxed">
+                            <div>
+                                상호: 청원여행사 · 대표: 김동현 · 주소: 부산광역시 해운대구 해운대로 216 2층
+                            </div>
+                            <div>
+                                대표번호: (051) 747-8207 · 이메일: chungwon87@naver.com · 팩스: (051) 747-82074 ·
+                                사업자등록번호: 473-15-00667 · 통신판매업신고번호: 제2023-부산해운대-1696호
+                            </div>
+                            <div>관광사업자등록번호: 제2017-000026호</div>
+                        </div>
+
+                        {/* 하단 문구 */}
+                        <div className="mt-6 space-y-1">
+                            <div>Copyright @ 청원여행사 All Rights Reserved.</div>
+                            <div>Powered by Findvalue Crop</div>
+                        </div>
                     </div>
                 </div>
             </div>
