@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import Container from "../../components/common/Container";
 import ServiceSideNav from "../../components/common/ServiceSideNav";
 import { createInquiry } from "../../api/inquiries.api";
+import { INQUIRY_CATEGORIES, InquiryCategory } from "../../constants/inquiry";
 
 export default function SupportPage() {
     const [contactName, setContactName] = useState("");
@@ -13,6 +14,8 @@ export default function SupportPage() {
 
     const [saving, setSaving] = useState(false);
     const [msg, setMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+
+    const [category, setCategory] = useState<InquiryCategory>("PRODUCT");
 
     const canSubmit = useMemo(() => {
         return (
@@ -47,6 +50,7 @@ export default function SupportPage() {
         setSaving(true);
         try {
             await createInquiry({
+                category, // ✅ 추가
                 contactName,
                 contactPhone,
                 contactEmail,
@@ -63,6 +67,9 @@ export default function SupportPage() {
             setContactName("");
             setContactPhone("");
             setContactEmail("");
+
+            // 분류도 초기화하고 싶으면 유지(원하면 이 줄 삭제)
+            setCategory("PRODUCT");
         } catch (e: any) {
             setMsg({ type: "err", text: `접수 실패: ${e?.message ?? String(e)}` });
         } finally {
@@ -117,6 +124,26 @@ export default function SupportPage() {
                                             className="mt-2 h-12 w-full rounded-xl border border-neutral-200 px-4 text-sm outline-none focus:border-neutral-400"
                                         />
                                     </div>
+                                </div>
+
+                                {/* ✅ 분류 */}
+                                <div className="mt-4 space-y-2">
+                                    <label className="text-xs font-bold text-neutral-700">
+                                        분류 (필수)
+                                    </label>
+
+                                    <select
+                                        value={category}
+                                        onChange={(e) => setCategory(e.target.value as InquiryCategory)}
+                                        className="mt-2 h-12 w-full rounded-xl border border-neutral-200 px-4 text-sm outline-none focus:border-neutral-400"
+                                        required
+                                    >
+                                        {INQUIRY_CATEGORIES.map((c) => (
+                                            <option key={c.value} value={c.value}>
+                                                {c.label}
+                                            </option>
+                                        ))}
+                                    </select>
                                 </div>
 
                                 <div className="mt-4">

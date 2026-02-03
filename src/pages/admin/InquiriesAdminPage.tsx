@@ -2,6 +2,7 @@ import { useState } from "react";
 import Container from "../../components/common/Container";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { adminListInquiries, adminUpdateInquiry, type InquiryRow, type InquiryStatus } from "../../api/inquiries.api";
+import { INQUIRY_CATEGORY_LABEL } from "../../constants/inquiry";
 
 function Badge({ status }: { status: InquiryStatus }) {
     const label = status === "NEW" ? "신규" : status === "IN_PROGRESS" ? "처리중" : "완료";
@@ -91,7 +92,17 @@ export default function InquiriesAdminPage() {
                                             className="w-full text-left px-5 py-4 hover:bg-neutral-900/60"
                                         >
                                             <div className="flex items-center justify-between gap-3">
-                                                <div className="font-extrabold text-white line-clamp-1">{row.title}</div>
+                                                <div className="flex items-center gap-2 min-w-0">
+                                                    {/* 분류 뱃지 */}
+                                                    <span className="shrink-0 rounded-full bg-neutral-700 px-2 py-0.5 text-[11px] font-bold text-neutral-100">
+                                                      {INQUIRY_CATEGORY_LABEL[row.category]}
+                                                    </span>
+
+                                                    <div className="font-extrabold text-white line-clamp-1">
+                                                        {row.title}
+                                                    </div>
+                                                </div>
+
                                                 <Badge status={row.status} />
                                             </div>
 
@@ -115,14 +126,31 @@ export default function InquiriesAdminPage() {
                                     <>
                                         <div className="flex items-start justify-between gap-3">
                                             <div>
-                                                <div className="text-lg font-extrabold text-white">{selected.title}</div>
-                                                <div className="mt-1 text-xs text-neutral-500">{fmtDate(selected.created_at)}</div>
+                                                <div className="flex items-center gap-2">
+                                                    {/* 분류 */}
+                                                    <span className="rounded-full bg-neutral-700 px-2 py-0.5 text-[11px] font-bold text-neutral-100">
+                                                    {INQUIRY_CATEGORY_LABEL[selected.category]}
+                                                  </span>
+
+                                                    <div className="text-lg font-extrabold text-white">
+                                                        {selected.title}
+                                                    </div>
+                                                </div>
+
+                                                <div className="mt-1 text-xs text-neutral-500">
+                                                    {fmtDate(selected.created_at)}
+                                                </div>
                                             </div>
+
                                             <Badge status={selected.status} />
                                         </div>
 
                                         {/* ✅ 고객 정보 박스 */}
                                         <div className="mt-4 rounded-2xl border border-neutral-800 bg-neutral-950/40 p-4">
+                                            <div>
+                                                <span className="text-neutral-400">문의 분류:</span>{" "}
+                                                {INQUIRY_CATEGORY_LABEL[selected.category]}
+                                            </div>
                                             <div className="text-xs font-bold text-neutral-200">고객 정보</div>
                                             <div className="mt-2 space-y-1 text-sm text-neutral-200">
                                                 <div>

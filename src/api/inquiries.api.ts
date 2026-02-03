@@ -1,10 +1,13 @@
 import { supabase } from "../lib/supabase";
+import { InquiryCategory } from "@/constants/inquiry";
 
 export type InquiryStatus = "NEW" | "IN_PROGRESS" | "DONE";
 
 export type InquiryRow = {
     id: string;
     user_id: string | null;
+
+    category: InquiryCategory; // ✅ 추가
 
     contact_name: string;
     contact_phone: string;
@@ -21,6 +24,7 @@ export type InquiryRow = {
 };
 
 export async function createInquiry(input: {
+    category: InquiryCategory; // ✅ 추가
     contactName: string;
     contactPhone: string;
     contactEmail?: string;
@@ -32,6 +36,7 @@ export async function createInquiry(input: {
 
     const payload = {
         user_id: userId,
+        category: input.category, // ✅ 추가
         contact_name: input.contactName.trim(),
         contact_phone: input.contactPhone.trim(),
         contact_email: (input.contactEmail ?? "").trim() || null,
