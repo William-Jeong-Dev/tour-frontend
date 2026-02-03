@@ -84,6 +84,10 @@ export type Product = {
     themeId?: string | null;
     areaId: string | null;
 
+    // 여행자 보험
+    travelInsuranceEnabled: boolean;
+    travelInsuranceContent: string;
+
     createdAt: string;
     updatedAt: string;
 };

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { listAreasByTheme, type AreaRow } from "../../api/areas.api";
@@ -25,6 +25,14 @@ import {
 import { supabase } from "../../lib/supabase";
 
 const BUCKET_NAME = "product-thumbnails";
+
+/** ✅ 여행자 보험 기본 문구 */
+const DEFAULT_TRAVEL_INSURANCE_TEXT = `보험 청구 시 필요 서류(현지 또는 공항에서 발급 필요)
+1. 현지 병원 이용 : 진단서, 진료비세부내역서, 진료비계산서, 처방전과 일자 별 약제비계산서(카드 결제영수증은 사용 불가)
+2. 도난 사고 : 현지 경찰서에서 발급된 도난신고 사실확인서, 피해물품 영수증(피해 입증자료) 필요
+3. 항공사 수하물 관련 사고 : 항공사 보상 관련 확인서, 파손 시 수리 견적서 및 영수증 또는 수리불가 확인서 필요
+- 일정 종료 후 보험기간의 개별 연장은 불가하며, 보장기간은 종료일로부터 90일 이내
+- 상세 내용은 보험회사를 통해 확인해 주시기 바랍니다.`;
 
 // public bucket용 썸네일 URL 만들기
 function toPublicThumbUrl(raw: string) {
@@ -123,26 +131,32 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
     const [form, setForm] = useState<ProductUpsert>({
         title: "",
         subtitle: "",
-        // ✅ theme_id
-        themeId: null as any, // (타입에 themeId가 없으면 types/product.ts에 추가해줘)
-        // ✅ area_id (하위 지역)
-        areaId: null as any,  // (타입에 areaId도 없으면 추가 권장)
+        // ✅ theme_id / area_id
+        themeId: null as any,
+        areaId: null as any,
+
         region: "일본",
         nights: 3,
         days: 4,
         status: "DRAFT",
         description: "",
         priceText: "상담 문의",
+
         // ✅ public bucket 썸네일: path 저장
         thumbnailPath: "",
         thumbnailUrl: "",
+
         images: [],
         included: [],
         excluded: [],
         notices: [],
         itinerary: [],
         departures: [],
-    });
+
+        // ✅ 여행자 보험
+        travelInsuranceEnabled: false,
+        travelInsuranceContent: DEFAULT_TRAVEL_INSURANCE_TEXT,
+    } as any);
 
     /* ✅ themeId 기반 area 목록 로딩 */
     const themeId = String((form as any).themeId ?? "").trim();
@@ -157,7 +171,7 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
     const areas: AreaRow[] = (areasQuery.data ?? []) as AreaRow[];
 
     const onChangeTheme = (nextThemeId: string) => {
-        // ✅ 테마 바뀌면 areaId는 초기화(null)하는 게 안전
+        // ✅ 테마 바뀌면 areaId는 초기화(null)
         setForm((prev: any) => ({
             ...prev,
             themeId: nextThemeId ? nextThemeId : null,
@@ -171,14 +185,13 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
     const [thumbPreview, setThumbPreview] = useState<string>("");
 
     useEffect(() => {
-        // thumbnailUrl(외부 URL 또는 path) / thumbnailPath 모두 처리
-        const raw = (form.thumbnailUrl || form.thumbnailPath || "").trim();
+        const raw = ((form as any).thumbnailUrl || (form as any).thumbnailPath || "").trim();
         if (!raw) {
             setThumbPreview("");
             return;
         }
         setThumbPreview(toPublicThumbUrl(raw));
-    }, [form.thumbnailUrl, form.thumbnailPath]);
+    }, [(form as any).thumbnailUrl, (form as any).thumbnailPath]);
 
     const onPickThumb = () => fileRef.current?.click();
 
@@ -196,10 +209,10 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
             const publicUrl = toPublicThumbUrl(path);
 
             // 3) DB에는 path 저장(권장), UI 미리보기만 publicUrl 사용
-            setForm((prev) => ({
+            setForm((prev: any) => ({
                 ...prev,
                 thumbnailPath: path,
-                thumbnailUrl: path, // 정책 유지(thumb url 칼럼에 path 저장)
+                thumbnailUrl: path,
             }));
             setThumbPreview(publicUrl);
         } finally {
@@ -216,31 +229,33 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
                 if (!p) return;
 
                 setForm({
-                    title: p.title ?? "",
-                    subtitle: p.subtitle ?? "",
+                    title: (p as any).title ?? "",
+                    subtitle: (p as any).subtitle ?? "",
                     themeId: (p as any).themeId ?? null,
-                    areaId: (p as any).areaId ?? null, // ✅ 추가
-                    region: p.region ?? "일본",
-                    nights: p.nights ?? 3,
-                    days: p.days ?? 4,
-                    status: (p.status ?? "DRAFT") as ProductStatus,
-                    description: p.description ?? "",
-                    priceText: p.priceText ?? "",
-                    thumbnailPath: (p as any).thumbnailPath ?? "", // ✅ path
-                    thumbnailUrl: p.thumbnailUrl ?? "",
-                    images: p.images ?? [],
-                    included: p.included ?? [],
-                    excluded: p.excluded ?? [],
-                    notices: p.notices ?? [],
-                    itinerary: p.itinerary ?? [],
-                    departures: p.departures ?? [],
+                    areaId: (p as any).areaId ?? null,
+                    region: (p as any).region ?? "일본",
+                    nights: (p as any).nights ?? 3,
+                    days: (p as any).days ?? 4,
+                    status: ((p as any).status ?? "DRAFT") as ProductStatus,
+                    description: (p as any).description ?? "",
+                    priceText: (p as any).priceText ?? "",
+                    thumbnailPath: (p as any).thumbnailPath ?? "",
+                    thumbnailUrl: (p as any).thumbnailUrl ?? "",
+                    images: (p as any).images ?? [],
+                    included: (p as any).included ?? [],
+                    excluded: (p as any).excluded ?? [],
+                    notices: (p as any).notices ?? [],
+                    itinerary: (p as any).itinerary ?? [],
+                    departures: (p as any).departures ?? [],
+
+                    // ✅ 여행자 보험
+                    travelInsuranceEnabled: (p as any).travelInsuranceEnabled ?? false,
+                    travelInsuranceContent: (p as any).travelInsuranceContent ?? DEFAULT_TRAVEL_INSURANCE_TEXT,
                 } as any);
 
-                // 혹시 thumbnailUrl이 비어있고 path만 있는 경우 보정
-                const raw = String((p as any).thumbnailPath ?? p.thumbnailUrl ?? "").trim();
-                if (raw) {
-                    setThumbPreview(toPublicThumbUrl(raw));
-                }
+                // thumbnailUrl이 비어있고 path만 있는 경우 보정
+                const raw = String((p as any).thumbnailPath ?? (p as any).thumbnailUrl ?? "").trim();
+                if (raw) setThumbPreview(toPublicThumbUrl(raw));
             })();
         }
     }, [mode, id]);
@@ -248,7 +263,6 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
     /* ---------- save ---------- */
     const save = useMutation({
         mutationFn: async () => {
-            // ✅ form에 areaId가 들어있으니 create/update에서 그대로 저장되도록 구성
             if (mode === "create") return createProduct(form);
             return updateProduct(id, form);
         },
@@ -312,8 +326,8 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
                     <Section title="기본 정보">
                         <Field label="제목">
                             <input
-                                value={form.title}
-                                onChange={(e) => setForm({ ...form, title: e.target.value })}
+                                value={(form as any).title}
+                                onChange={(e) => setForm({ ...(form as any), title: e.target.value } as any)}
                                 className="input w-full"
                                 placeholder="예) 오키나와 3박4일 골프 패키지"
                             />
@@ -321,8 +335,8 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
 
                         <Field label="부제">
                             <input
-                                value={form.subtitle}
-                                onChange={(e) => setForm({ ...form, subtitle: e.target.value })}
+                                value={(form as any).subtitle}
+                                onChange={(e) => setForm({ ...(form as any), subtitle: e.target.value } as any)}
                                 className="input w-full"
                                 placeholder="예) #1인1실 #온천 #시내호텔"
                             />
@@ -334,7 +348,11 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
                                 <div className="overflow-hidden rounded-xl border border-neutral-800 bg-black/30">
                                     <div className="aspect-[16/10] w-full">
                                         {thumbPreview ? (
-                                            <img src={thumbPreview} alt="thumbnail" className="h-full w-full object-cover" />
+                                            <img
+                                                src={thumbPreview}
+                                                alt="thumbnail"
+                                                className="h-full w-full object-cover"
+                                            />
                                         ) : (
                                             <div className="grid h-full w-full place-items-center text-sm text-neutral-400">
                                                 썸네일이 아직 없습니다.
@@ -365,18 +383,18 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
                                         {thumbUploading ? "업로드 중..." : "이미지 업로드"}
                                     </button>
 
-                                    {(form.thumbnailPath || thumbPreview) && (
+                                    {(form as any).thumbnailPath || thumbPreview ? (
                                         <button
                                             type="button"
                                             onClick={() => {
-                                                setForm((prev) => ({ ...prev, thumbnailPath: "", thumbnailUrl: "" }));
+                                                setForm((prev: any) => ({ ...prev, thumbnailPath: "", thumbnailUrl: "" }));
                                                 setThumbPreview("");
                                             }}
                                             className="rounded-xl border border-neutral-800 bg-neutral-950/40 px-4 py-2 text-sm font-extrabold text-neutral-200 hover:bg-neutral-900"
                                         >
                                             제거
                                         </button>
-                                    )}
+                                    ) : null}
                                 </div>
 
                                 <div className="mt-2 text-xs text-neutral-500">
@@ -442,8 +460,8 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
                         <div className="grid grid-cols-2 gap-3">
                             <Field label="지역(레거시 region)">
                                 <select
-                                    value={form.region}
-                                    onChange={(e) => setForm({ ...form, region: e.target.value })}
+                                    value={(form as any).region}
+                                    onChange={(e) => setForm({ ...(form as any), region: e.target.value } as any)}
                                     className="input w-full"
                                 >
                                     {REGIONS.map((x) => (
@@ -454,8 +472,8 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
 
                             <Field label="상태">
                                 <select
-                                    value={form.status}
-                                    onChange={(e) => setForm({ ...form, status: e.target.value as ProductStatus })}
+                                    value={(form as any).status}
+                                    onChange={(e) => setForm({ ...(form as any), status: e.target.value } as any)}
                                     className="input w-full"
                                 >
                                     {STATUSES.map((s) => (
@@ -470,17 +488,17 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
                         <div className="grid grid-cols-2 gap-3">
                             <Field label="박">
                                 <input
-                                    value={form.nights}
+                                    value={(form as any).nights}
                                     inputMode="numeric"
-                                    onChange={(e) => setForm({ ...form, nights: clampInt(e.target.value) })}
+                                    onChange={(e) => setForm({ ...(form as any), nights: clampInt(e.target.value) } as any)}
                                     className="input w-full"
                                 />
                             </Field>
                             <Field label="일">
                                 <input
-                                    value={form.days}
+                                    value={(form as any).days}
                                     inputMode="numeric"
-                                    onChange={(e) => setForm({ ...form, days: clampInt(e.target.value) })}
+                                    onChange={(e) => setForm({ ...(form as any), days: clampInt(e.target.value) } as any)}
                                     className="input w-full"
                                 />
                             </Field>
@@ -488,41 +506,85 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
 
                         <Field label="가격 문구(옵션)">
                             <input
-                                value={form.priceText ?? ""}
-                                onChange={(e) => setForm({ ...form, priceText: e.target.value })}
+                                value={(form as any).priceText ?? ""}
+                                onChange={(e) => setForm({ ...(form as any), priceText: e.target.value } as any)}
                                 className="input w-full"
                                 placeholder="예) 1,059,000원~ / 상담 문의"
                             />
                         </Field>
 
                         <Field label="상품 소개(옵션)">
-              <textarea
-                  value={form.description ?? ""}
-                  onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  className="input w-full min-h-[120px] resize-y"
-                  placeholder="상품 소개를 입력하세요"
-              />
+                            <textarea
+                                value={(form as any).description ?? ""}
+                                onChange={(e) => setForm({ ...(form as any), description: e.target.value } as any)}
+                                className="input w-full min-h-[120px] resize-y"
+                                placeholder="상품 소개를 입력하세요"
+                            />
                         </Field>
                     </Section>
                 )}
 
                 {tab === "bullets" && (
                     <Section title="포함 / 불포함 / 참고">
-                        <ListEditor title="포함" items={form.included} onChange={(v) => setForm({ ...form, included: v })} />
-                        <ListEditor title="불포함" items={form.excluded} onChange={(v) => setForm({ ...form, excluded: v })} />
-                        <ListEditor title="참고" items={form.notices} onChange={(v) => setForm({ ...form, notices: v })} />
+                        <ListEditor title="포함" items={(form as any).included} onChange={(v) => setForm({ ...(form as any), included: v } as any)} />
+                        <ListEditor title="불포함" items={(form as any).excluded} onChange={(v) => setForm({ ...(form as any), excluded: v } as any)} />
+                        <ListEditor title="참고" items={(form as any).notices} onChange={(v) => setForm({ ...(form as any), notices: v } as any)} />
+
+                        {/* ✅ 여행자 보험(유무 + 내용) */}
+                        <div className="mt-6 rounded-2xl border border-neutral-800 bg-neutral-950/40 p-4 space-y-3">
+                            <div className="text-sm font-extrabold text-neutral-100">여행자 보험</div>
+
+                            <label className="flex items-center gap-2 text-sm text-neutral-200">
+                                <input
+                                    type="checkbox"
+                                    checked={Boolean((form as any).travelInsuranceEnabled)}
+                                    onChange={(e) => {
+                                        const checked = e.target.checked;
+                                        setForm((prev: any) => ({
+                                            ...prev,
+                                            travelInsuranceEnabled: checked,
+                                            travelInsuranceContent: checked
+                                                ? (prev.travelInsuranceContent?.trim()
+                                                    ? prev.travelInsuranceContent
+                                                    : DEFAULT_TRAVEL_INSURANCE_TEXT)
+                                                : prev.travelInsuranceContent ?? "",
+                                        }));
+                                    }}
+                                />
+                                상품 상세에 “여행자 보험” 섹션 노출
+                            </label>
+
+                            {Boolean((form as any).travelInsuranceEnabled) ? (
+                                <div>
+                                    <div className="text-xs text-neutral-400">
+                                        아래 내용을 상품 상세페이지에 그대로 노출합니다.
+                                    </div>
+                                    <textarea
+                                        value={String((form as any).travelInsuranceContent ?? "")}
+                                        onChange={(e) =>
+                                            setForm((prev: any) => ({
+                                                ...prev,
+                                                travelInsuranceContent: e.target.value,
+                                            }))
+                                        }
+                                        className="mt-2 w-full min-h-[180px] rounded-xl border border-neutral-800 bg-neutral-950 px-3 py-2 text-sm text-neutral-200 focus:outline-none"
+                                        placeholder="여행자 보험 안내 내용을 입력하세요"
+                                    />
+                                </div>
+                            ) : null}
+                        </div>
                     </Section>
                 )}
 
                 {tab === "itinerary" && (
                     <Section title="일정표">
-                        <ItineraryEditor days={form.itinerary ?? []} onChange={(v) => setForm({ ...form, itinerary: v })} />
+                        <ItineraryEditor days={(form as any).itinerary ?? []} onChange={(v) => setForm({ ...(form as any), itinerary: v } as any)} />
                     </Section>
                 )}
 
                 {tab === "offers" && (
                     <Section title="출발일 · 오퍼">
-                        <OffersEditor items={form.departures ?? []} onChange={(v) => setForm({ ...form, departures: v })} />
+                        <OffersEditor items={(form as any).departures ?? []} onChange={(v) => setForm({ ...(form as any), departures: v } as any)} />
                     </Section>
                 )}
 
@@ -538,16 +600,10 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
             {/* ---------- mobile sticky actions ---------- */}
             <div className="sticky bottom-0 z-30 -mx-4 mt-8 bg-black/80 px-4 py-3 backdrop-blur md:hidden">
                 <div className="grid grid-cols-2 gap-3">
-                    <button
-                        onClick={() => nav("/admin/products")}
-                        className="rounded-xl border border-neutral-800 py-3 text-sm font-bold text-neutral-200"
-                    >
+                    <button onClick={() => nav("/admin/products")} className="rounded-xl border border-neutral-800 py-3 text-sm font-bold text-neutral-200">
                         취소
                     </button>
-                    <button
-                        onClick={() => save.mutate()}
-                        className="rounded-xl bg-[#2E97F2] py-3 text-sm font-extrabold text-white"
-                    >
+                    <button onClick={() => save.mutate()} className="rounded-xl bg-[#2E97F2] py-3 text-sm font-extrabold text-white">
                         저장
                     </button>
                 </div>
@@ -575,15 +631,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
     );
 }
 
-function ListEditor({
-                        title,
-                        items,
-                        onChange,
-                    }: {
-    title: string;
-    items: string[];
-    onChange: (v: string[]) => void;
-}) {
+function ListEditor({ title, items, onChange }: { title: string; items: string[]; onChange: (v: string[]) => void }) {
     const [draft, setDraft] = useState("");
 
     return (
@@ -593,9 +641,10 @@ function ListEditor({
             <div className="mt-2 flex gap-2">
                 <input value={draft} onChange={(e) => setDraft(e.target.value)} className="input flex-1" />
                 <button
+                    type="button"
                     onClick={() => {
                         if (!draft.trim()) return;
-                        onChange([...items, draft.trim()]);
+                        onChange([...(items ?? []), draft.trim()]);
                         setDraft("");
                     }}
                     className="rounded-xl bg-neutral-50 px-3 py-2 text-sm font-bold text-neutral-950"
@@ -605,13 +654,10 @@ function ListEditor({
             </div>
 
             <div className="mt-3 space-y-2">
-                {items.map((x, i) => (
-                    <div
-                        key={i}
-                        className="flex items-center justify-between rounded-lg border border-neutral-800 px-3 py-2 text-sm text-neutral-200"
-                    >
+                {(items ?? []).map((x, i) => (
+                    <div key={i} className="flex items-center justify-between rounded-lg border border-neutral-800 px-3 py-2 text-sm text-neutral-200">
                         <span className="min-w-0 flex-1">{x}</span>
-                        <button onClick={() => onChange(items.filter((_, idx) => idx !== i))} className="text-xs text-neutral-400">
+                        <button type="button" onClick={() => onChange(items.filter((_, idx) => idx !== i))} className="text-xs text-neutral-400">
                             삭제
                         </button>
                     </div>
@@ -625,7 +671,7 @@ function ListEditor({
 function OffersEditor({ items, onChange }: { items: Departure[]; onChange: (v: Departure[]) => void }) {
     const add = () => {
         onChange([
-            ...items,
+            ...(items ?? []),
             {
                 id: uid("dep"),
                 dateISO: "",
@@ -641,43 +687,34 @@ function OffersEditor({ items, onChange }: { items: Departure[]; onChange: (v: D
     };
 
     const update = (idx: number, patch: Partial<Departure>) => {
-        const next = [...items];
+        const next = [...(items ?? [])];
         next[idx] = { ...next[idx], ...patch };
         onChange(next);
     };
 
     const remove = (idx: number) => {
-        onChange(items.filter((_, i) => i !== idx));
+        onChange((items ?? []).filter((_, i) => i !== idx));
     };
 
     return (
         <div className="space-y-3">
-            {items.length === 0 ? (
+            {(items ?? []).length === 0 ? (
                 <div className="rounded-xl border border-neutral-800 bg-neutral-950/40 p-4 text-sm text-neutral-400">
                     아직 등록된 출발일이 없습니다. 아래 버튼으로 추가하세요.
                 </div>
             ) : null}
 
-            {items.map((d, i) => (
+            {(items ?? []).map((d, i) => (
                 <div key={d.id ?? i} className="rounded-2xl border border-neutral-800 bg-neutral-950/40 p-4">
                     <div className="grid grid-cols-2 gap-3">
                         <div className="col-span-2">
                             <div className="mb-1 text-xs font-semibold text-neutral-400">출발일</div>
-                            <input
-                                type="date"
-                                value={d.dateISO ?? ""}
-                                onChange={(e) => update(i, { dateISO: e.target.value })}
-                                className="input"
-                            />
+                            <input type="date" value={d.dateISO ?? ""} onChange={(e) => update(i, { dateISO: e.target.value })} className="input" />
                         </div>
 
                         <div>
                             <div className="mb-1 text-xs font-semibold text-neutral-400">오퍼</div>
-                            <select
-                                value={d.offerType ?? "NORMAL"}
-                                onChange={(e) => update(i, { offerType: e.target.value as OfferType })}
-                                className="input"
-                            >
+                            <select value={d.offerType ?? "NORMAL"} onChange={(e) => update(i, { offerType: e.target.value as OfferType })} className="input">
                                 <option value="NORMAL">기본</option>
                                 <option value="EVENT">이벤트</option>
                                 <option value="SPECIAL">특가</option>
@@ -686,11 +723,7 @@ function OffersEditor({ items, onChange }: { items: Departure[]; onChange: (v: D
 
                         <div>
                             <div className="mb-1 text-xs font-semibold text-neutral-400">상태</div>
-                            <select
-                                value={d.status ?? "AVAILABLE"}
-                                onChange={(e) => update(i, { status: e.target.value as DepartStatus })}
-                                className="input"
-                            >
+                            <select value={d.status ?? "AVAILABLE"} onChange={(e) => update(i, { status: e.target.value as DepartStatus })} className="input">
                                 <option value="AVAILABLE">예약가능</option>
                                 <option value="CONFIRMED">출발확정</option>
                                 <option value="INQUIRY">가격문의</option>
@@ -747,28 +780,19 @@ function OffersEditor({ items, onChange }: { items: Departure[]; onChange: (v: D
 
                         <div className="col-span-2">
                             <div className="mb-1 text-xs font-semibold text-neutral-400">메모(선택)</div>
-                            <input
-                                value={d.note ?? ""}
-                                onChange={(e) => update(i, { note: e.target.value })}
-                                className="input"
-                                placeholder="예: 특가 좌석 한정, 이벤트 안내 등"
-                            />
+                            <input value={d.note ?? ""} onChange={(e) => update(i, { note: e.target.value })} className="input" placeholder="예: 특가 좌석 한정, 이벤트 안내 등" />
                         </div>
                     </div>
 
                     <div className="mt-3 flex justify-end">
-                        <button onClick={() => remove(i)} className="text-xs font-bold text-rose-400">
+                        <button type="button" onClick={() => remove(i)} className="text-xs font-bold text-rose-400">
                             삭제
                         </button>
                     </div>
                 </div>
             ))}
 
-            <button
-                type="button"
-                onClick={add}
-                className="w-full rounded-xl border border-neutral-800 bg-neutral-950/40 py-3 text-sm font-bold text-neutral-200"
-            >
+            <button type="button" onClick={add} className="w-full rounded-xl border border-neutral-800 bg-neutral-950/40 py-3 text-sm font-bold text-neutral-200">
                 + 출발일 추가
             </button>
         </div>
@@ -799,18 +823,18 @@ function ItineraryEditor({ days, onChange }: { days: ItineraryDay[]; onChange: (
     };
 
     const removeDay = (idx: number) => {
-        const next = renumberDays(days.filter((_, i) => i !== idx));
+        const next = renumberDays((days ?? []).filter((_, i) => i !== idx));
         onChange(next);
     };
 
     const updateDay = (idx: number, patch: Partial<ItineraryDay>) => {
-        const next = [...days];
+        const next = [...(days ?? [])];
         next[idx] = { ...next[idx], ...patch };
         onChange(next);
     };
 
     const addRow = (dayIdx: number) => {
-        const next = [...days];
+        const next = [...(days ?? [])];
         const row: ItineraryRow = {
             id: uid("row"),
             place: "",
@@ -826,14 +850,14 @@ function ItineraryEditor({ days, onChange }: { days: ItineraryDay[]; onChange: (
     };
 
     const removeRow = (dayIdx: number, rowIdx: number) => {
-        const next = [...days];
+        const next = [...(days ?? [])];
         const rows = (next[dayIdx].rows ?? []).filter((_, i) => i !== rowIdx);
         next[dayIdx] = { ...next[dayIdx], rows };
         onChange(next);
     };
 
     const updateRow = (dayIdx: number, rowIdx: number, patch: Partial<ItineraryRow>) => {
-        const next = [...days];
+        const next = [...(days ?? [])];
         const rows = [...(next[dayIdx].rows ?? [])];
         rows[rowIdx] = { ...rows[rowIdx], ...patch };
         next[dayIdx] = { ...next[dayIdx], rows };
@@ -850,36 +874,27 @@ function ItineraryEditor({ days, onChange }: { days: ItineraryDay[]; onChange: (
 
     return (
         <div className="space-y-3">
-            {days.length === 0 ? (
+            {(days ?? []).length === 0 ? (
                 <div className="rounded-xl border border-neutral-800 bg-neutral-950/40 p-4 text-sm text-neutral-400">
                     아직 일정표가 없습니다. 아래 버튼으로 일차를 추가하세요.
                 </div>
             ) : null}
 
-            {days.map((d, di) => (
+            {(days ?? []).map((d, di) => (
                 <div key={d.id ?? di} className="rounded-2xl border border-neutral-800 bg-neutral-950/40 p-4">
                     <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0 flex-1">
                             <div className="mb-1 text-xs font-semibold text-neutral-400">일차 제목</div>
-                            <input
-                                value={d.title ?? `${d.dayNo}일차`}
-                                onChange={(e) => updateDay(di, { title: e.target.value })}
-                                className="input"
-                            />
+                            <input value={d.title ?? `${d.dayNo}일차`} onChange={(e) => updateDay(di, { title: e.target.value })} className="input" />
                         </div>
-                        <button onClick={() => removeDay(di)} className="mt-6 text-xs font-bold text-rose-400">
+                        <button type="button" onClick={() => removeDay(di)} className="mt-6 text-xs font-bold text-rose-400">
                             삭제
                         </button>
                     </div>
 
                     <div className="mt-3">
                         <div className="mb-1 text-xs font-semibold text-neutral-400">날짜 텍스트(선택)</div>
-                        <input
-                            value={d.dateText ?? ""}
-                            onChange={(e) => updateDay(di, { dateText: e.target.value })}
-                            className="input"
-                            placeholder="예: 2026-03-21, 3/21(토) 등"
-                        />
+                        <input value={d.dateText ?? ""} onChange={(e) => updateDay(di, { dateText: e.target.value })} className="input" placeholder="예: 2026-03-21, 3/21(토) 등" />
                     </div>
 
                     {/* rows */}
@@ -889,40 +904,22 @@ function ItineraryEditor({ days, onChange }: { days: ItineraryDay[]; onChange: (
                                 <div className="grid grid-cols-2 gap-2">
                                     <div className="col-span-2">
                                         <div className="mb-1 text-xs font-semibold text-neutral-400">내용</div>
-                                        <textarea
-                                            value={r.content ?? ""}
-                                            onChange={(e) => updateRow(di, ri, { content: e.target.value })}
-                                            className="input min-h-[90px] resize-y"
-                                            placeholder="일정 내용을 입력하세요"
-                                        />
+                                        <textarea value={r.content ?? ""} onChange={(e) => updateRow(di, ri, { content: e.target.value })} className="input min-h-[90px] resize-y" placeholder="일정 내용을 입력하세요" />
                                     </div>
 
                                     <div>
                                         <div className="mb-1 text-xs font-semibold text-neutral-400">장소</div>
-                                        <input
-                                            value={r.place ?? ""}
-                                            onChange={(e) => updateRow(di, ri, { place: e.target.value })}
-                                            className="input"
-                                        />
+                                        <input value={r.place ?? ""} onChange={(e) => updateRow(di, ri, { place: e.target.value })} className="input" />
                                     </div>
 
                                     <div>
                                         <div className="mb-1 text-xs font-semibold text-neutral-400">교통</div>
-                                        <input
-                                            value={r.transport ?? ""}
-                                            onChange={(e) => updateRow(di, ri, { transport: e.target.value })}
-                                            className="input"
-                                        />
+                                        <input value={r.transport ?? ""} onChange={(e) => updateRow(di, ri, { transport: e.target.value })} className="input" />
                                     </div>
 
                                     <div>
                                         <div className="mb-1 text-xs font-semibold text-neutral-400">시간</div>
-                                        <input
-                                            value={r.time ?? ""}
-                                            onChange={(e) => updateRow(di, ri, { time: e.target.value })}
-                                            className="input"
-                                            placeholder="예: 10:30"
-                                        />
+                                        <input value={r.time ?? ""} onChange={(e) => updateRow(di, ri, { time: e.target.value })} className="input" placeholder="예: 10:30" />
                                     </div>
 
                                     <div>
@@ -942,7 +939,7 @@ function ItineraryEditor({ days, onChange }: { days: ItineraryDay[]; onChange: (
                                 </div>
 
                                 <div className="mt-3 flex justify-end">
-                                    <button onClick={() => removeRow(di, ri)} className="text-xs font-bold text-rose-400">
+                                    <button type="button" onClick={() => removeRow(di, ri)} className="text-xs font-bold text-rose-400">
                                         일정 삭제
                                     </button>
                                 </div>
@@ -950,21 +947,13 @@ function ItineraryEditor({ days, onChange }: { days: ItineraryDay[]; onChange: (
                         ))}
                     </div>
 
-                    <button
-                        type="button"
-                        onClick={() => addRow(di)}
-                        className="mt-4 w-full rounded-xl border border-neutral-800 bg-neutral-950/40 py-3 text-sm font-bold text-neutral-200"
-                    >
+                    <button type="button" onClick={() => addRow(di)} className="mt-4 w-full rounded-xl border border-neutral-800 bg-neutral-950/40 py-3 text-sm font-bold text-neutral-200">
                         + 일정 추가
                     </button>
                 </div>
             ))}
 
-            <button
-                type="button"
-                onClick={addDay}
-                className="w-full rounded-xl border border-neutral-800 bg-neutral-950/40 py-3 text-sm font-bold text-neutral-200"
-            >
+            <button type="button" onClick={addDay} className="w-full rounded-xl border border-neutral-800 bg-neutral-950/40 py-3 text-sm font-bold text-neutral-200">
                 + 일차 추가
             </button>
         </div>

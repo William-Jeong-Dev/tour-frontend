@@ -41,6 +41,9 @@ type ProductRow = {
     theme_id: string | null;
     area_id: string | null;
 
+    travel_insurance_enabled: boolean;
+    travel_insurance_content: string;
+
     created_at: string;
     updated_at: string;
 };
@@ -53,11 +56,6 @@ function assertSupabaseReady() {
             "Supabase env가 없습니다. .env.local에 VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY 설정 후 dev 서버를 재시작하세요."
         );
     }
-}
-
-function extOf(name: string) {
-    const i = name.lastIndexOf(".");
-    return i >= 0 ? name.slice(i + 1).toLowerCase() : "jpg";
 }
 
 function isHttpUrl(s: string) {
@@ -124,7 +122,6 @@ export async function uploadProductThumbnail(file: File): Promise<string> {
     return filename; // "thumb/uuid.jpg"
 }
 
-
 /* =========================================================
    ✅ Row <-> Product mapping
    ========================================================= */
@@ -162,9 +159,13 @@ async function toProduct(row: ProductRow): Promise<Product> {
         themeId: row.theme_id ?? null,
         areaId: row.area_id ?? null,
 
+        // ✅ 여행자 보험
+        travelInsuranceEnabled: Boolean(row.travel_insurance_enabled),
+        travelInsuranceContent: row.travel_insurance_content ?? "",
+
         createdAt: row.created_at ?? nowIso(),
         updatedAt: row.updated_at ?? nowIso(),
-    };
+    } as any;
 }
 
 function toRow(input: ProductUpsert): Omit<ProductRow, "id" | "created_at" | "updated_at"> {
@@ -183,7 +184,7 @@ function toRow(input: ProductUpsert): Omit<ProductRow, "id" | "created_at" | "up
         description: input.description ?? "",
 
         thumbnail_url: pathOrUrl,
-        thumbnail_path: input.thumbnailPath ?? null,
+        thumbnail_path: (input as any).thumbnailPath ?? null,
 
         images: Array.isArray(input.images) ? input.images : [],
 
@@ -194,7 +195,11 @@ function toRow(input: ProductUpsert): Omit<ProductRow, "id" | "created_at" | "up
         itinerary: Array.isArray(input.itinerary) ? input.itinerary : [],
         departures: Array.isArray(input.departures) ? input.departures : [],
 
-        theme_id: input.themeId ?? null,
+        // ✅ 여행자 보험
+        travel_insurance_enabled: Boolean((input as any).travelInsuranceEnabled),
+        travel_insurance_content: String((input as any).travelInsuranceContent ?? ""),
+
+        theme_id: (input as any).themeId ?? null,
         area_id: (input as any).areaId ?? null,
     };
 }
@@ -306,9 +311,9 @@ export async function searchPublishedProducts(q: string, limit = 50): Promise<Pr
             region: r.region ?? "",
             status: r.status ?? "DRAFT",
             priceText: r.price_text ?? "",
-            thumbnailUrl: getPublicThumbnailUrl(raw),   // ✅ 여기도 통일
+            thumbnailUrl: getPublicThumbnailUrl(raw),
             thumbnailPath: r.thumbnail_path ?? null,
-            areaId: r.area_id ?? null,                  // ✅ 추가
+            areaId: r.area_id ?? null,
             createdAt: r.created_at,
         };
     }) as Product[];
@@ -328,4 +333,3 @@ export async function listProductsByTheme(themeId: string, areaId?: string | nul
     if (error) throw error;
     return data ?? [];
 }
-

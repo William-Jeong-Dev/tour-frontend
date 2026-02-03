@@ -11,7 +11,6 @@ import { useSession } from "../../hooks/useSession";
 import { addFavorite, removeFavorite, isFavorited } from "../../api/favorites.api";
 import { createBooking } from "../../api/bookings.api";
 
-
 type Card = {
     id: string;
     title: string;
@@ -20,7 +19,7 @@ type Card = {
     badge?: string;
 };
 
-type TabKey = "select" | "itinerary" | "summary" | "info" | "schedule" | "policy";
+type TabKey = "select" | "itinerary" | "summary" | "info" | "schedule" | "insurance" | "policy";
 
 function krw(n: number) {
     return n.toLocaleString("ko-KR");
@@ -257,8 +256,21 @@ export default function ProductDetail() {
         enabled: Boolean(product?.themeId),
     });
 
+    // ✅ 여행자 보험: 노출 여부(활성 + 내용 존재)
+    const insuranceEnabled = useMemo(() => {
+        const enabled = Boolean((product as any)?.travelInsuranceEnabled);
+        const content = String((product as any)?.travelInsuranceContent ?? "").trim();
+        return enabled && content.length > 0;
+    }, [product]);
+
     // 탭/섹션
-    const tabKeys: TabKey[] = ["select", "itinerary", "summary", "info", "schedule", "policy"];
+    const tabKeys: TabKey[] = useMemo(() => {
+        const base: TabKey[] = ["select", "itinerary", "summary", "info", "schedule"];
+        if (insuranceEnabled) base.push("insurance");
+        base.push("policy");
+        return base;
+    }, [insuranceEnabled]);
+
     const { active, setActive, refs } = useActiveSection(tabKeys);
 
     // ✅ 클릭 시 이동 함수 (refs 말고 id로 찾으면 안정적)
@@ -283,7 +295,6 @@ export default function ProductDetail() {
             window.scrollBy({ top: -offset, left: 0, behavior: "instant" as ScrollBehavior });
         }, 250);
     };
-
 
     // ✅ 상세로 들어오면 “항상 맨 위”로
     useEffect(() => {
@@ -556,6 +567,7 @@ export default function ProductDetail() {
                                     ["summary", "요약정보"],
                                     ["schedule", "여행일정"],
                                     ["info", "상품정보"],
+                                    ...(insuranceEnabled ? ([["insurance", "여행자 보험"]] as Array<[TabKey, string]>) : []),
                                     ["policy", "약관/환불규정"],
                                 ] as Array<[TabKey, string]>
                             ).map(([key, label]) => (
@@ -976,6 +988,26 @@ export default function ProductDetail() {
                                     </p>
                                 </div>
                             </section>
+
+                            {/* ✅ 여행자 보험 */}
+                            {insuranceEnabled ? (
+                                <section
+                                    id="insurance"
+                                    ref={(el) => {
+                                        refs.current.insurance = el;
+                                    }}
+                                    className="scroll-mt-36"
+                                >
+                                    <h2 className="text-lg font-extrabold text-neutral-900">여행자 보험</h2>
+
+                                    <div className="mt-4 rounded-2xl border border-neutral-200 bg-white p-5">
+                                        <div className="text-sm font-extrabold text-neutral-900">안내</div>
+                                        <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-neutral-600">
+                                            {String((product as any)?.travelInsuranceContent ?? "")}
+                                        </p>
+                                    </div>
+                                </section>
+                            ) : null}
 
                             {/* 약관/환불규정 */}
                             <section
