@@ -44,6 +44,9 @@ type ProductRow = {
     travel_insurance_enabled: boolean;
     travel_insurance_content: string;
 
+    // ⭐ ADD: 리치 상세 블록
+    detail_blocks: any[];
+
     created_at: string;
     updated_at: string;
 };
@@ -116,7 +119,11 @@ export async function uploadProductThumbnail(file: File): Promise<string> {
 
     const { error } = await supabase.storage
         .from("product-thumbnails")
-        .upload(filename, file, { cacheControl: "3600", upsert: false, contentType: file.type || undefined });
+        .upload(filename, file, {
+            cacheControl: "3600",
+            upsert: false,
+            contentType: file.type || undefined,
+        });
 
     if (error) throw error;
     return filename; // "thumb/uuid.jpg"
@@ -163,6 +170,8 @@ async function toProduct(row: ProductRow): Promise<Product> {
         travelInsuranceEnabled: Boolean(row.travel_insurance_enabled),
         travelInsuranceContent: row.travel_insurance_content ?? "",
 
+        detailBlocks: Array.isArray((row as any).detail_blocks) ? (row as any).detail_blocks : [],
+
         createdAt: row.created_at ?? nowIso(),
         updatedAt: row.updated_at ?? nowIso(),
     } as any;
@@ -201,6 +210,8 @@ function toRow(input: ProductUpsert): Omit<ProductRow, "id" | "created_at" | "up
 
         theme_id: (input as any).themeId ?? null,
         area_id: (input as any).areaId ?? null,
+
+        detail_blocks: Array.isArray((input as any).detailBlocks) ? (input as any).detailBlocks : [],
     };
 }
 

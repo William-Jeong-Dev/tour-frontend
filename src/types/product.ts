@@ -45,6 +45,28 @@ export type Departure = {
     note?: string;   // 메모
 };
 
+export type ProductDetailBlock =
+    | {
+    id: string;
+    type: "TITLE";
+    text: string;
+}
+    | {
+    id: string;
+    type: "TEXT";
+    text: string;
+}
+    | {
+    id: string;
+    type: "IMAGE_SLIDER";
+    title?: string;          // "숙소", "골프장" 등
+    images: {
+        path: string;        // products/{productId}/detail/{blockId}/{index}.webp
+        caption?: string;
+    }[];
+    description?: string;    // 항목 설명
+};
+
 export type Product = {
     id: string;
 
@@ -87,6 +109,8 @@ export type Product = {
     // 여행자 보험
     travelInsuranceEnabled: boolean;
     travelInsuranceContent: string;
+
+    detailBlocks?: ProductDetailBlock[];
 
     createdAt: string;
     updatedAt: string;

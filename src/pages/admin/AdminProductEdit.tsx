@@ -12,6 +12,7 @@ import type {
     OfferType,
     ProductStatus,
     ProductUpsert,
+    ProductDetailBlock,
 } from "../../types/product";
 
 import {
@@ -55,13 +56,14 @@ function toPublicThumbUrl(raw: string) {
 }
 
 /* ---------------- tabs ---------------- */
-type TabKey = "basic" | "bullets" | "itinerary" | "offers" | "assets";
+type TabKey = "basic" | "bullets" | "itinerary" | "offers" | "assets" | "detail";
 
 const TABS: Array<{ key: TabKey; label: string }> = [
     { key: "basic", label: "기본정보" },
     { key: "bullets", label: "포함/불포함" },
     { key: "itinerary", label: "일정표" },
     { key: "offers", label: "출발일·오퍼" },
+    { key: "detail", label: "상세설명" },
     { key: "assets", label: "원본문서" },
 ];
 
@@ -80,7 +82,7 @@ function clampInt(v: string, fallback = 0) {
 }
 
 function isTabKey(x: any): x is TabKey {
-    return ["basic", "bullets", "itinerary", "offers", "assets"].includes(String(x));
+    return ["basic", "bullets", "detail", "itinerary", "offers", "assets"].includes(String(x));
 }
 
 /* ====================== MAIN ====================== */
@@ -92,6 +94,15 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
     const id = params.id ?? "";
     const tabParam = params.tab;
     const tab: TabKey = isTabKey(tabParam) ? tabParam : "basic";
+
+    const tempProductIdRef = useRef<string>(uid("tmp_product"));
+    useEffect(() => {
+        // form에 임시 productId를 숨겨 저장 (create 모드에서만 사용)
+        if (mode === "create") {
+            setForm((prev: any) => ({ ...prev, __tempProductId: tempProductIdRef.current }));
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     useEffect(() => {
         if (!isTabKey(tabParam)) {
@@ -156,6 +167,8 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
         // ✅ 여행자 보험
         travelInsuranceEnabled: false,
         travelInsuranceContent: DEFAULT_TRAVEL_INSURANCE_TEXT,
+
+        detailBlocks: [],
     } as any);
 
     /* ✅ themeId 기반 area 목록 로딩 */
@@ -251,6 +264,8 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
                     // ✅ 여행자 보험
                     travelInsuranceEnabled: (p as any).travelInsuranceEnabled ?? false,
                     travelInsuranceContent: (p as any).travelInsuranceContent ?? DEFAULT_TRAVEL_INSURANCE_TEXT,
+
+                    detailBlocks: (p as any).detailBlocks ?? [],
                 } as any);
 
                 // thumbnailUrl이 비어있고 path만 있는 경우 보정
@@ -595,6 +610,16 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
                         </div>
                     </Section>
                 )}
+
+                {tab === "detail" && (
+                    <Section title="상세 블록 (상세페이지 본문 구성)">
+                        <DetailBlocksEditor
+                            blocks={((form as any).detailBlocks ?? [])}
+                            onChange={(v) => setForm({ ...(form as any), detailBlocks: v } as any)}
+                        />
+                    </Section>
+                )}
+
             </div>
 
             {/* ---------- mobile sticky actions ---------- */}
@@ -959,3 +984,259 @@ function ItineraryEditor({ days, onChange }: { days: ItineraryDay[]; onChange: (
         </div>
     );
 }
+
+async function uploadDetailImage(
+    file: File,
+    productId: string,
+    blockId: string,
+    index: number
+) {
+    const path = `products/${productId}/detail/${blockId}/${index}.webp`;
+
+    const { error } = await supabase.storage
+        .from(BUCKET_NAME)
+        .upload(path, file, {
+            upsert: true,
+            contentType: file.type || "image/webp",
+            cacheControl: "3600",
+        });
+
+    if (error) throw error;
+    return path;
+}
+
+async function deleteDetailImage(path: string) {
+    if (!path) return;
+    await supabase.storage.from(BUCKET_NAME).remove([path]);
+}
+
+function getPublicUrl(pathOrUrl: string) {
+    const v = String(pathOrUrl ?? "").trim();
+    if (!v) return "";
+    if (/^https?:\/\//i.test(v)) return v;
+
+    const clean = v.replace(/^\/+/, "");
+    const prefix = `${BUCKET_NAME}/`;
+    const normalized = clean.startsWith(prefix) ? clean.slice(prefix.length) : clean;
+
+    const { data } = supabase.storage.from(BUCKET_NAME).getPublicUrl(normalized);
+    return data?.publicUrl ?? "";
+}
+
+/* ====================== DETAIL BLOCKS (상세 블록) ====================== */
+function DetailBlocksEditor({
+                                blocks,
+                                onChange,
+                            }: {
+    blocks: any[];
+    onChange: (v: any[]) => void;
+}) {
+    const list = Array.isArray(blocks) ? blocks : [];
+
+    const addBlock = (type: "TITLE" | "TEXT" | "IMAGE_SLIDER") => {
+        const id = uid("blk");
+        const base: any = { id, type };
+
+        if (type === "TITLE" || type === "TEXT") {
+            base.text = "";
+        } else {
+            base.title = "";
+            base.description = "";
+            base.images = [];
+        }
+
+        onChange([...list, base]);
+    };
+
+    const update = (idx: number, patch: any) => {
+        const next = [...list];
+        next[idx] = { ...next[idx], ...patch };
+        onChange(next);
+    };
+
+    const remove = (idx: number) => onChange(list.filter((_, i) => i !== idx));
+
+    const move = (idx: number, dir: -1 | 1) => {
+        const j = idx + dir;
+        if (j < 0 || j >= list.length) return;
+        const next = [...list];
+        const tmp = next[idx];
+        next[idx] = next[j];
+        next[j] = tmp;
+        onChange(next);
+    };
+
+    const addImage = (idx: number) => {
+        const b = list[idx];
+        const images = Array.isArray(b?.images) ? b.images : [];
+        update(idx, { images: [...images, { path: "", caption: "" }] });
+    };
+
+    const updateImage = (idx: number, imgIdx: number, patch: any) => {
+        const b = list[idx];
+        const images = Array.isArray(b?.images) ? [...b.images] : [];
+        images[imgIdx] = { ...images[imgIdx], ...patch };
+        update(idx, { images });
+    };
+
+    const removeImage = (idx: number, imgIdx: number) => {
+        const b = list[idx];
+        const images = Array.isArray(b?.images) ? b.images : [];
+        update(idx, { images: images.filter((_: any, i: number) => i !== imgIdx) });
+    };
+
+    return (
+        <div className="space-y-3">
+            {/* add buttons */}
+            <div className="flex flex-wrap gap-2">
+                <button
+                    type="button"
+                    onClick={() => addBlock("TITLE")}
+                    className="rounded-xl bg-neutral-50 px-3 py-2 text-sm font-extrabold text-neutral-950"
+                >
+                    + 제목 블록
+                </button>
+                <button
+                    type="button"
+                    onClick={() => addBlock("TEXT")}
+                    className="rounded-xl bg-neutral-50 px-3 py-2 text-sm font-extrabold text-neutral-950"
+                >
+                    + 텍스트 블록
+                </button>
+                <button
+                    type="button"
+                    onClick={() => addBlock("IMAGE_SLIDER")}
+                    className="rounded-xl bg-neutral-50 px-3 py-2 text-sm font-extrabold text-neutral-950"
+                >
+                    + 이미지 슬라이더
+                </button>
+            </div>
+
+            {list.length === 0 ? (
+                <div className="rounded-xl border border-neutral-800 bg-neutral-950/40 p-4 text-sm text-neutral-400">
+                    아직 상세 블록이 없습니다. 위 버튼으로 추가하세요.
+                </div>
+            ) : null}
+
+            {/* blocks */}
+            {list.map((b: any, idx: number) => (
+                <div key={b?.id ?? idx} className="rounded-2xl border border-neutral-800 bg-neutral-950/40 p-4">
+                    <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                            <div className="text-xs font-semibold text-neutral-400">블록 타입</div>
+                            <div className="mt-1 text-sm font-extrabold text-neutral-100">
+                                {b.type === "TITLE" ? "TITLE" : b.type === "TEXT" ? "TEXT" : "IMAGE_SLIDER"}
+                            </div>
+                            <div className="mt-1 text-[11px] text-neutral-500">id: {b?.id}</div>
+                        </div>
+
+                        <div className="flex gap-2">
+                            <button type="button" onClick={() => move(idx, -1)} className="text-xs font-bold text-neutral-300">
+                                ↑
+                            </button>
+                            <button type="button" onClick={() => move(idx, 1)} className="text-xs font-bold text-neutral-300">
+                                ↓
+                            </button>
+                            <button type="button" onClick={() => remove(idx)} className="text-xs font-bold text-rose-400">
+                                삭제
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* TITLE/TEXT */}
+                    {(b.type === "TITLE" || b.type === "TEXT") ? (
+                        <div className="mt-4">
+                            <div className="mb-1 text-xs font-semibold text-neutral-400">텍스트</div>
+                            <textarea
+                                value={String(b.text ?? "")}
+                                onChange={(e) => update(idx, { text: e.target.value })}
+                                className="input w-full min-h-[120px] resize-y"
+                                placeholder={b.type === "TITLE" ? "섹션 제목을 입력" : "본문 텍스트를 입력"}
+                            />
+                        </div>
+                    ) : null}
+
+                    {/* IMAGE_SLIDER */}
+                    {b.type === "IMAGE_SLIDER" ? (
+                        <div className="mt-4 space-y-3">
+                            <div>
+                                <div className="mb-1 text-xs font-semibold text-neutral-400">슬라이더 제목(선택)</div>
+                                <input
+                                    value={String(b.title ?? "")}
+                                    onChange={(e) => update(idx, { title: e.target.value })}
+                                    className="input w-full"
+                                    placeholder="예: 숙소 / 골프장"
+                                />
+                            </div>
+
+                            <div>
+                                <div className="mb-1 text-xs font-semibold text-neutral-400">설명(선택)</div>
+                                <textarea
+                                    value={String(b.description ?? "")}
+                                    onChange={(e) => update(idx, { description: e.target.value })}
+                                    className="input w-full min-h-[100px] resize-y"
+                                    placeholder="슬라이더 하단 설명"
+                                />
+                            </div>
+
+                            <div className="rounded-xl border border-neutral-800 bg-black/20 p-3">
+                                <div className="flex items-center justify-between">
+                                    <div className="text-sm font-bold text-neutral-200">이미지 목록</div>
+                                    <button
+                                        type="button"
+                                        onClick={() => addImage(idx)}
+                                        className="rounded-lg bg-neutral-50 px-3 py-2 text-xs font-extrabold text-neutral-950"
+                                    >
+                                        + 이미지 추가
+                                    </button>
+                                </div>
+
+                                {(Array.isArray(b.images) ? b.images : []).length === 0 ? (
+                                    <div className="mt-2 text-sm text-neutral-400">아직 이미지가 없습니다.</div>
+                                ) : null}
+
+                                <div className="mt-3 space-y-3">
+                                    {(Array.isArray(b.images) ? b.images : []).map((img: any, ii: number) => (
+                                        <div key={ii} className="rounded-xl border border-neutral-800 bg-neutral-950/40 p-3">
+                                            <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                                                <div>
+                                                    <div className="mb-1 text-xs font-semibold text-neutral-400">path</div>
+                                                    <input
+                                                        value={String(img?.path ?? "")}
+                                                        onChange={(e) => updateImage(idx, ii, { path: e.target.value })}
+                                                        className="input w-full"
+                                                        placeholder="products/{productId}/detail/{blockId}/0.webp 또는 public url"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <div className="mb-1 text-xs font-semibold text-neutral-400">caption(선택)</div>
+                                                    <input
+                                                        value={String(img?.caption ?? "")}
+                                                        onChange={(e) => updateImage(idx, ii, { caption: e.target.value })}
+                                                        className="input w-full"
+                                                        placeholder="예: 로비 전경"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div className="mt-2 flex justify-end">
+                                                <button type="button" onClick={() => removeImage(idx, ii)} className="text-xs font-bold text-rose-400">
+                                                    이미지 삭제
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="text-[11px] text-neutral-500">
+                                * 지금은 path/url 입력 방식(업로드는 다음 단계). DB에는 그대로 jsonb로 저장됩니다.
+                            </div>
+                        </div>
+                    ) : null}
+                </div>
+            ))}
+        </div>
+    );
+}
+

@@ -987,6 +987,70 @@ export default function ProductDetail() {
                                         {product?.description || "(임시) 아직 상품 소개가 없습니다."}
                                     </p>
                                 </div>
+
+                                {/* ✅ 상세 블록 렌더 (detailBlocks) */}
+                                {Array.isArray((product as any)?.detailBlocks) && (product as any).detailBlocks.length > 0 ? (
+                                    <div className="mt-6 space-y-4">
+                                        {(product as any).detailBlocks.map((b: any) => {
+                                            if (!b) return null;
+
+                                            if (b.type === "TITLE") {
+                                                return (
+                                                    <div key={b.id} className="rounded-2xl border border-neutral-200 bg-white p-5">
+                                                        <div className="text-base font-extrabold text-neutral-900">{String(b.text ?? "")}</div>
+                                                    </div>
+                                                );
+                                            }
+
+                                            if (b.type === "TEXT") {
+                                                return (
+                                                    <div key={b.id} className="rounded-2xl border border-neutral-200 bg-white p-5">
+                                                        <p className="whitespace-pre-wrap text-sm leading-6 text-neutral-700">{String(b.text ?? "")}</p>
+                                                    </div>
+                                                );
+                                            }
+
+                                            if (b.type === "IMAGE_SLIDER") {
+                                                const imgs = Array.isArray(b.images) ? b.images : [];
+                                                return (
+                                                    <div key={b.id} className="rounded-2xl border border-neutral-200 bg-white p-5">
+                                                        {b.title ? <div className="text-sm font-extrabold text-neutral-900">{String(b.title)}</div> : null}
+
+                                                        {b.description ? (
+                                                            <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-neutral-600">{String(b.description)}</p>
+                                                        ) : null}
+
+                                                        {imgs.length ? (
+                                                            <div className="mt-4 flex gap-3 overflow-x-auto">
+                                                                {imgs.map((x: any, i: number) => {
+                                                                    const src = String(x?.path ?? "").trim(); // 일단 path/url 그대로 사용
+                                                                    if (!src) return null;
+                                                                    return (
+                                                                        <div key={`${b.id}-${i}`} className="shrink-0 w-[280px]">
+                                                                            <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white">
+                                                                                <div className="aspect-[16/10] w-full">
+                                                                                    <img src={src} alt={x?.caption ?? ""} className="h-full w-full object-cover" />
+                                                                                </div>
+                                                                            </div>
+
+                                                                            {x?.caption ? (
+                                                                                <div className="mt-2 text-xs font-semibold text-neutral-600">{String(x.caption)}</div>
+                                                                            ) : null}
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        ) : (
+                                                            <div className="mt-3 text-sm text-neutral-400">등록된 이미지가 없습니다.</div>
+                                                        )}
+                                                    </div>
+                                                );
+                                            }
+
+                                            return null;
+                                        })}
+                                    </div>
+                                ) : null}
                             </section>
 
                             {/* ✅ 여행자 보험 */}
