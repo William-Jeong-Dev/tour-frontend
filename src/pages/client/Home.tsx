@@ -15,6 +15,8 @@ import { getPublicSiteAssetUrl } from "../../api/siteSettings.api";
 import SitePopup from "../../components/popup/SitePopup";
 import { listActivePopupsForClient, type PopupRow } from "../../api/popups.client";
 
+import { useHomeOnsenSection, useHomeSpecialSection } from "../../hooks/useHomeSections";
+
 type Card = {
     id: string;
     title: string;
@@ -89,14 +91,49 @@ function ProductCard({ item }: { item: Card }) {
 export default function Home() {
     const productsQuery = useProducts();
 
+    const specialCfgQ = useHomeSpecialSection();
+    const onsenCfgQ = useHomeOnsenSection();
+
+    const specialCfg = specialCfgQ.data;
+    const onsenCfg = onsenCfgQ.data;
+
     const published = useMemo(() => {
         const items = productsQuery.data ?? [];
         return items.filter((p) => p.status === "PUBLISHED");
     }, [productsQuery.data]);
 
     const homeCards = useMemo(() => published.map(toCard), [published]);
-    const specialCards = homeCards.slice(0, 4);
-    const onsenTopCards = homeCards.slice(4, 8).length ? homeCards.slice(4, 8) : homeCards.slice(0, 4);
+
+    const byId = useMemo(() => {
+        const m = new Map<string, Card>();
+        homeCards.forEach((c) => m.set(c.id, c));
+        return m;
+    }, [homeCards]);
+
+    const specialCards = useMemo(() => {
+        const fallback = homeCards.slice(0, 4);
+        if (!specialCfg) return fallback;
+        if (!specialCfg.productIds?.length) return fallback;
+
+        // 지정한 상품 우선 (PUBLISHED만)
+        const picked = specialCfg.productIds
+            .map((id) => byId.get(id))
+            .filter(Boolean) as Card[];
+
+        return picked.length ? picked.slice(0, 4) : fallback;
+    }, [homeCards, specialCfg, byId]);
+
+    const onsenTopCards = useMemo(() => {
+        const fallback = homeCards.slice(4, 8).length ? homeCards.slice(4, 8) : homeCards.slice(0, 4);
+        if (!onsenCfg) return fallback;
+        if (!onsenCfg.productIds?.length) return fallback;
+
+        const picked = onsenCfg.productIds
+            .map((id) => byId.get(id))
+            .filter(Boolean) as Card[];
+
+        return picked.length ? picked.slice(0, 4) : fallback;
+    }, [homeCards, onsenCfg, byId]);
 
     // ✅ HERO 슬라이드: DB에서 읽고 없으면 defaultHeroSlides 사용
     const heroQuery = useHeroSlides(defaultHeroSlides);
@@ -315,60 +352,66 @@ export default function Home() {
             {/* ✅ HERO 아래부터는 Container */}
             <Container>
                 {/* SPECIAL */}
-                <section className="py-7 md:py-9">
-                    <SectionTitle left="특가 🔥 얼리버드 골프" />
+                {specialCfg?.enabled !== false ? (
+                    <section className="py-7 md:py-9">
+                        <SectionTitle left={specialCfg?.title || "🚩대표가 직접 고른 가성비 일정"} />
 
-                    {productsQuery.isLoading ? (
-                        <div className="mt-6 rounded-2xl border border-neutral-200 bg-white p-6 text-sm text-neutral-500">
-                            상품 불러오는 중...
-                        </div>
-                    ) : specialCards.length === 0 ? (
-                        <div className="mt-6 rounded-2xl border border-dashed border-neutral-300 bg-white p-6 text-sm text-neutral-500">
-                            아직 노출(PUBLISHED) 상품이 없습니다. 어드민에서 상품을 등록/노출로 바꿔주세요.
-                        </div>
-                    ) : (
-                        <>
-                            <div className="mt-6 hidden md:grid md:grid-cols-4 md:gap-6">
-                                {specialCards.map((p) => (
-                                    <ProductCard key={p.id} item={p} />
-                                ))}
+                        {productsQuery.isLoading ? (
+                            <div className="mt-6 rounded-2xl border border-neutral-200 bg-white p-6 text-sm text-neutral-500">
+                                상품 불러오는 중...
                             </div>
+                        ) : specialCards.length === 0 ? (
+                            <div className="mt-6 rounded-2xl border border-dashed border-neutral-300 bg-white p-6 text-sm text-neutral-500">
+                                아직 노출(PUBLISHED) 상품이 없습니다. 어드민에서 상품을 등록/노출로 바꿔주세요.
+                            </div>
+                        ) : (
+                            <>
+                                <div className="mt-6 hidden md:grid md:grid-cols-4 md:gap-6">
+                                    {specialCards.map((p) => (
+                                        <ProductCard key={p.id} item={p} />
+                                    ))}
+                                </div>
 
-                            <div className="mt-6 md:hidden">
-                                <MobileSnapCarousel items={specialCards} renderItem={(p) => <ProductCard item={p} />} />
-                            </div>
-                        </>
-                    )}
-                </section>
+                                <div className="mt-6 md:hidden">
+                                    <MobileSnapCarousel items={specialCards} renderItem={(p) => <ProductCard item={p} />} />
+                                </div>
+                            </>
+                        )}
+                    </section>
+                ) : null}
 
                 {/* ONSEN */}
-                <section className="py-7 md:py-9">
-                    <div className="flex items-center justify-center gap-2">
-                        <h3 className="text-lg md:text-xl font-extrabold text-neutral-900">골프여행, 고르기 어려울 땐 🤔 ?</h3>
-                    </div>
+                {onsenCfg?.enabled !== false ? (
+                    <section className="py-7 md:py-9">
+                        <div className="flex items-center justify-center gap-2">
+                            <h3 className="text-lg md:text-xl font-extrabold text-neutral-900">
+                                {onsenCfg?.title || "골프여행, 고민하지 마세요"}
+                            </h3>
+                        </div>
 
-                    <div className="mt-3 flex items-center justify-center gap-2">
-                        {["오키나와", "시내호텔", "가성비", "프리미엄"].map((t) => (
-                            <button
-                                key={t}
-                                type="button"
-                                className="rounded-full border border-neutral-200 bg-white px-3 py-1 text-sm font-semibold text-neutral-700 hover:bg-neutral-50"
-                            >
-                                {t}
-                            </button>
-                        ))}
-                    </div>
+                        <div className="mt-3 flex items-center justify-center gap-2">
+                            {(onsenCfg?.tags?.length ? onsenCfg.tags : ["특가일정", "2인골프", "온천포함", "시내호텔"]).map((t) => (
+                                <button
+                                    key={t}
+                                    type="button"
+                                    className="rounded-full border border-neutral-200 bg-white px-3 py-1 text-sm font-semibold text-neutral-700 hover:bg-neutral-50"
+                                >
+                                    {t}
+                                </button>
+                            ))}
+                        </div>
 
-                    <div className="mt-8 hidden md:grid md:grid-cols-4 md:gap-6">
-                        {onsenTopCards.map((p) => (
-                            <ProductCard key={p.id} item={p} />
-                        ))}
-                    </div>
+                        <div className="mt-8 hidden md:grid md:grid-cols-4 md:gap-6">
+                            {onsenTopCards.map((p) => (
+                                <ProductCard key={p.id} item={p} />
+                            ))}
+                        </div>
 
-                    <div className="mt-8 md:hidden">
-                        <MobileSnapCarousel items={onsenTopCards} renderItem={(p) => <ProductCard item={p} />} />
-                    </div>
-                </section>
+                        <div className="mt-8 md:hidden">
+                            <MobileSnapCarousel items={onsenTopCards} renderItem={(p) => <ProductCard item={p} />} />
+                        </div>
+                    </section>
+                ) : null}
 
                 {/* BIG FEATURE */}
                 <section className="py-8 md:py-10 pb-12 md:pb-16">

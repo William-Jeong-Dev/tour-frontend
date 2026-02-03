@@ -554,8 +554,8 @@ export default function ProductDetail() {
                                     ["select", "상품선택"],
                                     ["itinerary", "주요 여행일정"],
                                     ["summary", "요약정보"],
-                                    ["info", "상품정보"],
                                     ["schedule", "여행일정"],
+                                    ["info", "상품정보"],
                                     ["policy", "약관/환불규정"],
                                 ] as Array<[TabKey, string]>
                             ).map(([key, label]) => (
@@ -897,24 +897,6 @@ export default function ProductDetail() {
                                 </div>
                             </section>
 
-                            {/* 상품정보 */}
-                            <section
-                                id="info"
-                                ref={(el) => {
-                                    refs.current.info = el;
-                                }}
-                                className="scroll-mt-36"
-                            >
-                                <h2 className="text-lg font-extrabold text-neutral-900">상품정보</h2>
-
-                                <div className="mt-4 rounded-2xl border border-neutral-200 bg-white p-5">
-                                    <div className="text-sm font-extrabold text-neutral-900">상품 소개</div>
-                                    <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-neutral-600">
-                                        {product?.description || "(임시) 아직 상품 소개가 없습니다."}
-                                    </p>
-                                </div>
-                            </section>
-
                             {/* 여행일정 */}
                             <section
                                 id="schedule"
@@ -974,6 +956,24 @@ export default function ProductDetail() {
                                             등록된 일정표가 없습니다.
                                         </div>
                                     )}
+                                </div>
+                            </section>
+
+                            {/* 상품정보 */}
+                            <section
+                                id="info"
+                                ref={(el) => {
+                                    refs.current.info = el;
+                                }}
+                                className="scroll-mt-36"
+                            >
+                                <h2 className="text-lg font-extrabold text-neutral-900">상품정보</h2>
+
+                                <div className="mt-4 rounded-2xl border border-neutral-200 bg-white p-5">
+                                    <div className="text-sm font-extrabold text-neutral-900">상품 소개</div>
+                                    <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-neutral-600">
+                                        {product?.description || "(임시) 아직 상품 소개가 없습니다."}
+                                    </p>
                                 </div>
                             </section>
 

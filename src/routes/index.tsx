@@ -46,6 +46,8 @@ import AdminThumbnailCleanupPage from "../pages/admin/AdminThumbnailCleanupPage"
 
 import EstimatePage from "../pages/client/EstimatePage";
 
+import AdminHomeSections from "../pages/admin/AdminHomeSections";
+
 
 function RouteError() {
     const err = useRouteError() as any;
@@ -105,6 +107,8 @@ export const router = createBrowserRouter([
 
             // ✅ HERO 슬라이드 관리 라우트
             { path: "hero-slides", element: <HeroSlideAdminPage /> },
+
+            { path: "home-sections", element: <AdminHomeSections /> },
 
             { path: "settings/branding", element: <AdminBranding /> },
 
