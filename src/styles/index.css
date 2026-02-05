@@ -79,4 +79,14 @@ body {
         opacity: 0.6;
         cursor: not-allowed;
     }
+
+    /* 가로/세로 스크롤바 숨김 (스크롤은 유지) */
+    .no-scrollbar {
+        -ms-overflow-style: none; /* IE, Edge */
+        scrollbar-width: none; /* Firefox */
+    }
+    .no-scrollbar::-webkit-scrollbar {
+        display: none; /* Chrome, Safari */
+    }
+
 }

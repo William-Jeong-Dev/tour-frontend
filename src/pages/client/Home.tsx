@@ -1,6 +1,5 @@
 import { Link } from "react-router-dom";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 
 import Container from "../../components/common/Container";
 import MobileSnapCarousel from "../../components/common/MobileSnapCarousel";
@@ -16,6 +15,8 @@ import SitePopup from "../../components/popup/SitePopup";
 import { listActivePopupsForClient, type PopupRow } from "../../api/popups.client";
 
 import { useHomeOnsenSection, useHomeSpecialSection } from "../../hooks/useHomeSections";
+
+import { DesktopCarousel } from "../../components/common/DesktopCarousel";
 
 type Card = {
     id: string;
@@ -79,10 +80,15 @@ function ProductCard({ item }: { item: Card }) {
                     ) : null}
                 </div>
 
-                <div className="p-4">
-                    <div className="line-clamp-2 text-base font-semibold text-neutral-900">{item.title}</div>
-                    <div className="mt-2 text-base font-extrabold text-neutral-900">{item.price}</div>
+                <div className="p-4 flex min-h-[86px] min-w-0 flex-col justify-between">
+                    <div className="min-w-0 text-base font-semibold text-neutral-900 overflow-hidden text-ellipsis whitespace-nowrap">
+                        {item.title}
+                    </div>
+                    <div className="mt-2 text-base font-extrabold text-neutral-900">
+                        {item.price}
+                    </div>
                 </div>
+
             </article>
         </Link>
     );
@@ -111,20 +117,19 @@ export default function Home() {
     }, [homeCards]);
 
     const specialCards = useMemo(() => {
-        const fallback = homeCards.slice(0, 4);
+        const fallback = homeCards;
+
         if (!specialCfg) return fallback;
         if (!specialCfg.productIds?.length) return fallback;
 
-        // 지정한 상품 우선 (PUBLISHED만)
-        const picked = specialCfg.productIds
+        return specialCfg.productIds
             .map((id) => byId.get(id))
             .filter(Boolean) as Card[];
-
-        return picked.length ? picked.slice(0, 4) : fallback;
     }, [homeCards, specialCfg, byId]);
 
     const onsenTopCards = useMemo(() => {
-        const fallback = homeCards.slice(4, 8).length ? homeCards.slice(4, 8) : homeCards.slice(0, 4);
+        const fallback = homeCards.slice(4, 12).length ? homeCards.slice(4, 12) : homeCards.slice(0, 8);
+
         if (!onsenCfg) return fallback;
         if (!onsenCfg.productIds?.length) return fallback;
 
@@ -132,7 +137,7 @@ export default function Home() {
             .map((id) => byId.get(id))
             .filter(Boolean) as Card[];
 
-        return picked.length ? picked.slice(0, 4) : fallback;
+        return picked.length ? picked : fallback;
     }, [homeCards, onsenCfg, byId]);
 
     // ✅ HERO 슬라이드: DB에서 읽고 없으면 defaultHeroSlides 사용
@@ -364,14 +369,35 @@ export default function Home() {
                             <div className="mt-6 rounded-2xl border border-dashed border-neutral-300 bg-white p-6 text-sm text-neutral-500">
                                 아직 노출(PUBLISHED) 상품이 없습니다. 어드민에서 상품을 등록/노출로 바꿔주세요.
                             </div>
-                        ) : (
+                        ) : specialCards.length <= 4 ? (
                             <>
+                                {/* DESKTOP GRID */}
                                 <div className="mt-6 hidden md:grid md:grid-cols-4 md:gap-6">
                                     {specialCards.map((p) => (
                                         <ProductCard key={p.id} item={p} />
                                     ))}
                                 </div>
 
+                                {/* MOBILE SLIDE */}
+                                <div className="mt-6 md:hidden">
+                                    <MobileSnapCarousel items={specialCards} renderItem={(p) => <ProductCard item={p} />} />
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                {/* DESKTOP: ARROW CAROUSEL (크기 고정) */}
+                                <div className="mt-6 hidden md:block">
+                                    <DesktopCarousel
+                                        items={specialCards}
+                                        renderItem={(p) => (
+                                            <div className="w-[260px] shrink-0 md:w-[280px]">
+                                                <ProductCard item={p} />
+                                            </div>
+                                        )}
+                                    />
+                                </div>
+
+                                {/* MOBILE: 기존 스냅 캐러셀 */}
                                 <div className="mt-6 md:hidden">
                                     <MobileSnapCarousel items={specialCards} renderItem={(p) => <ProductCard item={p} />} />
                                 </div>
@@ -380,6 +406,7 @@ export default function Home() {
                     </section>
                 ) : null}
 
+                {/* ONSEN */}
                 {/* ONSEN */}
                 {onsenCfg?.enabled !== false ? (
                     <section className="py-7 md:py-9">
@@ -401,15 +428,40 @@ export default function Home() {
                             ))}
                         </div>
 
-                        <div className="mt-8 hidden md:grid md:grid-cols-4 md:gap-6">
-                            {onsenTopCards.map((p) => (
-                                <ProductCard key={p.id} item={p} />
-                            ))}
-                        </div>
+                        {onsenTopCards.length <= 4 ? (
+                            <>
+                                {/* DESKTOP GRID */}
+                                <div className="mt-8 hidden md:grid md:grid-cols-4 md:gap-6">
+                                    {onsenTopCards.map((p) => (
+                                        <ProductCard key={p.id} item={p} />
+                                    ))}
+                                </div>
 
-                        <div className="mt-8 md:hidden">
-                            <MobileSnapCarousel items={onsenTopCards} renderItem={(p) => <ProductCard item={p} />} />
-                        </div>
+                                {/* MOBILE SLIDE */}
+                                <div className="mt-8 md:hidden">
+                                    <MobileSnapCarousel items={onsenTopCards} renderItem={(p) => <ProductCard item={p} />} />
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                {/* DESKTOP SLIDE */}
+                                <div className="mt-8 hidden md:block">
+                                    <DesktopCarousel
+                                        items={onsenTopCards}
+                                        renderItem={(p) => (
+                                            <div className="w-[260px] shrink-0 md:w-[280px] h-full">
+                                                <ProductCard item={p} />
+                                            </div>
+                                        )}
+                                    />
+                                </div>
+
+                                {/* MOBILE SLIDE */}
+                                <div className="mt-8 md:hidden">
+                                    <MobileSnapCarousel items={onsenTopCards} renderItem={(p) => <ProductCard item={p} />} />
+                                </div>
+                            </>
+                        )}
                     </section>
                 ) : null}
 
