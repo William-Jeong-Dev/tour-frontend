@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { deleteProduct, listPublishedProducts } from "../../api/products.api";
+import { deleteProduct, listProducts } from "../../api/products.api";
 
 function fmtUpdatedAt(iso: string) {
     try {
@@ -21,13 +21,30 @@ export default function AdminProductList() {
     const [q, setQ] = useState("");
     const [region, setRegion] = useState("전체");
 
+    const [status, setStatus] = useState<"전체" | "PUBLISHED" | "DRAFT" | "HIDDEN">("전체");
+
     const query = useQuery({
-        queryKey: ["admin-products", { q, region }],
-        queryFn: () => listPublishedProducts({ q, region }),
+        queryKey: ["admin-products", { q, region, status }],
+        queryFn: () =>
+            listProducts({
+                q,
+                region,
+                status: status === "전체" ? undefined : status,
+            }),
     });
 
     const items = query.data ?? [];
     const regions = useMemo(() => ["전체", "일본", "제주", "동남아", "유럽"], []);
+
+    const statusOptions = useMemo(
+        () => [
+            { value: "전체", label: "전체" },
+            { value: "PUBLISHED", label: "노출" },
+            { value: "DRAFT", label: "임시" },
+            { value: "HIDDEN", label: "숨김" },
+        ] as const,
+        []
+    );
 
     const onDelete = async (id: string) => {
         if (!confirm("정말 삭제할까요?")) return;
@@ -52,8 +69,8 @@ export default function AdminProductList() {
             </div>
 
             {/* Filters */}
-            <div className="mt-6 grid gap-3 rounded-2xl border border-neutral-900 bg-neutral-950/20 p-4 md:grid-cols-[1fr_180px]">
-                <div>
+            <div className="mt-6 grid gap-3 rounded-2xl border border-neutral-900 bg-neutral-950/20 p-4 md:grid-cols-[1fr_180px_180px]">
+            <div>
                     <div className="mb-2 text-sm text-neutral-300">검색</div>
                     <input
                         value={q}
@@ -61,6 +78,20 @@ export default function AdminProductList() {
                         placeholder="상품명/부제 검색"
                         className="w-full rounded-xl border border-neutral-800 bg-neutral-950/40 px-4 py-3 text-sm outline-none"
                     />
+                </div>
+                <div>
+                    <div className="mb-2 text-sm text-neutral-300">상태</div>
+                    <select
+                        value={status}
+                        onChange={(e) => setStatus(e.target.value as any)}
+                        className="w-full rounded-xl border border-neutral-800 bg-neutral-950/40 px-4 py-3 text-sm outline-none"
+                    >
+                        {statusOptions.map((s) => (
+                            <option key={s.value} value={s.value}>
+                                {s.label}
+                            </option>
+                        ))}
+                    </select>
                 </div>
                 <div>
                     <div className="mb-2 text-sm text-neutral-300">지역</div>
