@@ -30,6 +30,7 @@ export default function EstimatePage() {
         name: "",
         phone: "",
         depart_date: "",
+        return_date: "",
         people_count: 1,
         region: "",
         budget: "",
@@ -40,6 +41,7 @@ export default function EstimatePage() {
         if (!form.name.trim()) return false;
         if (!form.phone.trim()) return false;
         if (!form.depart_date.trim()) return false;
+        if (!form.return_date?.trim()) return false;
         if (!form.people_count || form.people_count < 1) return false;
         if (!callTime.trim()) return false;
         return true;
@@ -108,6 +110,18 @@ export default function EstimatePage() {
                                         onChange={(e) =>
                                             setForm((p) => ({ ...p, depart_date: e.target.value }))
                                         }
+                                    />
+                                </div>
+
+                                {/* 리턴일 */}
+                                <div>
+                                    <label className="text-sm font-semibold">리턴일 (필수)</label>
+                                    <input
+                                        type="date"
+                                        min={form.depart_date || undefined}
+                                        value={form.return_date || ""}
+                                        onChange={(e) => setForm((prev) => ({ ...prev, return_date: e.target.value }))}
+                                        className="mt-2 w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-900 outline-none focus:border-neutral-300 focus:ring-0"
                                     />
                                 </div>
 

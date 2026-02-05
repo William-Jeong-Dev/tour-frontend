@@ -5,6 +5,7 @@ export type BookingStatus = "REQUESTED" | "CONFIRMED" | "CANCELLED" | "COMPLETED
 export type CreateBookingPayload = {
     product_id: string;
     travel_date?: string | null;   // "YYYY-MM-DD"
+    // return_date?: string | null;    // "YYYY-MM-DD"
     people_count: number;
     contact_name?: string | null;
     contact_phone?: string | null;
@@ -30,9 +31,10 @@ export async function getMyBookings(user_id: string) {
     const { data, error } = await supabase
         .from("bookings")
         .select(`
-      id, status, travel_date, people_count, created_at,
-      products:product_id ( id, title, region, thumbnail_path, thumbnail_url )
-    `)
+          id, status, travel_date, return_date, people_count, created_at,
+          products:product_id ( id, title, region, thumbnail_path, thumbnail_url )
+        `)
+
         .eq("user_id", user_id)
         .neq("status", "CANCELLED")          // 취소건 제외
         .order("created_at", { ascending: false });
@@ -53,14 +55,12 @@ export async function getAdminBookings(
     // ✅ count: exact 로 totalCount 받기
     let q = supabase
         .from("bookings")
-        .select(
-            `
-      id,user_id,product_id,status,travel_date,people_count,memo_user,memo_admin,created_at,updated_at,
-      products:products(id,title,region,thumbnail_path,thumbnail_url),
-      profiles:profiles(user_id,email,name,phone)
-    `,
-            { count: "exact" }
-        )
+        .select(`
+          id,user_id,product_id,status,travel_date,return_date,people_count,memo_user,memo_admin,created_at,updated_at,
+          products:products(id,title,region,thumbnail_path,thumbnail_url),
+          profiles:profiles(user_id,email,name,phone)
+        `, { count: "exact" })
+
         .order("created_at", { ascending: false })
         .range(offset, offset + limit - 1);
 
