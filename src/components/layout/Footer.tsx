@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+
 export default function Footer() {
     return (
         <footer id="site-footer" className="mt-14 sm:mt-16 bg-neutral-50">
@@ -12,14 +14,19 @@ export default function Footer() {
                             평일 09:00 ~ 18:00 · 업무시간 외 문의는 상담 채널로 남겨주세요.
                         </div>
                     </div>
-
                     <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-                        <button className="w-full sm:w-auto rounded-lg bg-yellow-400 px-4 py-2 text-base font-bold text-neutral-900 hover:bg-yellow-300">
+                        <Link
+                            to="/estimate"
+                            className="w-full sm:w-auto rounded-lg bg-yellow-400 px-4 py-2 text-base font-bold text-neutral-900 hover:bg-yellow-300 text-center"
+                        >
                             1:1 맞춤견적
-                        </button>
-                        <button className="w-full sm:w-auto rounded-lg border border-neutral-300 bg-white px-4 py-2 text-base font-semibold hover:bg-neutral-100">
+                        </Link>
+                        <Link
+                            to="/faq"
+                            className="w-full sm:w-auto rounded-lg border border-neutral-300 bg-white px-4 py-2 text-base font-semibold hover:bg-neutral-100 text-center"
+                        >
                             FAQ/문의하기
-                        </button>
+                        </Link>
                     </div>
                 </div>
             </div>
