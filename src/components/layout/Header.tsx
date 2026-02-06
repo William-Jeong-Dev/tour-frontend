@@ -220,7 +220,7 @@ export default function Header() {
                             "flex items-center justify-center",
                             "w-auto",
                             "md:absolute md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2",
-                            "md:pointer-events-auto pointer-events-none",
+                            "pointer-events-auto",
                         ].join(" ")}
                     >
                         {logoUrl ? (
@@ -398,7 +398,7 @@ export default function Header() {
                             <button
                                 type="button"
                                 className="whitespace-nowrap rounded-full bg-yellow-400 px-4 py-2 text-sm font-extrabold text-neutral-900 hover:bg-yellow-300"
-                                onClick={() => navigate("/support")}
+                                onClick={() => navigate("/estimate")}
                             >
                                 1:1 맞춤견적
                             </button>
