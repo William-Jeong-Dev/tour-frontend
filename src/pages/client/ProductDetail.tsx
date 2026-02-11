@@ -920,7 +920,7 @@ export default function ProductDetail() {
                                     {(product?.itinerary ?? []).length ? (
                                         <div className="rounded-2xl border border-neutral-200 bg-white p-5">
                                             <div className="overflow-x-auto rounded-2xl border border-neutral-200">
-                                                <table className="min-w-[700px] w-full text-left text-xs">
+                                                <table className="min-w-[700px] w-full text-left text-sm">
                                                     <thead className="bg-neutral-50 text-neutral-600">
                                                     <tr className="divide-x divide-neutral-200">
                                                         <th className="px-3 py-2 w-[80px]">일차</th>
