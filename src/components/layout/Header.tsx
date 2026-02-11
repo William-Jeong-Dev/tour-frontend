@@ -54,6 +54,7 @@ export default function Header() {
 
     const [activeTheme, setActiveTheme] = useState<string | null>(null);
     const [scrolled, setScrolled] = useState(false);
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
     useEffect(() => {
         const onScroll = () => setScrolled(window.scrollY > 4);
@@ -88,97 +89,198 @@ export default function Header() {
         >
             <div className="mx-auto w-full max-w-[1400px] px-4 md:px-6">
                 {/* =======================
-            (모바일) 1줄: 상담/공지/로그인 + SNS
+            (모바일) 로고 + 햄버거 메뉴
            ======================= */}
-                <div className="relative z-30 flex items-center justify-between pt-3 pb-2 md:hidden">
-                    {/* 좌측: 상담/공지 */}
-                    <div className="flex items-center gap-2">
-                        <button
-                            type="button"
-                            onClick={() => navigate("/support")}
-                            className="whitespace-nowrap rounded-full bg-yellow-400 px-3 py-2 text-xs font-extrabold text-neutral-900 hover:bg-yellow-300"
-                        >
-                            상담
-                        </button>
-
-                        <button
-                            type="button"
-                            onClick={() => navigate("/notices")}
-                            className="whitespace-nowrap rounded-full bg-white/10 px-3 py-2 text-xs font-bold text-white hover:bg-white/15"
-                        >
-                            공지
-                        </button>
-                    </div>
-
-                    {/* 우측: SNS + 로그인/마이 */}
-                    <div className="flex items-center gap-2">
-                        {/* Kakao (링크 생기면 href만 교체) */}
-                        <a
-                            href="#"
-                            onClick={(e) => e.preventDefault()}
-                            aria-label="카카오톡"
-                            title="카카오톡"
-                            className="inline-flex h-9 w-9 items-center justify-center"
-                        >
+                <div className="relative z-30 flex items-center justify-between py-3 md:hidden">
+                    {/* 로고 */}
+                    <Link to="/" aria-label="홈으로" className="flex items-center">
+                        {logoUrl ? (
                             <img
-                                src={KakaoLogo}
-                                alt="KakaoTalk"
-                                className="h-6 w-6 object-contain opacity-95"
+                                src={logoUrl}
+                                alt="청원여행사"
+                                className="h-10 w-auto max-w-[180px] object-contain"
                                 loading="eager"
                             />
-                        </a>
-
-                        {/* Instagram ✅ */}
-                        <a
-                            href="https://www.instagram.com/chungwon.tour/"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            aria-label="인스타그램"
-                            title="인스타그램"
-                            className="inline-flex h-9 w-9 items-center justify-center"
-                        >
-                            <img
-                                src={InstaIcon}
-                                alt="Instagram"
-                                className="h-6 w-6 object-contain opacity-95"
-                                loading="eager"
-                            />
-                        </a>
-
-                        {/* Blog ✅ */}
-                        <a
-                            href="https://blog.naver.com/chungwon87"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            aria-label="블로그"
-                            title="블로그"
-                            className="inline-flex h-9 w-9 items-center justify-center"
-                        >
-                            <img
-                                src={BlogIcon}
-                                alt="Blog"
-                                className="h-6 w-6 object-contain opacity-95"
-                                loading="eager"
-                            />
-                        </a>
-
-                        {session ? (
-                            <Link
-                                to="/me"
-                                className="whitespace-nowrap rounded-full bg-white/10 px-3 py-2 text-xs font-bold text-white hover:bg-white/15"
-                            >
-                                마이
-                            </Link>
                         ) : (
-                            <Link
-                                to="/login"
-                                className="whitespace-nowrap rounded-full bg-white/10 px-3 py-2 text-xs font-bold text-white hover:bg-white/15"
-                            >
-                                로그인
-                            </Link>
+                            <div className="leading-tight text-white">
+                                <div className="text-base font-extrabold">청원여행사</div>
+                            </div>
                         )}
-                    </div>
+                    </Link>
+
+                    {/* 햄버거 메뉴 버튼 */}
+                    <button
+                        type="button"
+                        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                        className="flex h-10 w-10 items-center justify-center rounded-lg text-white hover:bg-white/10"
+                        aria-label="메뉴 열기"
+                    >
+                        {mobileMenuOpen ? (
+                            <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        ) : (
+                            <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                            </svg>
+                        )}
+                    </button>
                 </div>
+
+                {/* =======================
+            (모바일) 펼쳐지는 메뉴
+           ======================= */}
+                {mobileMenuOpen && (
+                    <div className="md:hidden pb-4">
+                        {/* 상담/공지/로그인 버튼 */}
+                        <div className="flex items-center justify-between border-b border-white/20 pb-3 mb-3">
+                            <div className="flex items-center gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        navigate("/support");
+                                        setMobileMenuOpen(false);
+                                    }}
+                                    className="whitespace-nowrap rounded-full bg-yellow-400 px-3 py-2 text-xs font-extrabold text-neutral-900 hover:bg-yellow-300"
+                                >
+                                    상담
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        navigate("/notices");
+                                        setMobileMenuOpen(false);
+                                    }}
+                                    className="whitespace-nowrap rounded-full bg-white/10 px-3 py-2 text-xs font-bold text-white hover:bg-white/15"
+                                >
+                                    공지
+                                </button>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                                <a
+                                    href="#"
+                                    onClick={(e) => e.preventDefault()}
+                                    aria-label="카카오톡"
+                                    className="inline-flex h-9 w-9 items-center justify-center"
+                                >
+                                    <img src={KakaoLogo} alt="KakaoTalk" className="h-6 w-6 object-contain opacity-95" loading="eager" />
+                                </a>
+                                <a
+                                    href="https://www.instagram.com/chungwon.tour/"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    aria-label="인스타그램"
+                                    className="inline-flex h-9 w-9 items-center justify-center"
+                                >
+                                    <img src={InstaIcon} alt="Instagram" className="h-6 w-6 object-contain opacity-95" loading="eager" />
+                                </a>
+                                <a
+                                    href="https://blog.naver.com/chungwon87"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    aria-label="블로그"
+                                    className="inline-flex h-9 w-9 items-center justify-center"
+                                >
+                                    <img src={BlogIcon} alt="Blog" className="h-6 w-6 object-contain opacity-95" loading="eager" />
+                                </a>
+                                {session ? (
+                                    <Link
+                                        to="/me"
+                                        onClick={() => setMobileMenuOpen(false)}
+                                        className="whitespace-nowrap rounded-full bg-white/10 px-3 py-2 text-xs font-bold text-white hover:bg-white/15"
+                                    >
+                                        마이
+                                    </Link>
+                                ) : (
+                                    <Link
+                                        to="/login"
+                                        onClick={() => setMobileMenuOpen(false)}
+                                        className="whitespace-nowrap rounded-full bg-white/10 px-3 py-2 text-xs font-bold text-white hover:bg-white/15"
+                                    >
+                                        로그인
+                                    </Link>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* 테마 카테고리 */}
+                        <div className="flex flex-wrap gap-2 mb-3">
+                            {themesQuery.isLoading ? (
+                                <div className="text-white/80 text-sm">테마 불러오는 중...</div>
+                            ) : themes.length === 0 ? (
+                                <div className="text-white/80 text-sm">활성화된 테마가 없습니다.</div>
+                            ) : (
+                                themes.map((t: ThemeRow) => {
+                                    const active = activeTheme === t.slug;
+                                    return (
+                                        <button
+                                            key={t.id}
+                                            type="button"
+                                            onClick={() => {
+                                                onClickTheme(t.slug);
+                                                setMobileMenuOpen(false);
+                                            }}
+                                            className={[
+                                                "shrink-0 rounded-full transition px-4 py-2 text-sm",
+                                                active ? "bg-white text-[#2E97F2]" : "text-white/95 hover:bg-white/10 bg-white/5",
+                                            ].join(" ")}
+                                        >
+                                            {t.name}
+                                        </button>
+                                    );
+                                })
+                            )}
+                        </div>
+
+                        {/* 검색 */}
+                        <div className="flex items-center gap-2 rounded-full bg-white/15 px-4 py-2 text-white/90 mb-3">
+                            <span className="text-sm">🔍</span>
+                            <input
+                                value={q}
+                                onChange={(e) => setQ(e.target.value)}
+                                className="min-w-0 flex-1 bg-transparent text-sm placeholder:text-white/70 focus:outline-none"
+                                placeholder="검색어를 입력하세요"
+                                inputMode="search"
+                                enterKeyHint="search"
+                                onKeyDown={(e) => {
+                                    if (e.key === "Enter") {
+                                        goSearch();
+                                        setMobileMenuOpen(false);
+                                    }
+                                }}
+                            />
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    goSearch();
+                                    setMobileMenuOpen(false);
+                                }}
+                                disabled={disabledSearch}
+                                aria-label="검색"
+                                className={[
+                                    "grid h-8 w-8 place-items-center rounded-full",
+                                    "bg-white/20 text-white hover:bg-white/30",
+                                    disabledSearch ? "opacity-50 cursor-not-allowed" : "",
+                                ].join(" ")}
+                            >
+                                🔎
+                            </button>
+                        </div>
+
+                        {/* 1:1 맞춤견적 버튼 */}
+                        <button
+                            type="button"
+                            className="w-full rounded-full bg-yellow-400 py-3 text-sm font-extrabold text-neutral-900 hover:bg-yellow-300"
+                            onClick={() => {
+                                navigate("/estimate");
+                                setMobileMenuOpen(false);
+                            }}
+                        >
+                            1:1 맞춤견적
+                        </button>
+                    </div>
+                )}
 
                 {/* =======================
             (PC) 1줄: 로고 위 우측 메뉴 (현재 안 보이던 부분)
@@ -206,9 +308,9 @@ export default function Header() {
                 </div>
 
                 {/* =======================
-            2줄: 로고 영역
+            2줄: 로고 영역 (PC 전용)
            ======================= */}
-                <div className="relative flex items-center justify-between pt-3 pb-6 md:pt-4 md:pb-10">
+                <div className="hidden md:relative md:flex items-center justify-between pt-3 pb-6 md:pt-4 md:pb-10">
                     {/* PC 좌측 스페이서 */}
                     <div className="hidden md:block w-[260px]" aria-hidden="true" />
 
@@ -290,22 +392,20 @@ export default function Header() {
                         </div>
                     </div>
 
-                    <div className="md:hidden w-0" aria-hidden="true" />
                 </div>
             </div>
 
             {/* =======================
-          3줄: 카테고리 + (PC) 검색/상담
-          + (모바일) 검색/버튼 추가 ✅
+          3줄: 카테고리 + 검색/상담 (PC 전용)
          ======================= */}
-            <div>
+            <div className="hidden md:block">
                 <nav className="mx-auto w-full max-w-[1400px] px-4 md:px-6">
-                    <div className="flex flex-col gap-3 pt-4 pb-3 md:flex-row md:items-center md:gap-4 md:pt-5">
+                    <div className="flex flex-row items-center gap-4 pt-5">
                         {/* 카테고리 */}
                         <div
                             className={[
                                 "min-w-0 flex-1 flex items-center gap-3 overflow-x-auto",
-                                "text-[15px] sm:text-base md:text-[16px] font-semibold",
+                                "text-[16px] font-semibold",
                                 "[&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]",
                             ].join(" ")}
                         >
@@ -325,8 +425,7 @@ export default function Header() {
                                             onClick={() => onClickTheme(t.slug)}
                                             className={[
                                                 "shrink-0 rounded-full transition",
-                                                "px-5 py-2.5 md:px-6 md:py-3",
-                                                "text-[15px] sm:text-base md:text-[16px]",
+                                                "px-6 py-3 text-[16px]",
                                                 active ? "bg-white text-[#2E97F2]" : "text-white/95 hover:bg-white/10",
                                             ].join(" ")}
                                         >
@@ -337,8 +436,8 @@ export default function Header() {
                             )}
                         </div>
 
-                        {/* ✅ PC 검색/상담 */}
-                        <div className="hidden md:flex items-center gap-3 shrink-0 ml-auto justify-end">
+                        {/* PC 검색/상담 */}
+                        <div className="flex items-center gap-3 shrink-0 ml-auto justify-end">
                             <div className="flex items-center gap-2 rounded-full bg-white/15 px-4 py-2 text-white/90">
                                 <span className="text-sm">🔍</span>
                                 <input
@@ -357,47 +456,6 @@ export default function Header() {
                             <button
                                 type="button"
                                 className="whitespace-nowrap rounded-full bg-yellow-400 px-5 py-2 text-sm font-extrabold text-neutral-900 hover:bg-yellow-300"
-                                onClick={() => navigate("/estimate")}
-                            >
-                                1:1 맞춤견적
-                            </button>
-                        </div>
-
-                        {/* ✅ 모바일 검색/상담 (버튼 포함) */}
-                        <div className="flex md:hidden items-center gap-2">
-                            <div className="flex flex-1 items-center gap-2 rounded-full bg-white/15 px-4 py-2 text-white/90">
-                                <span className="text-sm">🔍</span>
-                                <input
-                                    value={q}
-                                    onChange={(e) => setQ(e.target.value)}
-                                    className="min-w-0 flex-1 bg-transparent text-sm placeholder:text-white/70 focus:outline-none"
-                                    placeholder="검색어를 입력하세요"
-                                    inputMode="search"
-                                    enterKeyHint="search"
-                                    onKeyDown={(e) => {
-                                        if (e.key === "Enter") goSearch();
-                                    }}
-                                />
-
-                                {/* ✅ 모바일 전용 검색 버튼 */}
-                                <button
-                                    type="button"
-                                    onClick={goSearch}
-                                    disabled={disabledSearch}
-                                    aria-label="검색"
-                                    className={[
-                                        "grid h-8 w-8 place-items-center rounded-full",
-                                        "bg-white/20 text-white hover:bg-white/30 active:scale-[0.98]",
-                                        disabledSearch ? "opacity-50 cursor-not-allowed" : "",
-                                    ].join(" ")}
-                                >
-                                    🔎
-                                </button>
-                            </div>
-
-                            <button
-                                type="button"
-                                className="whitespace-nowrap rounded-full bg-yellow-400 px-4 py-2 text-sm font-extrabold text-neutral-900 hover:bg-yellow-300"
                                 onClick={() => navigate("/estimate")}
                             >
                                 1:1 맞춤견적

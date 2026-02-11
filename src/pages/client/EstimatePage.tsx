@@ -194,19 +194,6 @@ export default function EstimatePage() {
                                     </div>
                                 </div>
 
-                                {/* 통화 가능 시간 (필수) */}
-                                <div className="md:col-span-2">
-                                    <label className="text-sm font-bold text-neutral-800">
-                                        통화 가능 시간 (필수)
-                                    </label>
-                                    <input
-                                        className="mt-2 w-full rounded-xl border border-neutral-200 px-4 py-3 text-sm outline-none focus:border-neutral-400"
-                                        placeholder="예) 오후 6시 이후 / 아무때나"
-                                        value={callTime}
-                                        onChange={(e) => setCallTime(e.target.value)}
-                                    />
-                                </div>
-
                                 {/* 예산 */}
                                 <div className="md:col-span-2">
                                     <label className="text-sm font-bold text-neutral-800">
@@ -219,6 +206,19 @@ export default function EstimatePage() {
                                         onChange={(e) =>
                                             setForm((p) => ({ ...p, budget: e.target.value }))
                                         }
+                                    />
+                                </div>
+
+                                {/* 통화 가능 시간 (필수) */}
+                                <div className="md:col-span-2">
+                                    <label className="text-sm font-bold text-neutral-800">
+                                        통화 가능 시간 (필수)
+                                    </label>
+                                    <input
+                                        className="mt-2 w-full rounded-xl border border-neutral-200 px-4 py-3 text-sm outline-none focus:border-neutral-400"
+                                        placeholder="예) 오후 6시 이후 / 아무때나"
+                                        value={callTime}
+                                        onChange={(e) => setCallTime(e.target.value)}
                                     />
                                 </div>
 
