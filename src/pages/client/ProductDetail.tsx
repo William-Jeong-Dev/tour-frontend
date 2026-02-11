@@ -832,10 +832,7 @@ export default function ProductDetail() {
                                         <div className="rounded-2xl border border-neutral-200 p-4">
                                             <div className="text-sm font-extrabold text-neutral-900">여행기간</div>
                                             <div className="mt-2 text-sm text-neutral-600">
-                                                2026년 01월 28일 (수) ~ 2026년 01월 30일 (금)
-                                            </div>
-                                            <div className="mt-2 inline-flex rounded-full bg-neutral-100 px-3 py-1 text-xs font-bold text-neutral-700">
-                                                2박 3일
+                                                기본 일정은 {product?.nights ?? 0}박 {product?.days ?? 0}일이며, 일정 조정은 상담을 통해 안내드립니다.
                                             </div>
                                         </div>
 
@@ -981,16 +978,9 @@ export default function ProductDetail() {
                             >
                                 <h2 className="text-lg font-extrabold text-neutral-900">상품정보</h2>
 
-                                <div className="mt-4 rounded-2xl border border-neutral-200 bg-white p-5">
-                                    <div className="text-sm font-extrabold text-neutral-900">상품 소개</div>
-                                    <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-neutral-600">
-                                        {product?.description || "(임시) 아직 상품 소개가 없습니다."}
-                                    </p>
-                                </div>
-
-                                {/* ✅ 상세 블록 렌더 (detailBlocks) */}
+                                {/* ✅ 상세 블록 렌더 (detailBlocks) - 사진 먼저 */}
                                 {Array.isArray((product as any)?.detailBlocks) && (product as any).detailBlocks.length > 0 ? (
-                                    <div className="mt-6 space-y-4">
+                                    <div className="mt-4 space-y-4">
                                         {(product as any).detailBlocks.map((b: any) => {
                                             if (!b) return null;
 
@@ -1051,6 +1041,14 @@ export default function ProductDetail() {
                                         })}
                                     </div>
                                 ) : null}
+
+                                {/* 상품 소개 (설명) */}
+                                <div className="mt-6 rounded-2xl border border-neutral-200 bg-white p-5">
+                                    <div className="text-sm font-extrabold text-neutral-900">상품 소개</div>
+                                    <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-neutral-600">
+                                        {product?.description || "(임시) 아직 상품 소개가 없습니다."}
+                                    </p>
+                                </div>
                             </section>
 
                             {/* ✅ 여행자 보험 */}
