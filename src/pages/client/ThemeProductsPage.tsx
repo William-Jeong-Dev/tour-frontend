@@ -180,7 +180,7 @@ export default function ThemeProductsPage() {
                         type="button"
                         onClick={() => goArea(undefined)}
                         className={[
-                            "shrink-0 rounded-full border px-4 py-2 text-sm font-bold transition",
+                            "shrink-0 rounded-full border px-4 py-2 text-sm font-bold transition cursor-pointer",
                             !currentAreaSlug
                                 ? "border-[#2E97F2] bg-[#2E97F2] text-white"
                                 : "border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50",
@@ -197,7 +197,7 @@ export default function ThemeProductsPage() {
                                 type="button"
                                 onClick={() => goArea(a.slug)}
                                 className={[
-                                    "shrink-0 rounded-full border px-4 py-2 text-sm font-bold transition",
+                                    "shrink-0 rounded-full border px-4 py-2 text-sm font-bold transition cursor-pointer",
                                     active
                                         ? "border-[#2E97F2] bg-[#2E97F2] text-white"
                                         : "border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50",
