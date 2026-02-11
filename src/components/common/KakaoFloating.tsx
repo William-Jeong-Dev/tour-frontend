@@ -57,17 +57,16 @@ export default function KakaoFloating() {
                 <img src={KakaoEmoji} alt="Kakao" className="h-9 w-9 object-contain" />
             </a>
 
-            {/* 📞 전화 (동그라미 겹침 방지: 버튼 배경/링 제거, 이미지가 원형이면 그대로 예쁨) */}
-            {/* 📞 전화 - 배경/쉐도우 없이, 크기만 카카오와 동일 */}
+            {/* 📞 전화 - 카카오와 동일한 크기 */}
             <a
                 href="tel:01086888810"
                 aria-label="전화 상담"
-                className="h-24 w-24 flex items-center justify-center active:scale-[0.98] transition"
+                className="h-14 w-14 rounded-full bg-blue-500 shadow-lg hover:brightness-95 active:scale-[0.98] transition flex items-center justify-center"
             >
                 <img
                     src={PhoneIcon}
                     alt="Phone"
-                    className="h-24 w-24 object-contain"
+                    className="h-9 w-9 object-contain"
                     draggable={false}
                 />
             </a>
