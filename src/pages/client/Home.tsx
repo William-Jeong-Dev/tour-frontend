@@ -233,10 +233,10 @@ export default function Home() {
             {/* ✅ HERO */}
             <section className="w-screen bg-white -mt-px overflow-hidden">
                 <div className="grid grid-cols-12 items-stretch gap-0 min-h-[calc(92vh-var(--header-h,140px)+12px)]">
-                    {/* LEFT */}
-                    <div className="col-span-12 md:col-span-5 flex justify-end">
-                        <div className="w-full max-w-[1400px] px-6">
-                            <div className="h-full flex items-center">
+                    {/* LEFT - 모바일에서는 이미지 다음에 표시 */}
+                    <div className="col-span-12 md:col-span-5 flex justify-end order-last md:order-first">
+                        <div className="w-full max-w-[1400px] px-6 py-4 md:py-0">
+                            <div className="md:h-full md:flex md:items-center">
                                 <div className="w-full max-w-[580px] ml-0 md:ml-16 lg:ml-24 xl:ml-28 flex flex-col justify-center items-start text-left">
                                     <h1 className="text-3xl md:text-4xl font-extrabold leading-tight tracking-tight text-[#2E97F2]">
                                         {active.title.split("\n").map((line, idx) => (

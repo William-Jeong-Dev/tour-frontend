@@ -48,8 +48,8 @@ export default function HeroSplit() {
                     </div>
                 </div>
 
-                {/* Right */}
-                <div className="relative min-h-[560px]">
+                {/* Right - 모바일에서 먼저 표시 */}
+                <div className="relative min-h-[300px] lg:min-h-[560px] order-first lg:order-last">
                     <img
                         src="https://images.unsplash.com/photo-1527631746610-bca00a040d60?auto=format&fit=crop&w=2200&q=60"
                         alt=""
