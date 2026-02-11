@@ -1,8 +1,9 @@
 import { Link } from "react-router-dom";
+import MobileBottomNav from "../common/MobileBottomNav";
 
 export default function Footer() {
     return (
-        <footer id="site-footer" className="mt-14 sm:mt-16 bg-neutral-50">
+        <footer id="site-footer" className="mt-14 sm:mt-16 bg-neutral-50 pb-20 md:pb-0">
             {/* 고객센터 바 */}
             <div id="cs" className="border-t border-b border-neutral-200">
                 <div className="mx-auto flex max-w-[1400px] flex-col gap-4 px-4 sm:px-6 py-6 sm:flex-row sm:items-center sm:justify-between">
@@ -78,6 +79,9 @@ export default function Footer() {
                     </div>
                 </div>
             </div>
+
+            {/* 모바일 하단 고정 네비게이션 */}
+            <MobileBottomNav />
         </footer>
     );
 }
