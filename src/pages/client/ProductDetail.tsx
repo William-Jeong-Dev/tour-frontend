@@ -916,50 +916,46 @@ export default function ProductDetail() {
                             >
                                 <h2 className="text-lg font-extrabold text-neutral-900">여행일정</h2>
 
-                                <div className="mt-4 space-y-4">
+                                <div className="mt-4">
                                     {(product?.itinerary ?? []).length ? (
-                                        (product?.itinerary ?? []).map((day) => (
-                                            <div key={day.id} className="rounded-2xl border border-neutral-200 bg-white p-5">
-                                                <div className="flex flex-wrap items-center justify-between gap-3">
-                                                    <div className="text-sm font-extrabold text-neutral-900">
-                                                        {day.title || `${day.dayNo}일차`}
-                                                        {day.dateText ? <span className="ml-2 text-xs text-neutral-500">{day.dateText}</span> : null}
-                                                    </div>
-                                                    <div className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-bold text-neutral-700">
-                                                        {product?.region ?? ""}
-                                                    </div>
-                                                </div>
+                                        <div className="rounded-2xl border border-neutral-200 bg-white p-5">
+                                            <div className="overflow-x-auto rounded-2xl border border-neutral-200">
+                                                <table className="min-w-[700px] w-full text-left text-xs">
+                                                    <thead className="bg-neutral-50 text-neutral-600">
+                                                    <tr className="divide-x divide-neutral-200">
+                                                        <th className="px-3 py-2 w-[80px]">일차</th>
+                                                        <th className="px-3 py-2 w-[110px]">교통편</th>
+                                                        <th className="px-3 py-2 w-[90px]">시간</th>
+                                                        <th className="px-3 py-2">일정</th>
+                                                        <th className="px-3 py-2 w-[160px]">식사</th>
+                                                    </tr>
+                                                    </thead>
+                                                    <tbody className="divide-y divide-neutral-200">
+                                                    {(product?.itinerary ?? []).flatMap((day) =>
+                                                        (day.rows ?? []).map((row, rowIdx) => {
+                                                            const meals = [
+                                                                row.mealMorning && row.mealMorning !== "NONE" ? `조식: ${mealLabel(row.mealMorning)}` : null,
+                                                                row.mealLunch && row.mealLunch !== "NONE" ? `중식: ${mealLabel(row.mealLunch)}` : null,
+                                                                row.mealDinner && row.mealDinner !== "NONE" ? `석식: ${mealLabel(row.mealDinner)}` : null,
+                                                            ].filter(Boolean);
+                                                            const mealText = meals.length > 0 ? meals.join(" / ") : "-";
+                                                            const isFirstRowOfDay = rowIdx === 0;
 
-                                                <div className="mt-4 overflow-x-auto rounded-2xl border border-neutral-200">
-                                                    <table className="min-w-[860px] w-full text-left text-xs">
-                                                        <thead className="bg-neutral-50 text-neutral-600">
-                                                        <tr>
-                                                            <th className="px-3 py-2 w-[140px]">장소</th>
-                                                            <th className="px-3 py-2 w-[110px]">교통</th>
-                                                            <th className="px-3 py-2 w-[90px]">시간</th>
-                                                            <th className="px-3 py-2">내용</th>
-                                                            <th className="px-3 py-2 w-[80px]">조식</th>
-                                                            <th className="px-3 py-2 w-[80px]">중식</th>
-                                                            <th className="px-3 py-2 w-[80px]">석식</th>
-                                                        </tr>
-                                                        </thead>
-                                                        <tbody className="divide-y divide-neutral-200">
-                                                        {(day.rows ?? []).map((row) => (
-                                                            <tr key={row.id} className="align-top text-neutral-800">
-                                                                <td className="px-3 py-2">{row.place || "-"}</td>
-                                                                <td className="px-3 py-2">{row.transport || "-"}</td>
-                                                                <td className="px-3 py-2">{row.time || "-"}</td>
-                                                                <td className="px-3 py-2 whitespace-pre-wrap">{row.content || "-"}</td>
-                                                                <td className="px-3 py-2">{mealLabel(row.mealMorning)}</td>
-                                                                <td className="px-3 py-2">{mealLabel(row.mealLunch)}</td>
-                                                                <td className="px-3 py-2">{mealLabel(row.mealDinner)}</td>
-                                                            </tr>
-                                                        ))}
-                                                        </tbody>
-                                                    </table>
-                                                </div>
+                                                            return (
+                                                                <tr key={row.id} className="align-top text-neutral-800 divide-x divide-neutral-200">
+                                                                    <td className="px-3 py-2 font-semibold">{isFirstRowOfDay ? `${day.dayNo}일차` : ""}</td>
+                                                                    <td className="px-3 py-2">{row.transport || "-"}</td>
+                                                                    <td className="px-3 py-2">{row.time || "-"}</td>
+                                                                    <td className="px-3 py-2 whitespace-pre-wrap">{row.content || row.place || "-"}</td>
+                                                                    <td className="px-3 py-2">{mealText}</td>
+                                                                </tr>
+                                                            );
+                                                        })
+                                                    )}
+                                                    </tbody>
+                                                </table>
                                             </div>
-                                        ))
+                                        </div>
                                     ) : (
                                         <div className="rounded-2xl border border-dashed border-neutral-300 p-6 text-sm text-neutral-500">
                                             등록된 일정표가 없습니다.
