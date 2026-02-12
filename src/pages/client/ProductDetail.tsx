@@ -925,7 +925,7 @@ export default function ProductDetail() {
                                                     <tr className="divide-x divide-neutral-200">
                                                         <th className="px-3 py-2 w-[80px]">일차</th>
                                                         <th className="px-3 py-2 w-[110px]">교통편</th>
-                                                        <th className="px-3 py-2 w-[90px]">시간</th>
+                                                        <th className="hidden px-3 py-2 w-[90px] md:table-cell">시간</th>
                                                         <th className="px-3 py-2">일정</th>
                                                         <th className="px-3 py-2 w-[160px]">식사</th>
                                                     </tr>
@@ -943,7 +943,7 @@ export default function ProductDetail() {
                                                                 <tr key={row.id} className="align-top text-neutral-800 divide-x divide-neutral-200">
                                                                     <td className="px-3 py-2 font-semibold">{isFirstRowOfDay ? `${day.dayNo}일차` : ""}</td>
                                                                     <td className="px-3 py-2">{row.transport || "-"}</td>
-                                                                    <td className="px-3 py-2">{row.time || "-"}</td>
+                                                                    <td className="hidden px-3 py-2 md:table-cell">{row.time || "-"}</td>
                                                                     <td className="px-3 py-2 whitespace-pre-wrap">{row.content || row.place || "-"}</td>
                                                                     <td className="px-3 py-2">
                                                                         <div className="space-y-1 text-xs">
