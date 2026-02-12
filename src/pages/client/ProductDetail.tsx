@@ -1076,17 +1076,8 @@ export default function ProductDetail() {
                                 className="scroll-mt-36"
                             >
                                 <h2 className="text-lg font-extrabold text-neutral-900">약관/환불규정</h2>
-                                <div className="mt-4 rounded-2xl border border-neutral-200 bg-white p-5">
-                                    <div className="text-sm font-extrabold text-neutral-900">안내</div>
-                                    <p className="mt-3 text-sm leading-6 text-neutral-600">
-                                        (데모) 본 상품은 해외여행 특별약관이 적용됩니다. 상세 약관/환불규정은 추후 실제 데이터 연동 시 노출하세요.
-                                    </p>
-                                    <button
-                                        type="button"
-                                        className="mt-5 inline-flex items-center justify-center rounded-2xl border border-neutral-300 bg-white px-4 py-3 text-sm font-bold text-neutral-800 hover:bg-neutral-50"
-                                    >
-                                        약관 상세보기
-                                    </button>
+                                <div className="mt-4 space-y-3">
+                                    <PolicyAccordion />
                                 </div>
                             </section>
                         </div>
@@ -1096,5 +1087,112 @@ export default function ProductDetail() {
                 </div>
             </Container>
         </main>
+    );
+}
+
+/* ====================== 약관/환불규정 아코디언 ====================== */
+const POLICY_ITEMS = [
+    {
+        title: "여행계약",
+        content: `1. 여행계약은 여행자가 여행업자에게 여행의 예약을 하고 여행업자가 이를 승낙함으로써 성립합니다.\n\n2. 여행업자는 여행자에게 여행 일정, 여행사업자의 등록번호·상호·소재지 및 관광진흥법에 의한 영업보증보험 등의 가입에 관한 사항 등 여행계약서와 약관 및 여행조건 설명서를 교부하여야 합니다.\n\n3. 여행업자는 여행출발 전 여행자에게 여행일정표와 여행약관을 서면 또는 전자문서로 교부하여야 합니다.`,
+    },
+    {
+        title: "예약금 및 잔금",
+        content: `1. 예약금: 여행요금의 10% 이상 (상품에 따라 상이)\n\n2. 잔금: 여행 출발 7일 전까지 완납\n※ 성수기 및 연휴기간 상품의 경우 잔금 납부일이 상이할 수 있습니다.\n\n3. 예약금 입금 후 예약이 확정되며, 잔금 미납 시 예약이 취소될 수 있습니다.`,
+    },
+    {
+        title: "취소/환불 규정",
+        isRefundTable: true,
+    },
+    {
+        title: "여행자 의무사항",
+        content: `1. 여행자는 여행 출발 전까지 여권, 비자 등 여행에 필요한 서류를 구비해야 합니다.\n\n2. 여행자는 여행 중 여행업자의 안내에 따라야 하며, 여행 일정을 임의로 변경하여서는 안됩니다.\n\n3. 여행자의 귀책사유로 인하여 발생한 추가 비용은 여행자가 부담합니다.\n\n4. 여행자는 여행 중 타인에게 피해를 주는 행위를 하여서는 안됩니다.`,
+    },
+    {
+        title: "여행사 책임",
+        content: `1. 여행업자는 여행 출발 시부터 도착 시까지 여행자의 안전에 대하여 주의를 기울여야 합니다.\n\n2. 여행업자는 여행자에게 안전에 관한 정보를 제공하여야 합니다.\n\n3. 여행업자는 고의 또는 과실로 여행자에게 손해를 가한 경우 손해를 배상할 책임이 있습니다.\n\n4. 천재지변, 전쟁, 정부의 명령, 운송·숙박기관의 파업 등 불가항력적인 사유로 인하여 여행일정이 변경되거나 여행이 불가능해진 경우에는 책임을 지지 않습니다.`,
+    },
+    {
+        title: "개인정보 수집 및 이용",
+        content: `1. 수집항목: 성명, 연락처, 여권정보, 결제정보 등\n\n2. 수집목적: 여행상품 예약 및 서비스 제공, 고객상담, 마케팅 및 이벤트 안내\n\n3. 보유기간: 서비스 제공 완료 후 관련 법령에 따른 보유기간까지\n\n4. 여행자는 개인정보 수집에 대한 동의를 거부할 권리가 있으나, 동의를 거부할 경우 여행상품 예약이 제한될 수 있습니다.`,
+    },
+];
+
+const REFUND_TABLE = [
+    { period: "여행 시작 30일 전까지", rate: "전액 환불" },
+    { period: "여행 시작 29일 ~ 20일 전", rate: "여행요금의 10% 배상" },
+    { period: "여행 시작 19일 ~ 10일 전", rate: "여행요금의 15% 배상" },
+    { period: "여행 시작 9일 ~ 8일 전", rate: "여행요금의 20% 배상" },
+    { period: "여행 시작 7일 ~ 1일 전", rate: "여행요금의 30% 배상" },
+    { period: "여행 당일 취소", rate: "여행요금의 50% 배상" },
+];
+
+function PolicyAccordion() {
+    const [openIndex, setOpenIndex] = useState<number | null>(null);
+
+    const toggle = (index: number) => {
+        setOpenIndex(openIndex === index ? null : index);
+    };
+
+    return (
+        <div className="space-y-2">
+            {POLICY_ITEMS.map((item, index) => (
+                <div key={index} className="overflow-hidden rounded-2xl border border-neutral-200 bg-white">
+                    <button
+                        type="button"
+                        onClick={() => toggle(index)}
+                        className="flex w-full items-center justify-between px-5 py-4 text-left hover:bg-neutral-50"
+                    >
+                        <span className="text-sm font-bold text-neutral-900">{item.title}</span>
+                        <svg
+                            className={`h-5 w-5 text-neutral-400 transition-transform ${openIndex === index ? "rotate-180" : ""}`}
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                        >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+                    {openIndex === index && (
+                        <div className="border-t border-neutral-200 px-5 py-4">
+                            {item.isRefundTable ? (
+                                <div>
+                                    <p className="mb-4 text-sm leading-6 text-neutral-600">
+                                        여행자의 여행계약 해제 요청이 있는 경우, 여행업자는 아래 기준에 따라 취소료를 공제 후
+                                        환불합니다.
+                                    </p>
+                                    <div className="overflow-hidden rounded-xl border border-neutral-200">
+                                        <table className="w-full text-sm">
+                                            <thead className="bg-neutral-100">
+                                                <tr>
+                                                    <th className="px-4 py-3 text-left font-bold text-neutral-700">취소 시점</th>
+                                                    <th className="px-4 py-3 text-left font-bold text-neutral-700">환불 기준</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-neutral-200">
+                                                {REFUND_TABLE.map((row, i) => (
+                                                    <tr key={i} className={i % 2 === 1 ? "bg-neutral-50" : ""}>
+                                                        <td className="px-4 py-3 text-neutral-600">{row.period}</td>
+                                                        <td className="px-4 py-3 text-neutral-600">{row.rate}</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <p className="mt-4 text-xs leading-5 text-neutral-500">
+                                        ※ 항공권, 숙박 등 선결제된 비용은 해당 업체의 환불규정에 따릅니다.
+                                        <br />
+                                        ※ 성수기(명절, 연휴 등)에는 별도의 취소 규정이 적용될 수 있습니다.
+                                        <br />※ 여행자의 개별 귀책사유로 인한 취소 시 실비용이 추가 공제될 수 있습니다.
+                                    </p>
+                                </div>
+                            ) : (
+                                <p className="whitespace-pre-wrap text-sm leading-6 text-neutral-600">{item.content}</p>
+                            )}
+                        </div>
+                    )}
+                </div>
+            ))}
+        </div>
     );
 }
