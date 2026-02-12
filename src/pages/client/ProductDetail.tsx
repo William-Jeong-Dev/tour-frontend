@@ -477,9 +477,19 @@ export default function ProductDetail() {
                                     <img src={heroImg} alt={baseTitle} className="h-full w-full object-cover object-center" />
                                 </div>
                             </div>
+
+                            {/* 상품 소개 */}
+                            {product?.description ? (
+                                <div className="mt-6 rounded-2xl border border-neutral-200 bg-white p-5">
+                                    <div className="text-sm font-extrabold text-neutral-900">상품 소개</div>
+                                    <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-neutral-600">
+                                        {product.description}
+                                    </p>
+                                </div>
+                            ) : null}
                         </div>
 
-                        {/* 오른쪽: “선택중인 행사” */}
+                        {/* 오른쪽: "선택중인 행사" */}
                         <aside className="col-span-12 lg:col-span-5">
                             <div className="lg:sticky lg:top-28">
                                 <div className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
@@ -566,7 +576,9 @@ export default function ProductDetail() {
                                     ["itinerary", "주요 여행일정"],
                                     ["summary", "요약정보"],
                                     ["schedule", "여행일정"],
-                                    ["info", "상품정보"],
+                                    ...(Array.isArray((product as any)?.detailBlocks) && (product as any).detailBlocks.length > 0
+                                        ? ([["info", "상품정보"]] as Array<[TabKey, string]>)
+                                        : []),
                                     ...(insuranceEnabled ? ([["insurance", "여행자 보험"]] as Array<[TabKey, string]>) : []),
                                     ["policy", "약관/환불규정"],
                                 ] as Array<[TabKey, string]>
@@ -967,18 +979,17 @@ export default function ProductDetail() {
                                 </div>
                             </section>
 
-                            {/* 상품정보 */}
-                            <section
-                                id="info"
-                                ref={(el) => {
-                                    refs.current.info = el;
-                                }}
-                                className="scroll-mt-36"
-                            >
-                                <h2 className="text-lg font-extrabold text-neutral-900">상품정보</h2>
+                            {/* 상품정보 - detailBlocks가 있을 때만 표시 */}
+                            {Array.isArray((product as any)?.detailBlocks) && (product as any).detailBlocks.length > 0 ? (
+                                <section
+                                    id="info"
+                                    ref={(el) => {
+                                        refs.current.info = el;
+                                    }}
+                                    className="scroll-mt-36"
+                                >
+                                    <h2 className="text-lg font-extrabold text-neutral-900">상품정보</h2>
 
-                                {/* ✅ 상세 블록 렌더 (detailBlocks) - 사진 먼저 */}
-                                {Array.isArray((product as any)?.detailBlocks) && (product as any).detailBlocks.length > 0 ? (
                                     <div className="mt-4 space-y-4">
                                         {(product as any).detailBlocks.map((b: any) => {
                                             if (!b) return null;
@@ -1012,7 +1023,7 @@ export default function ProductDetail() {
                                                         {imgs.length ? (
                                                             <div className="mt-4 flex gap-3 overflow-x-auto">
                                                                 {imgs.map((x: any, i: number) => {
-                                                                    const src = String(x?.path ?? "").trim(); // 일단 path/url 그대로 사용
+                                                                    const src = String(x?.path ?? "").trim();
                                                                     if (!src) return null;
                                                                     return (
                                                                         <div key={`${b.id}-${i}`} className="shrink-0 w-[280px]">
@@ -1039,16 +1050,8 @@ export default function ProductDetail() {
                                             return null;
                                         })}
                                     </div>
-                                ) : null}
-
-                                {/* 상품 소개 (설명) */}
-                                <div className="mt-6 rounded-2xl border border-neutral-200 bg-white p-5">
-                                    <div className="text-sm font-extrabold text-neutral-900">상품 소개</div>
-                                    <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-neutral-600">
-                                        {product?.description || "(임시) 아직 상품 소개가 없습니다."}
-                                    </p>
-                                </div>
-                            </section>
+                                </section>
+                            ) : null}
 
                             {/* ✅ 여행자 보험 */}
                             {insuranceEnabled ? (
