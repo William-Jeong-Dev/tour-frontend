@@ -933,12 +933,10 @@ export default function ProductDetail() {
                                                     <tbody className="divide-y divide-neutral-200">
                                                     {(product?.itinerary ?? []).flatMap((day) =>
                                                         (day.rows ?? []).map((row, rowIdx) => {
-                                                            const meals = [
-                                                                row.mealMorning && row.mealMorning !== "NONE" ? `조식: ${mealLabel(row.mealMorning)}` : null,
-                                                                row.mealLunch && row.mealLunch !== "NONE" ? `중식: ${mealLabel(row.mealLunch)}` : null,
-                                                                row.mealDinner && row.mealDinner !== "NONE" ? `석식: ${mealLabel(row.mealDinner)}` : null,
-                                                            ].filter(Boolean);
-                                                            const mealText = meals.length > 0 ? meals.join(" / ") : "-";
+                                                            const getMealText = (meal: MealType | undefined | null) => {
+                                                                if (!meal || meal === "NONE") return "불포함";
+                                                                return mealLabel(meal);
+                                                            };
                                                             const isFirstRowOfDay = rowIdx === 0;
 
                                                             return (
@@ -947,7 +945,13 @@ export default function ProductDetail() {
                                                                     <td className="px-3 py-2">{row.transport || "-"}</td>
                                                                     <td className="px-3 py-2">{row.time || "-"}</td>
                                                                     <td className="px-3 py-2 whitespace-pre-wrap">{row.content || row.place || "-"}</td>
-                                                                    <td className="px-3 py-2">{mealText}</td>
+                                                                    <td className="px-3 py-2">
+                                                                        <div className="space-y-1 text-xs">
+                                                                            <div>조식 : {getMealText(row.mealMorning)}</div>
+                                                                            <div>중식 : {getMealText(row.mealLunch)}</div>
+                                                                            <div>석식 : {getMealText(row.mealDinner)}</div>
+                                                                        </div>
+                                                                    </td>
                                                                 </tr>
                                                             );
                                                         })
