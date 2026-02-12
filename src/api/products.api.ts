@@ -44,6 +44,9 @@ type ProductRow = {
     travel_insurance_enabled: boolean;
     travel_insurance_content: string;
 
+    // 방문도시
+    visit_cities: string;
+
     // ⭐ ADD: 리치 상세 블록
     detail_blocks: any[];
 
@@ -170,6 +173,9 @@ async function toProduct(row: ProductRow): Promise<Product> {
         travelInsuranceEnabled: Boolean(row.travel_insurance_enabled),
         travelInsuranceContent: row.travel_insurance_content ?? "",
 
+        // 방문도시
+        visitCities: row.visit_cities ?? "",
+
         detailBlocks: Array.isArray((row as any).detail_blocks) ? (row as any).detail_blocks : [],
 
         createdAt: row.created_at ?? nowIso(),
@@ -207,6 +213,9 @@ function toRow(input: ProductUpsert): Omit<ProductRow, "id" | "created_at" | "up
         // ✅ 여행자 보험
         travel_insurance_enabled: Boolean((input as any).travelInsuranceEnabled),
         travel_insurance_content: String((input as any).travelInsuranceContent ?? ""),
+
+        // 방문도시
+        visit_cities: String((input as any).visitCities ?? ""),
 
         theme_id: (input as any).themeId ?? null,
         area_id: (input as any).areaId ?? null,

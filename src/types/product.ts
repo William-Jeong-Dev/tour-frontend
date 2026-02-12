@@ -110,6 +110,9 @@ export type Product = {
     travelInsuranceEnabled: boolean;
     travelInsuranceContent: string;
 
+    // 방문도시
+    visitCities: string;
+
     detailBlocks?: ProductDetailBlock[];
 
     createdAt: string;

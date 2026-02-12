@@ -168,6 +168,9 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
         travelInsuranceEnabled: false,
         travelInsuranceContent: DEFAULT_TRAVEL_INSURANCE_TEXT,
 
+        // 방문도시
+        visitCities: "",
+
         detailBlocks: [],
     } as any);
 
@@ -264,6 +267,9 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
                     // ✅ 여행자 보험
                     travelInsuranceEnabled: (p as any).travelInsuranceEnabled ?? false,
                     travelInsuranceContent: (p as any).travelInsuranceContent ?? DEFAULT_TRAVEL_INSURANCE_TEXT,
+
+                    // 방문도시
+                    visitCities: (p as any).visitCities ?? "",
 
                     detailBlocks: (p as any).detailBlocks ?? [],
                 } as any);
@@ -518,6 +524,18 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
                                 />
                             </Field>
                         </div>
+
+                        <Field label="방문도시">
+                            <input
+                                value={(form as any).visitCities ?? ""}
+                                onChange={(e) => setForm({ ...(form as any), visitCities: e.target.value } as any)}
+                                className="input w-full"
+                                placeholder="예) 오사카, 교토, 나라"
+                            />
+                            <div className="mt-1 text-[11px] text-neutral-500">
+                                상품 상세페이지 &apos;주요 여행일정&apos;에 표시됩니다.
+                            </div>
+                        </Field>
 
                         <Field label="가격 문구(옵션)">
                             <input

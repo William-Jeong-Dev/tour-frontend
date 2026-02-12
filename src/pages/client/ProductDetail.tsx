@@ -838,9 +838,8 @@ export default function ProductDetail() {
 
                                         <div className="rounded-2xl border border-neutral-200 p-4">
                                             <div className="text-sm font-extrabold text-neutral-900">방문도시</div>
-                                            <div className="mt-2 text-sm text-neutral-600">사가</div>
-                                            <div className="mt-4 text-xs text-neutral-500">
-                                                (데모) 실제로는 API로 도시/코스/호텔 데이터를 가져오면 돼.
+                                            <div className="mt-2 text-sm text-neutral-600">
+                                                {(product as any)?.visitCities || "-"}
                                             </div>
                                         </div>
                                     </div>
