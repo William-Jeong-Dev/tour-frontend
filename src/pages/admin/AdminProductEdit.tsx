@@ -658,6 +658,30 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 function ListEditor({ title, items, onChange }: { title: string; items: string[]; onChange: (v: string[]) => void }) {
     const [draft, setDraft] = useState("");
+    const [editingIndex, setEditingIndex] = useState<number | null>(null);
+    const [editValue, setEditValue] = useState("");
+
+    const startEdit = (index: number, value: string) => {
+        setEditingIndex(index);
+        setEditValue(value);
+    };
+
+    const saveEdit = () => {
+        if (editingIndex === null) return;
+        if (!editValue.trim()) {
+            cancelEdit();
+            return;
+        }
+        const newItems = [...(items ?? [])];
+        newItems[editingIndex] = editValue.trim();
+        onChange(newItems);
+        cancelEdit();
+    };
+
+    const cancelEdit = () => {
+        setEditingIndex(null);
+        setEditValue("");
+    };
 
     return (
         <div className="rounded-xl border border-neutral-800 bg-neutral-950/40 p-3">
@@ -680,11 +704,37 @@ function ListEditor({ title, items, onChange }: { title: string; items: string[]
 
             <div className="mt-3 space-y-2">
                 {(items ?? []).map((x, i) => (
-                    <div key={i} className="flex items-center justify-between rounded-lg border border-neutral-800 px-3 py-2 text-sm text-neutral-200">
-                        <span className="min-w-0 flex-1">{x}</span>
-                        <button type="button" onClick={() => onChange(items.filter((_, idx) => idx !== i))} className="text-xs text-neutral-400">
-                            삭제
-                        </button>
+                    <div key={i} className="flex items-center justify-between gap-2 rounded-lg border border-neutral-800 px-3 py-2 text-sm text-neutral-200">
+                        {editingIndex === i ? (
+                            <>
+                                <input
+                                    value={editValue}
+                                    onChange={(e) => setEditValue(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === "Enter") saveEdit();
+                                        if (e.key === "Escape") cancelEdit();
+                                    }}
+                                    className="input min-w-0 flex-1"
+                                    autoFocus
+                                />
+                                <button type="button" onClick={saveEdit} className="text-xs text-green-400">
+                                    저장
+                                </button>
+                                <button type="button" onClick={cancelEdit} className="text-xs text-neutral-400">
+                                    취소
+                                </button>
+                            </>
+                        ) : (
+                            <>
+                                <span className="min-w-0 flex-1">{x}</span>
+                                <button type="button" onClick={() => startEdit(i, x)} className="text-xs text-neutral-400">
+                                    수정
+                                </button>
+                                <button type="button" onClick={() => onChange(items.filter((_, idx) => idx !== i))} className="text-xs text-neutral-400">
+                                    삭제
+                                </button>
+                            </>
+                        )}
                     </div>
                 ))}
             </div>
