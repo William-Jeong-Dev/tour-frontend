@@ -23,6 +23,10 @@ export default function EstimatePage() {
     // ✅ 원하는 여행지(복수선택)
     const [travelRegions, setTravelRegions] = useState<string[]>([]);
 
+    // ✅ 개인정보 및 마케팅 동의
+    const [privacyAgreed, setPrivacyAgreed] = useState(false);
+    const [marketingAgreed, setMarketingAgreed] = useState(false);
+
     // ✅ email 제거
     const [form, setForm] = useState<
         Omit<EstimatePayload, "email">
@@ -44,8 +48,9 @@ export default function EstimatePage() {
         if (!form.return_date?.trim()) return false;
         if (!form.people_count || form.people_count < 1) return false;
         if (!callTime.trim()) return false;
+        if (!privacyAgreed) return false;
         return true;
-    }, [form, callTime]);
+    }, [form, callTime, privacyAgreed]);
 
     const toggleTravelRegion = (value: string) => {
         setTravelRegions((prev) =>
@@ -237,6 +242,78 @@ export default function EstimatePage() {
                                         }
                                     />
                                 </div>
+
+                                {/* 개인정보 수집 및 이용 동의 (필수) */}
+                                <div className="md:col-span-2 mt-4">
+                                    <div className="rounded-xl border border-neutral-200 p-4">
+                                        <label className="flex items-start gap-3 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={privacyAgreed}
+                                                onChange={(e) => setPrivacyAgreed(e.target.checked)}
+                                                className="mt-1 h-4 w-4 accent-blue-500"
+                                            />
+                                            <div className="flex-1">
+                                                <span className="text-sm font-bold text-neutral-800">
+                                                    개인정보 수집 및 이용 동의 (필수)
+                                                </span>
+                                            </div>
+                                        </label>
+                                        <div className="mt-3 max-h-40 overflow-y-auto rounded-lg bg-neutral-50 p-3 text-xs text-neutral-600 leading-relaxed">
+                                            <p className="font-semibold mb-2">청원여행사는 1:1 맞춤 견적 문의 및 여행 상담을 위해 아래와 같이 개인정보를 수집·이용합니다.</p>
+
+                                            <p className="font-semibold mt-3">1. 수집 항목</p>
+                                            <p>- 필수 항목: 이름, 휴대전화번호, 이메일, 여행 일정 정보(출발일, 리턴일 등)</p>
+                                            <p>- 선택 항목: 예산, 통화 가능 시간, 요청사항</p>
+
+                                            <p className="font-semibold mt-3">2. 수집 및 이용 목적</p>
+                                            <p>- 맞춤 여행 상담 및 견적 제공</p>
+                                            <p>- 여행 일정 안내 및 예약 진행 관리</p>
+                                            <p>- 고객 문의 응대 및 민원 처리</p>
+
+                                            <p className="font-semibold mt-3">3. 보유 및 이용 기간</p>
+                                            <p>- 상담 및 여행 진행 종료 후 즉시 파기</p>
+                                            <p>- 단, 관련 법령에 따라 일정 기간 보관이 필요한 경우 해당 기간 동안 보관</p>
+
+                                            <p className="mt-3 text-neutral-500">※ 귀하는 개인정보 수집 및 이용에 대한 동의를 거부할 권리가 있습니다. 단, 필수 항목에 대한 동의를 거부할 경우 1:1 맞춤 견적 문의 접수가 제한될 수 있습니다.</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* 마케팅 정보 수신 동의 (선택) */}
+                                <div className="md:col-span-2">
+                                    <div className="rounded-xl border border-neutral-200 p-4">
+                                        <label className="flex items-start gap-3 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={marketingAgreed}
+                                                onChange={(e) => setMarketingAgreed(e.target.checked)}
+                                                className="mt-1 h-4 w-4 accent-blue-500"
+                                            />
+                                            <div className="flex-1">
+                                                <span className="text-sm font-bold text-neutral-800">
+                                                    마케팅 정보 수신 동의 (선택)
+                                                </span>
+                                            </div>
+                                        </label>
+                                        <div className="mt-3 max-h-40 overflow-y-auto rounded-lg bg-neutral-50 p-3 text-xs text-neutral-600 leading-relaxed">
+                                            <p className="font-semibold mb-2">청원여행사는 신규 여행 상품, 프로모션, 이벤트 및 할인 정보 등을 문자(SMS), 카카오톡, 이메일 등을 통해 안내드릴 수 있습니다.</p>
+
+                                            <p className="font-semibold mt-3">1. 수집 항목</p>
+                                            <p>- 이름, 휴대전화번호, 이메일</p>
+
+                                            <p className="font-semibold mt-3">2. 이용 목적</p>
+                                            <p>- 신규 여행 상품 안내</p>
+                                            <p>- 이벤트 및 프로모션 정보 제공</p>
+                                            <p>- 맞춤형 여행 상품 추천</p>
+
+                                            <p className="font-semibold mt-3">3. 보유 및 이용 기간</p>
+                                            <p>- 동의 철회 시까지</p>
+
+                                            <p className="mt-3 text-neutral-500">※ 귀하는 마케팅 정보 수신에 대한 동의를 거부할 권리가 있으며, 동의를 거부하셔도 1:1 맞춤 견적 문의 및 상담 서비스 이용에는 제한이 없습니다.</p>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
                             <div className="mt-6 flex justify-end">
@@ -277,16 +354,17 @@ export default function EstimatePage() {
                                                 .filter(Boolean)
                                                 .join(" / ");
 
-                                            // ✅ email은 아예 안 보내거나(null로 고정) 중 택1
                                             const payload: EstimatePayload = {
                                                 name: form.name.trim(),
                                                 phone: form.phone.trim(),
-                                                email: null, // ✅ Edge Function이 email 필드 자체를 기대하면 이게 제일 안전
+                                                email: null,
                                                 depart_date: form.depart_date,
                                                 people_count: Number(form.people_count || 1),
                                                 region: mergedRegion ? mergedRegion : null,
                                                 budget: form.budget?.trim() ? form.budget.trim() : null,
                                                 memo: mergedMemo ? mergedMemo : null,
+                                                privacy_agreed: privacyAgreed,
+                                                marketing_agreed: marketingAgreed,
                                             };
 
                                             await sendEstimateEmail(payload);
@@ -305,6 +383,8 @@ export default function EstimatePage() {
                                             } as any);
                                             setCallTime("");
                                             setTravelRegions([]);
+                                            setPrivacyAgreed(false);
+                                            setMarketingAgreed(false);
                                         } catch (e: any) {
                                             alert(e?.message ?? "요청 접수에 실패했습니다.");
                                         } finally {

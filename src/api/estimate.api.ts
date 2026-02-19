@@ -11,6 +11,9 @@ export type EstimatePayload = {
     region?: string | null;
     budget?: string | null;
     memo?: string | null;
+
+    privacy_agreed: boolean;
+    marketing_agreed: boolean;
 };
 
 // FormSubmit: 메일을 받을 이메일 주소
@@ -29,6 +32,8 @@ export async function sendEstimateEmail(payload: EstimatePayload) {
     formData.append("여행지/테마", payload.region || "미입력");
     formData.append("예산", payload.budget || "미입력");
     formData.append("요청사항", payload.memo || "없음");
+    formData.append("개인정보 수집 동의", payload.privacy_agreed ? "동의함" : "동의안함");
+    formData.append("마케팅 수신 동의", payload.marketing_agreed ? "동의함" : "동의안함");
 
     // 리다이렉트 방지 (AJAX 모드)
     formData.append("_captcha", "false");
