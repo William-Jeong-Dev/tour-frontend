@@ -115,6 +115,9 @@ export type Product = {
 
     detailBlocks?: ProductDetailBlock[];
 
+    // 원본문서 링크
+    originalDocumentUrl?: string;
+
     createdAt: string;
     updatedAt: string;
 };

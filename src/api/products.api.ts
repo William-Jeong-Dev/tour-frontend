@@ -50,6 +50,9 @@ type ProductRow = {
     // ⭐ ADD: 리치 상세 블록
     detail_blocks: any[];
 
+    // 원본문서 링크
+    original_document_url: string | null;
+
     created_at: string;
     updated_at: string;
 };
@@ -178,6 +181,9 @@ async function toProduct(row: ProductRow): Promise<Product> {
 
         detailBlocks: Array.isArray((row as any).detail_blocks) ? (row as any).detail_blocks : [],
 
+        // 원본문서 링크
+        originalDocumentUrl: row.original_document_url ?? "",
+
         createdAt: row.created_at ?? nowIso(),
         updatedAt: row.updated_at ?? nowIso(),
     } as any;
@@ -221,6 +227,9 @@ function toRow(input: ProductUpsert): Omit<ProductRow, "id" | "created_at" | "up
         area_id: (input as any).areaId ?? null,
 
         detail_blocks: Array.isArray((input as any).detailBlocks) ? (input as any).detailBlocks : [],
+
+        // 원본문서 링크
+        original_document_url: String((input as any).originalDocumentUrl ?? "").trim() || null,
     };
 }
 

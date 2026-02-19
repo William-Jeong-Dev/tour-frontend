@@ -172,6 +172,9 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
         visitCities: "",
 
         detailBlocks: [],
+
+        // 원본문서 링크
+        originalDocumentUrl: "",
     } as any);
 
     /* ✅ themeId 기반 area 목록 로딩 */
@@ -272,6 +275,9 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
                     visitCities: (p as any).visitCities ?? "",
 
                     detailBlocks: (p as any).detailBlocks ?? [],
+
+                    // 원본문서 링크
+                    originalDocumentUrl: (p as any).originalDocumentUrl ?? "",
                 } as any);
 
                 // thumbnailUrl이 비어있고 path만 있는 경우 보정
@@ -623,9 +629,31 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
 
                 {tab === "assets" && (
                     <Section title="원본문서">
-                        <div className="rounded-xl border border-neutral-800 bg-neutral-950/40 p-4 text-sm text-neutral-300">
-                            다음 단계에서 문서 업로드 기능을 붙입니다.
+                        <Field label="원본문서 링크 (Google Drive 등)">
+                            <input
+                                value={(form as any).originalDocumentUrl ?? ""}
+                                onChange={(e) => setForm({ ...(form as any), originalDocumentUrl: e.target.value } as any)}
+                                className="input w-full"
+                                placeholder="https://drive.google.com/..."
+                            />
+                        </Field>
+                        <div className="mt-2 text-xs text-neutral-500">
+                            구글 드라이브, 노션 등 외부 문서 링크를 입력하세요.
                         </div>
+
+                        {(form as any).originalDocumentUrl ? (
+                            <div className="mt-4 rounded-xl border border-neutral-800 bg-neutral-950/40 p-4">
+                                <div className="text-xs font-semibold text-neutral-400 mb-2">등록된 링크</div>
+                                <a
+                                    href={(form as any).originalDocumentUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-sm text-[#2E97F2] hover:underline break-all"
+                                >
+                                    {(form as any).originalDocumentUrl}
+                                </a>
+                            </div>
+                        ) : null}
                     </Section>
                 )}
 
