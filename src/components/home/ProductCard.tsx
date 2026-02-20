@@ -17,22 +17,24 @@ export default function ProductCard({ item }: { item: CardItem }) {
                         loading="lazy"
                     />
                 </div>
+            </div>
 
-                {/* 이미지 위 라벨 */}
-                <div className="absolute bottom-3 left-3 flex flex-wrap gap-1">
+            {/* 썸네일과 제목 사이 태그 */}
+            {item.tags.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-1">
                     {item.tags.slice(0, 3).map((t) => (
                         <span
                             key={t}
                             className="rounded-md bg-[#2E97F2] px-2 py-0.5 text-[11px] font-semibold text-white shadow-sm"
                         >
-              {t}
-            </span>
+                            {t}
+                        </span>
                     ))}
                 </div>
-            </div>
+            )}
 
             {/* ✅ 텍스트 영역: 높이 고정 + 줄바꿈 방지(플러그인 불필요) */}
-            <div className="mt-3 flex min-h-[78px] min-w-0 flex-col justify-between">
+            <div className="mt-2 flex min-h-[78px] min-w-0 flex-col justify-between">
                 <div className="min-w-0">
                     <div className="truncate text-sm font-semibold text-neutral-900">
                         {item.subtitle}

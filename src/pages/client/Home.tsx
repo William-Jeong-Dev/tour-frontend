@@ -81,10 +81,12 @@ function ProductCard({ item }: { item: Card }) {
                     >
                         ♡
                     </button>
+                </div>
 
-                    {/* 태그들 (부제 해시태그만, 최대 3개) */}
+                <div className="pt-2 px-4 pb-4 flex min-h-[86px] min-w-0 flex-col justify-between">
+                    {/* 태그들 (썸네일과 제목 사이) */}
                     {item.tags && item.tags.length > 0 && (
-                        <div className="absolute left-3 top-3 flex flex-wrap gap-1">
+                        <div className="flex flex-wrap gap-1 mb-2">
                             {item.tags.slice(0, 3).map((tag, i) => (
                                 <span key={i} className="rounded-full bg-sky-500/90 px-2 py-1 text-xs font-bold text-white">
                                     {tag}
@@ -92,9 +94,6 @@ function ProductCard({ item }: { item: Card }) {
                             ))}
                         </div>
                     )}
-                </div>
-
-                <div className="p-4 flex min-h-[86px] min-w-0 flex-col justify-between">
                     <div className="min-w-0 text-base font-semibold text-neutral-900 overflow-hidden text-ellipsis whitespace-nowrap">
                         {item.title}
                     </div>
