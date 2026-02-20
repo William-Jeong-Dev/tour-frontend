@@ -957,7 +957,7 @@ export default function ProductDetail() {
                                                                     <td className="hidden px-3 py-2 md:table-cell">{row.time || "-"}</td>
                                                                     <td className="px-3 py-2 whitespace-pre-wrap">{row.content || row.place || "-"}</td>
                                                                     <td className="px-3 py-2">
-                                                                        <div className="space-y-1 text-xs">
+                                                                        <div className="space-y-1">
                                                                             <div>조식 : {getMealText(row.mealMorning)}</div>
                                                                             <div>중식 : {getMealText(row.mealLunch)}</div>
                                                                             <div>석식 : {getMealText(row.mealDinner)}</div>

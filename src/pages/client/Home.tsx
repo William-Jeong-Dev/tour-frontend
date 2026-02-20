@@ -265,9 +265,10 @@ export default function Home() {
 
                                     <div className="mt-6 space-y-3 w-full flex flex-col items-start">
                                         {active.cards.map((c) => (
-                                            <div
+                                            <Link
                                                 key={c.id}
-                                                className="w-full max-w-[520px] flex items-center gap-4 rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm hover:shadow-md"
+                                                to={c.productId ? `/product/${c.productId}` : "#"}
+                                                className="w-full max-w-[520px] flex items-center gap-4 rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm hover:shadow-md transition cursor-pointer"
                                             >
                                                 <div className="w-20 shrink-0 overflow-hidden rounded-xl">
                                                     <div className="aspect-[16/10] w-full overflow-hidden">
@@ -301,7 +302,7 @@ export default function Home() {
                                                     <div className="mt-2 line-clamp-1 text-sm font-semibold text-neutral-900">{c.title}</div>
                                                     <div className="mt-1 text-sm font-extrabold text-neutral-900">{c.price}</div>
                                                 </div>
-                                            </div>
+                                            </Link>
                                         ))}
                                     </div>
 
