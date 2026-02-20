@@ -1,8 +1,17 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Container from "../../components/common/Container";
-import { HeroSlide, useHeroSlides, saveHeroSlides } from "../../hooks/useHeroSlides";
+import { HeroSlide, HeroCard, useHeroSlides, saveHeroSlides } from "../../hooks/useHeroSlides";
 import { defaultHeroSlides } from "../client/HomeHeroDefaults";
 import { getPublicSiteAssetUrl, uploadSiteAsset } from "../../api/siteSettings.api";
+import { listPublishedProducts } from "../../api/products.api";
+import type { Product } from "../../types/product";
+
+// subtitle에서 #태그들을 파싱하는 유틸
+function parseHashtags(subtitle: string): string[] {
+    if (!subtitle) return [];
+    const matches = subtitle.match(/#[^\s#]+/g);
+    return matches ? matches.map(tag => tag.slice(1)) : []; // # 제거
+}
 
 function uid(prefix = "id") {
     return `${prefix}_${Math.random().toString(36).slice(2, 9)}_${Date.now()}`;
@@ -14,6 +23,23 @@ export default function HeroSlidesAdminPage() {
     const [saving, setSaving] = useState(false);
     const [uploading, setUploading] = useState(false);
     const [msg, setMsg] = useState<string | null>(null);
+
+    // PUBLISHED 상품 목록
+    const [products, setProducts] = useState<Product[]>([]);
+    const [productsLoading, setProductsLoading] = useState(true);
+
+    useEffect(() => {
+        (async () => {
+            try {
+                const list = await listPublishedProducts();
+                setProducts(list);
+            } catch (e) {
+                console.error("상품 목록 로드 실패", e);
+            } finally {
+                setProductsLoading(false);
+            }
+        })();
+    }, []);
 
     const canSave = useMemo(() => slides.length > 0, [slides.length]);
 
@@ -39,22 +65,7 @@ export default function HeroSlidesAdminPage() {
                 title: "새 슬라이드 제목",
                 tags: "#태그",
                 heroImage: "", // ✅ 이제 URL 기본값 대신 업로드를 권장 (빈 값으로 시작)
-                cards: [
-                    {
-                        id: uid("card"),
-                        title: "추천 상품 1",
-                        price: "상담 문의",
-                        img: "",
-                        badge: "추천",
-                    },
-                    {
-                        id: uid("card"),
-                        title: "추천 상품 2",
-                        price: "상담 문의",
-                        img: "",
-                        badge: "추천",
-                    },
-                ],
+                cards: [], // ✅ 상품 선택 방식으로 변경 - 빈 배열로 시작
             },
         ]);
     };
@@ -73,25 +84,41 @@ export default function HeroSlidesAdminPage() {
         );
     };
 
-    const addCard = (slideIndex: number) => {
+    // 상품 선택 시 카드 추가
+    const addCardFromProduct = (slideIndex: number, product: Product) => {
+        const tags = parseHashtags(product.subtitle || "");
+        const newCard: HeroCard = {
+            id: uid("card"),
+            productId: product.id,
+            title: product.title,
+            price: product.priceText || "상담 문의",
+            img: product.thumbnailUrl || "",
+            badge: product.region || "",
+            tags: tags,
+        };
+
         setSlides((prev) =>
             prev.map((s, si) => {
                 if (si !== slideIndex) return s;
                 return {
                     ...s,
-                    cards: [
-                        ...s.cards,
-                        {
-                            id: uid("card"),
-                            title: "새 카드",
-                            price: "상담 문의",
-                            img: "",
-                            badge: "",
-                        },
-                    ],
+                    cards: [...s.cards, newCard],
                 };
             })
         );
+    };
+
+    // 기존 카드의 상품 변경
+    const changeCardProduct = (slideIndex: number, cardIndex: number, product: Product) => {
+        const tags = parseHashtags(product.subtitle || "");
+        updateCard(slideIndex, cardIndex, {
+            productId: product.id,
+            title: product.title,
+            price: product.priceText || "상담 문의",
+            img: product.thumbnailUrl || "",
+            badge: product.region || "",
+            tags: tags,
+        });
     };
 
     const deleteCard = (slideIndex: number, cardIndex: number) => {
@@ -369,29 +396,49 @@ export default function HeroSlidesAdminPage() {
                                             <div className="pt-2">
                                                 <div className="flex items-center justify-between">
                                                     <div>
-                                                        <div className="text-sm font-extrabold text-white">왼쪽 카드</div>
+                                                        <div className="text-sm font-extrabold text-white">왼쪽 카드 (상품 선택)</div>
                                                         <div className="mt-1 text-xs text-neutral-400">
-                                                            1~2개를 추천합니다. (너무 많으면 UI가 복잡해져요)
+                                                            1~2개를 추천합니다. 노출(PUBLISHED) 상품 중에서 선택하세요.
                                                         </div>
                                                     </div>
+                                                </div>
 
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => addCard(idx)}
-                                                        disabled={disabled}
+                                                {/* 상품 선택 드롭다운 */}
+                                                <div className="mt-3">
+                                                    <select
+                                                        disabled={disabled || productsLoading}
+                                                        onChange={(e) => {
+                                                            const productId = e.target.value;
+                                                            if (!productId) return;
+                                                            const product = products.find(p => p.id === productId);
+                                                            if (product) {
+                                                                addCardFromProduct(idx, product);
+                                                            }
+                                                            e.target.value = ""; // 선택 초기화
+                                                        }}
                                                         className="
-                              rounded-xl border border-neutral-800 bg-neutral-900/40 px-3 py-2
-                              text-sm font-extrabold text-neutral-100 hover:bg-neutral-900
-                              disabled:cursor-not-allowed disabled:opacity-60
-                            "
+                                                            w-full rounded-xl
+                                                            border border-neutral-800 bg-neutral-950 px-3 py-2
+                                                            text-sm text-neutral-100
+                                                            focus:outline-none focus:ring-2 focus:ring-white/10
+                                                            disabled:cursor-not-allowed disabled:opacity-60
+                                                        "
                                                     >
-                                                        + 카드 추가
-                                                    </button>
+                                                        <option value="">
+                                                            {productsLoading ? "상품 불러오는 중..." : "+ 상품 선택하여 카드 추가"}
+                                                        </option>
+                                                        {products.map(p => (
+                                                            <option key={p.id} value={p.id}>
+                                                                {p.title} ({p.region || "지역 없음"}) - {p.priceText || "가격 미정"}
+                                                            </option>
+                                                        ))}
+                                                    </select>
                                                 </div>
 
                                                 <div className="mt-4 grid gap-4 md:grid-cols-2">
                                                     {s.cards.map((c, cardIdx) => {
-                                                        const cardUrl = getPublicSiteAssetUrl(c.img);
+                                                        const cardUrl = c.img ? (c.img.startsWith("http") ? c.img : getPublicSiteAssetUrl(c.img)) : "";
+                                                        const linkedProduct = products.find(p => p.id === c.productId);
                                                         return (
                                                             <div
                                                                 key={c.id}
@@ -400,7 +447,15 @@ export default function HeroSlidesAdminPage() {
                                                                 <div className="flex items-start justify-between gap-3">
                                                                     <div>
                                                                         <div className="text-sm font-extrabold text-white">카드 {cardIdx + 1}</div>
-                                                                        <div className="mt-1 text-xs text-neutral-400">id: {c.id}</div>
+                                                                        {c.productId ? (
+                                                                            <div className="mt-1 text-xs text-emerald-400">
+                                                                                연결된 상품: {linkedProduct?.title || c.productId}
+                                                                            </div>
+                                                                        ) : (
+                                                                            <div className="mt-1 text-xs text-yellow-400">
+                                                                                상품 연결 없음 (수동 입력)
+                                                                            </div>
+                                                                        )}
                                                                     </div>
 
                                                                     <button
@@ -418,102 +473,53 @@ export default function HeroSlidesAdminPage() {
                                                                 </div>
 
                                                                 <div className="mt-4 space-y-3">
+                                                                    {/* 상품 변경 드롭다운 */}
                                                                     <div>
-                                                                        <label className="text-xs font-semibold text-neutral-200">제목</label>
-                                                                        <input
-                                                                            value={c.title}
-                                                                            onChange={(e) => updateCard(idx, cardIdx, { title: e.target.value })}
-                                                                            placeholder="[얼리버드] 오키나와 실속 호텔+골프"
+                                                                        <label className="text-xs font-semibold text-neutral-200">상품 변경</label>
+                                                                        <select
+                                                                            value={c.productId || ""}
+                                                                            disabled={disabled || productsLoading}
+                                                                            onChange={(e) => {
+                                                                                const productId = e.target.value;
+                                                                                if (!productId) return;
+                                                                                const product = products.find(p => p.id === productId);
+                                                                                if (product) {
+                                                                                    changeCardProduct(idx, cardIdx, product);
+                                                                                }
+                                                                            }}
                                                                             className="
-                                        mt-1 w-full rounded-xl
-                                        border border-neutral-800 bg-neutral-950 px-3 py-2
-                                        text-sm text-neutral-100 placeholder:text-neutral-500
-                                        focus:outline-none focus:ring-2 focus:ring-white/10
-                                      "
-                                                                        />
+                                                                                mt-1 w-full rounded-xl
+                                                                                border border-neutral-800 bg-neutral-950 px-3 py-2
+                                                                                text-sm text-neutral-100
+                                                                                focus:outline-none focus:ring-2 focus:ring-white/10
+                                                                                disabled:cursor-not-allowed disabled:opacity-60
+                                                                            "
+                                                                        >
+                                                                            <option value="">상품을 선택하세요</option>
+                                                                            {products.map(p => (
+                                                                                <option key={p.id} value={p.id}>
+                                                                                    {p.title} ({p.region || "지역 없음"})
+                                                                                </option>
+                                                                            ))}
+                                                                        </select>
                                                                     </div>
 
-                                                                    <div className="grid gap-3 sm:grid-cols-2">
-                                                                        <div>
-                                                                            <label className="text-xs font-semibold text-neutral-200">가격</label>
-                                                                            <input
-                                                                                value={c.price}
-                                                                                onChange={(e) => updateCard(idx, cardIdx, { price: e.target.value })}
-                                                                                placeholder="979,000원~"
-                                                                                className="
-                                          mt-1 w-full rounded-xl
-                                          border border-neutral-800 bg-neutral-950 px-3 py-2
-                                          text-sm text-neutral-100 placeholder:text-neutral-500
-                                          focus:outline-none focus:ring-2 focus:ring-white/10
-                                        "
-                                                                            />
-                                                                        </div>
-
-                                                                        <div>
-                                                                            <label className="text-xs font-semibold text-neutral-200">뱃지</label>
-                                                                            <input
-                                                                                value={c.badge ?? ""}
-                                                                                onChange={(e) => updateCard(idx, cardIdx, { badge: e.target.value })}
-                                                                                placeholder="오키나와"
-                                                                                className="
-                                          mt-1 w-full rounded-xl
-                                          border border-neutral-800 bg-neutral-950 px-3 py-2
-                                          text-sm text-neutral-100 placeholder:text-neutral-500
-                                          focus:outline-none focus:ring-2 focus:ring-white/10
-                                        "
-                                                                            />
-                                                                        </div>
-                                                                    </div>
-
-                                                                    {/* ✅ 카드 이미지 업로드 */}
-                                                                    <div>
-                                                                        <label className="text-xs font-semibold text-neutral-200">이미지 업로드</label>
-
-                                                                        <div className="mt-1 flex flex-col gap-2">
-                                                                            <input
-                                                                                type="file"
-                                                                                accept="image/*"
-                                                                                disabled={disabled}
-                                                                                onChange={async (e) => {
-                                                                                    const file = e.target.files?.[0];
-                                                                                    if (!file) return;
-
-                                                                                    const path = await uploadImage(file, "hero/cards");
-                                                                                    if (!path) return;
-
-                                                                                    updateCard(idx, cardIdx, { img: path });
-                                                                                    e.currentTarget.value = "";
-                                                                                }}
-                                                                                className="
-                                          w-full rounded-xl
-                                          border border-neutral-800 bg-neutral-950 px-3 py-2
-                                          text-sm text-neutral-100
-                                          file:mr-3 file:rounded-lg file:border-0 file:bg-neutral-800 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-neutral-100
-                                          hover:file:bg-neutral-700
-                                          disabled:cursor-not-allowed disabled:opacity-60
-                                        "
-                                                                            />
-
-                                                                            <div className="flex items-center justify-between gap-2">
-                                                                                <div className="text-xs text-neutral-400 break-all">
-                                                                                    현재: <span className="text-neutral-200">{c.img ? c.img : "(없음)"}</span>
-                                                                                </div>
-
-                                                                                {c.img ? (
-                                                                                    <button
-                                                                                        type="button"
-                                                                                        onClick={() => updateCard(idx, cardIdx, { img: "" })}
-                                                                                        disabled={disabled}
-                                                                                        className="
-                                              rounded-xl border border-neutral-800 bg-neutral-900/40 px-3 py-2
-                                              text-xs font-extrabold text-neutral-100 hover:bg-neutral-900
-                                              disabled:cursor-not-allowed disabled:opacity-60
-                                            "
-                                                                                    >
-                                                                                        제거
-                                                                                    </button>
-                                                                                ) : null}
-                                                                            </div>
+                                                                    {/* 상품 정보 미리보기 */}
+                                                                    <div className="rounded-xl border border-neutral-700 bg-neutral-900/50 p-3">
+                                                                        <div className="text-xs text-neutral-400 mb-2">상품 정보</div>
+                                                                        <div className="text-sm text-neutral-100 font-semibold">{c.title}</div>
+                                                                        <div className="text-sm text-neutral-300 mt-1">{c.price}</div>
+                                                                        <div className="flex flex-wrap gap-1 mt-2">
+                                                                            {c.badge && (
+                                                                                <span className="rounded-md bg-emerald-900/50 px-2 py-0.5 text-xs text-emerald-300">
+                                                                                    {c.badge}
+                                                                                </span>
+                                                                            )}
+                                                                            {c.tags?.map((tag, i) => (
+                                                                                <span key={i} className="rounded-md bg-sky-900/50 px-2 py-0.5 text-xs text-sky-300">
+                                                                                    {tag}
+                                                                                </span>
+                                                                            ))}
                                                                         </div>
                                                                     </div>
 
@@ -529,7 +535,11 @@ export default function HeroSlidesAdminPage() {
                                                                                         (e.currentTarget as HTMLImageElement).style.display = "none";
                                                                                     }}
                                                                                 />
-                                                                            ) : null}
+                                                                            ) : (
+                                                                                <div className="h-full w-full flex items-center justify-center text-neutral-500 text-sm">
+                                                                                    이미지 없음
+                                                                                </div>
+                                                                            )}
                                                                         </div>
                                                                     </div>
                                                                 </div>

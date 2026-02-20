@@ -18,12 +18,20 @@ import { useHomeOnsenSection, useHomeSpecialSection } from "../../hooks/useHomeS
 
 import { DesktopCarousel } from "../../components/common/DesktopCarousel";
 
+// subtitle에서 #태그들을 파싱하는 유틸
+function parseHashtags(subtitle: string): string[] {
+    if (!subtitle) return [];
+    const matches = subtitle.match(/#[^\s#]+/g);
+    return matches ? matches.map(tag => tag.slice(1)) : []; // # 제거
+}
+
 type Card = {
     id: string;
     title: string;
     price: string;
     img: string;
     badge?: string;
+    tags?: string[];  // subtitle에서 파싱한 해시태그들
 };
 
 function toCard(p: Product): Card {
@@ -35,6 +43,7 @@ function toCard(p: Product): Card {
             p.thumbnailUrl ||
             "https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=900&q=80",
         badge: p.region || undefined,
+        tags: parseHashtags(p.subtitle || ""),
     };
 }
 
@@ -73,11 +82,16 @@ function ProductCard({ item }: { item: Card }) {
                         ♡
                     </button>
 
-                    {item.badge ? (
-                        <span className="absolute left-3 top-3 rounded-full bg-white/90 px-2 py-1 text-xs font-bold text-neutral-800">
-              {item.badge}
-            </span>
-                    ) : null}
+                    {/* 태그들 (부제 해시태그만, 최대 3개) */}
+                    {item.tags && item.tags.length > 0 && (
+                        <div className="absolute left-3 top-3 flex flex-wrap gap-1">
+                            {item.tags.slice(0, 3).map((tag, i) => (
+                                <span key={i} className="rounded-full bg-sky-500/90 px-2 py-1 text-xs font-bold text-white">
+                                    {tag}
+                                </span>
+                            ))}
+                        </div>
+                    )}
                 </div>
 
                 <div className="p-4 flex min-h-[86px] min-w-0 flex-col justify-between">
@@ -255,10 +269,10 @@ export default function Home() {
                                                 key={c.id}
                                                 className="w-full max-w-[520px] flex items-center gap-4 rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm hover:shadow-md"
                                             >
-                                                <div className="w-20 overflow-hidden rounded-xl">
+                                                <div className="w-20 shrink-0 overflow-hidden rounded-xl">
                                                     <div className="aspect-[16/10] w-full overflow-hidden">
                                                         <img
-                                                            src={getPublicSiteAssetUrl(c.img)}
+                                                            src={c.img?.startsWith("http") ? c.img : getPublicSiteAssetUrl(c.img)}
                                                             alt={c.title}
                                                             className="h-full w-full object-cover object-center"
                                                         />
@@ -266,19 +280,23 @@ export default function Home() {
                                                 </div>
 
                                                 <div className="min-w-0 text-left">
-                                                    <div className="flex flex-wrap items-center gap-2 justify-start">
-                                                        {c.badge ? (
-                                                            <span className="rounded-md bg-emerald-50 px-2 py-1 text-xs md:text-sm font-bold text-emerald-700">
-                                {c.badge}
-                              </span>
-                                                        ) : null}
-                                                        <span className="rounded-md bg-sky-50 px-2 py-1 text-xs md:text-sm font-bold text-sky-700">
-                              시내호텔
-                            </span>
-                                                        <span className="rounded-md bg-neutral-100 px-2 py-1 text-xs md:text-sm font-bold text-neutral-700">
-                              다색골프
-                            </span>
-                                                    </div>
+                                                    {/* 부제 해시태그만 표시 (최대 3개) */}
+                                                    {c.tags && c.tags.length > 0 && (
+                                                        <div className="flex flex-wrap items-center gap-2 justify-start">
+                                                            {c.tags.slice(0, 3).map((tag, tagIdx) => (
+                                                                <span
+                                                                    key={tagIdx}
+                                                                    className={`rounded-md px-2 py-1 text-xs md:text-sm font-bold ${
+                                                                        tagIdx % 2 === 0
+                                                                            ? "bg-sky-50 text-sky-700"
+                                                                            : "bg-neutral-100 text-neutral-700"
+                                                                    }`}
+                                                                >
+                                                                    {tag}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    )}
 
                                                     <div className="mt-2 line-clamp-1 text-sm font-semibold text-neutral-900">{c.title}</div>
                                                     <div className="mt-1 text-sm font-extrabold text-neutral-900">{c.price}</div>

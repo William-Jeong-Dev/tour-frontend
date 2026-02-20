@@ -367,6 +367,9 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
                                 className="input w-full"
                                 placeholder="예) #1인1실 #온천 #시내호텔"
                             />
+                            <p className="mt-1 text-xs text-neutral-400">
+                                #태그 형식으로 입력하면 썸네일에 태그로 표시됩니다. (최대 3개)
+                            </p>
                         </Field>
 
                         {/* ✅ 썸네일 업로드 */}

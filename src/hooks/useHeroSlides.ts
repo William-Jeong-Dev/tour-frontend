@@ -3,10 +3,12 @@ import { supabase } from "../lib/supabase"; // 프로젝트 경로에 맞게 수
 
 export type HeroCard = {
     id: string;
+    productId?: string;  // 연결된 상품 ID
     title: string;
     price: string;
     img: string;
     badge?: string;
+    tags?: string[];     // subtitle에서 파싱한 해시태그들
 };
 
 export type HeroSlide = {
