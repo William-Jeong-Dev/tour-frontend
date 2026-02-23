@@ -222,7 +222,7 @@ export default function Header() {
                                                 setMobileMenuOpen(false);
                                             }}
                                             className={[
-                                                "shrink-0 rounded-full transition px-4 py-2 text-sm",
+                                                "shrink-0 rounded-full transition px-4 py-2 text-sm cursor-pointer",
                                                 active ? "bg-white text-[#2E97F2]" : "text-white/95 hover:bg-white/10 bg-white/5",
                                             ].join(" ")}
                                         >
@@ -424,7 +424,7 @@ export default function Header() {
                                             type="button"
                                             onClick={() => onClickTheme(t.slug)}
                                             className={[
-                                                "shrink-0 rounded-full transition",
+                                                "shrink-0 rounded-full transition cursor-pointer",
                                                 "px-6 py-3 text-[16px]",
                                                 active ? "bg-white text-[#2E97F2]" : "text-white/95 hover:bg-white/10",
                                             ].join(" ")}
