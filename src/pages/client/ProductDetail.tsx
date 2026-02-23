@@ -19,6 +19,13 @@ type Card = {
     badge?: string;
 };
 
+// subtitle에서 #태그들을 파싱하는 유틸
+function parseHashtags(subtitle: string): string[] {
+    if (!subtitle) return [];
+    const matches = subtitle.match(/#[^\s#]+/g);
+    return matches ? matches.map(tag => tag.slice(1)) : []; // # 제거
+}
+
 type TabKey = "select" | "itinerary" | "summary" | "info" | "schedule" | "insurance" | "policy";
 
 function krw(n: number) {
@@ -106,11 +113,11 @@ function useActiveSection(keys: TabKey[]) {
 
 function TagChip({ label, to }: { label: string; to?: string }) {
     const base =
-        "inline-flex items-center rounded-md border border-neutral-200 bg-white px-2 py-1 text-xs font-bold text-neutral-700";
+        "inline-flex items-center rounded-full bg-sky-500 px-3 py-1 text-xs font-bold text-white";
 
     if (to) {
         return (
-            <Link to={to} className={`${base} hover:bg-neutral-50`}>
+            <Link to={to} className={`${base} hover:bg-sky-600`}>
                 {label}
             </Link>
         );
@@ -314,22 +321,10 @@ export default function ProductDetail() {
     }, [id]);
 
     const tags = useMemo(() => {
-        const out: Array<{ label: string; to?: string }> = [];
-
-        if (product?.region) out.push({ label: product.region });
-        out.push({ label: "추천" });
-
-        if (themeQuery.data?.name && themeQuery.data?.slug) {
-            out.push({ label: themeQuery.data.name, to: `/theme/${themeQuery.data.slug}` });
-        }
-
-        if (navProduct?.badge && navProduct.badge !== product?.region) {
-            out.push({ label: navProduct.badge });
-        }
-
-        const seen = new Set<string>();
-        return out.filter((x) => (seen.has(x.label) ? false : (seen.add(x.label), true)));
-    }, [product?.region, navProduct?.badge, themeQuery.data?.name, themeQuery.data?.slug]);
+        // 어드민에서 등록한 태그(subtitle 해시태그)만 표시
+        const hashTags = parseHashtags(product?.subtitle || "");
+        return hashTags.map((tag) => ({ label: tag }));
+    }, [product?.subtitle]);
 
     const baseTitle =
         product?.title ??
