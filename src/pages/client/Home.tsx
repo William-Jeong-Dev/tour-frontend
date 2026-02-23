@@ -434,15 +434,15 @@ export default function Home() {
                             </h3>
                         </div>
 
-                        <div className="mt-3 flex items-center justify-center gap-2">
+                        <div className="mt-3 flex items-center justify-center gap-2 flex-wrap">
                             {(onsenCfg?.tags?.length ? onsenCfg.tags : ["특가일정", "2인골프", "온천포함", "시내호텔"]).map((t) => (
-                                <button
+                                <Link
                                     key={t}
-                                    type="button"
-                                    className="rounded-full border border-neutral-200 bg-white px-3 py-1 text-sm font-semibold text-neutral-700 hover:bg-neutral-50"
+                                    to={`/search?q=${encodeURIComponent(t)}`}
+                                    className="rounded-full border border-neutral-200 bg-white px-3 py-1 text-sm font-semibold text-neutral-700 hover:bg-neutral-50 cursor-pointer"
                                 >
                                     {t}
-                                </button>
+                                </Link>
                             ))}
                         </div>
 
