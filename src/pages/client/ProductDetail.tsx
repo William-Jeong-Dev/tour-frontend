@@ -235,17 +235,20 @@ export default function ProductDetail() {
 
     const navProduct = (location.state as { product?: Card } | null)?.product;
 
+    // 🧹 localStorage 디버그 로그 정리
+    useEffect(() => {
+        localStorage.removeItem('kakao_debug_logs');
+    }, []);
+
     // ✅ Kakao SDK 동적 로드 및 초기화
     useEffect(() => {
         const kakaoKey = import.meta.env.VITE_KAKAO_APP_KEY;
-        addDebugLog(`🔑 Kakao Key: ${kakaoKey ? `${kakaoKey.substring(0, 8)}...` : "❌ 없음"}`);
 
         // Kakao SDK 동적 로드 함수
         const loadKakaoSDK = () => {
             return new Promise<void>((resolve, reject) => {
                 // 이미 로드되어 있으면 바로 resolve
                 if (window.Kakao) {
-                    addDebugLog("✅ Kakao SDK 이미 로드됨");
                     resolve();
                     return;
                 }
@@ -253,7 +256,6 @@ export default function ProductDetail() {
                 // 이미 스크립트 태그가 있는지 확인
                 const existingScript = document.querySelector('script[src*="kakao"]');
                 if (existingScript) {
-                    addDebugLog("🔄 기존 Kakao 스크립트 대기 중...");
                     let attempts = 0;
                     const maxAttempts = 50; // 5초 (100ms * 50)
 
@@ -262,34 +264,26 @@ export default function ProductDetail() {
                         attempts++;
                         if (window.Kakao) {
                             clearInterval(checkLoaded);
-                            addDebugLog("✅ 기존 스크립트 로드 완료");
                             resolve();
                         } else if (attempts >= maxAttempts) {
                             clearInterval(checkLoaded);
-                            addDebugLog(`❌ Kakao SDK 로드 타임아웃 (${attempts * 100}ms)`);
-                            addDebugLog("🔄 동적 로드 재시도...");
-                            // 기존 스크립트 제거하고 재시도하지 않고 reject
                             reject(new Error("SDK load timeout"));
                         }
                     }, 100);
                     return;
                 }
 
-                // 새로운 스크립트 태그 생성 (integrity 제거 - 모바일 호환성)
-                addDebugLog("📥 Kakao SDK 동적 로드 시작");
+                // 새로운 스크립트 태그 생성
                 const script = document.createElement("script");
                 script.src = "https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js";
                 script.crossOrigin = "anonymous";
                 script.async = true;
 
                 script.onload = () => {
-                    addDebugLog("✅ Kakao SDK 스크립트 로드 완료 (동적)");
-                    // 약간의 대기 시간 추가 (SDK 초기화 대기)
                     setTimeout(() => resolve(), 200);
                 };
 
                 script.onerror = (error) => {
-                    addDebugLog(`❌ Kakao SDK 스크립트 로드 실패: ${error}`);
                     reject(error);
                 };
 
@@ -302,28 +296,15 @@ export default function ProductDetail() {
             try {
                 await loadKakaoSDK();
 
-                if (window.Kakao) {
-                    if (!window.Kakao.isInitialized()) {
-                        if (kakaoKey) {
-                            window.Kakao.init(kakaoKey);
-                            addDebugLog("✅ Kakao SDK 초기화 완료");
-                            addDebugLog(`✅ 초기화 확인: ${window.Kakao.isInitialized()}`);
-                        } else {
-                            addDebugLog("⚠️ VITE_KAKAO_APP_KEY 환경변수가 없습니다.");
-                        }
-                    } else {
-                        addDebugLog("✅ Kakao SDK 이미 초기화됨");
-                    }
-                } else {
-                    addDebugLog("❌ Kakao SDK 로드 후에도 window.Kakao가 없음");
+                if (window.Kakao && !window.Kakao.isInitialized() && kakaoKey) {
+                    window.Kakao.init(kakaoKey);
                 }
-            } catch (error: any) {
-                addDebugLog(`❌ Kakao SDK 초기화 실패: ${error?.message || error}`);
+            } catch (error) {
+                console.error("Kakao SDK 초기화 실패:", error);
             }
         };
 
         initKakao();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const favQuery = useQuery({
@@ -497,33 +478,6 @@ export default function ProductDetail() {
 
     const bookingMut = useCreateBooking(String(userId));
 
-    // 🔍 모바일 디버그용 로그 상태
-    const [debugLogs, setDebugLogs] = useState<string[]>(() => {
-        // localStorage에서 이전 로그 복원
-        try {
-            const saved = localStorage.getItem('kakao_debug_logs');
-            return saved ? JSON.parse(saved) : [];
-        } catch {
-            return [];
-        }
-    });
-    const [showDebug, setShowDebug] = useState(false);
-
-    const addDebugLog = (message: string) => {
-        console.log(message);
-        const logEntry = `${new Date().toLocaleTimeString()}: ${message}`;
-        setDebugLogs((prev) => {
-            const newLogs = [...prev, logEntry];
-            // localStorage에 저장 (페이지 이동해도 유지)
-            try {
-                localStorage.setItem('kakao_debug_logs', JSON.stringify(newLogs));
-            } catch (e) {
-                console.error('로그 저장 실패:', e);
-            }
-            return newLogs;
-        });
-    };
-
     const totalPrice = useMemo(() => {
         if (!selectedDeparture || selectedDeparture.status === "INQUIRY") return null;
         return adult * (selectedDeparture.priceAdult ?? 0);
@@ -558,25 +512,20 @@ export default function ProductDetail() {
 
     // ✅ 카카오톡 공유하기
     const handleShareKakao = async () => {
-        addDebugLog("📱 공유하기 버튼 클릭");
-
         // Kakao SDK 동적 로드 함수 (필요시)
         const ensureKakaoSDK = async (): Promise<boolean> => {
             // 이미 로드되어 있고 초기화되어 있으면 바로 true 반환
             if (window.Kakao && window.Kakao.isInitialized()) {
-                addDebugLog("✅ Kakao SDK 사용 가능");
                 return true;
             }
 
             // SDK가 없으면 로드 시도
             if (!window.Kakao) {
-                addDebugLog("📥 Kakao SDK 로드 시도 (버튼 클릭)...");
                 try {
                     await new Promise<void>((resolve, reject) => {
                         // 이미 스크립트 태그가 있는지 재확인
                         const existing = document.querySelector('script[src*="kakao"]');
                         if (existing) {
-                            addDebugLog("⏳ 기존 스크립트 로드 대기...");
                             // 최대 3초 대기
                             let waited = 0;
                             const waitInterval = setInterval(() => {
@@ -592,22 +541,16 @@ export default function ProductDetail() {
                             return;
                         }
 
-                        // 새 스크립트 추가 (integrity 제거)
+                        // 새 스크립트 추가
                         const script = document.createElement("script");
                         script.src = "https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js";
                         script.crossOrigin = "anonymous";
                         script.async = true;
-                        script.onload = () => {
-                            addDebugLog("✅ SDK 스크립트 추가됨");
-                            setTimeout(() => resolve(), 200);
-                        };
+                        script.onload = () => setTimeout(() => resolve(), 200);
                         script.onerror = () => reject(new Error("Failed to load Kakao SDK"));
                         document.head.appendChild(script);
                     });
-
-                    addDebugLog("✅ SDK 로드 완료 (버튼 클릭 시)");
-                } catch (error: any) {
-                    addDebugLog(`❌ SDK 로드 실패: ${error?.message || error}`);
+                } catch (error) {
                     return false;
                 }
             }
@@ -615,36 +558,26 @@ export default function ProductDetail() {
             // 초기화 시도
             if (window.Kakao && !window.Kakao.isInitialized()) {
                 const kakaoKey = import.meta.env.VITE_KAKAO_APP_KEY;
-                addDebugLog(`🔑 초기화 시도, Key: ${kakaoKey ? "있음" : "없음"}`);
                 if (kakaoKey) {
                     try {
                         window.Kakao.init(kakaoKey);
-                        addDebugLog("✅ Kakao SDK 초기화 완료 (버튼 클릭 시)");
                         return true;
-                    } catch (error: any) {
-                        addDebugLog(`❌ SDK 초기화 실패: ${error?.message || error}`);
+                    } catch (error) {
                         return false;
                     }
-                } else {
-                    addDebugLog("⚠️ VITE_KAKAO_APP_KEY 환경변수가 없습니다.");
-                    return false;
                 }
+                return false;
             }
 
-            const result = window.Kakao && window.Kakao.isInitialized();
-            addDebugLog(`🔍 최종 확인: ${result ? "사용 가능" : "사용 불가"}`);
-            return result;
+            return window.Kakao && window.Kakao.isInitialized();
         };
 
         // Kakao SDK 확인 및 로드
         const kakaoReady = await ensureKakaoSDK();
 
         if (!kakaoReady) {
-            addDebugLog("⚠️ Kakao SDK를 사용할 수 없습니다. 대체 방법 사용");
-
             // Kakao SDK가 없거나 초기화되지 않은 경우 Web Share API 사용
             if (navigator.share) {
-                addDebugLog("📤 Web Share API 사용");
                 try {
                     await navigator.share({
                         title: baseTitle,
@@ -653,15 +586,12 @@ export default function ProductDetail() {
                     });
                 } catch (err: any) {
                     if (err.name !== "AbortError") {
-                        addDebugLog(`공유 실패: ${err?.message || err}`);
-                        // 대체: URL 복사
                         await navigator.clipboard.writeText(window.location.href);
                         alert("링크가 복사되었습니다!");
                     }
                 }
             } else {
                 // Web Share API도 없으면 URL 복사
-                addDebugLog("📋 URL 복사");
                 await navigator.clipboard.writeText(window.location.href);
                 alert("링크가 복사되었습니다!");
             }
@@ -670,11 +600,6 @@ export default function ProductDetail() {
 
         // Kakao SDK 사용
         try {
-            addDebugLog("💬 카카오톡 공유 실행");
-            addDebugLog(`🌐 현재 URL: ${window.location.href}`);
-            addDebugLog(`📝 제목: ${baseTitle}`);
-            addDebugLog(`🖼️ 이미지: ${heroImg}`);
-
             window.Kakao.Share.sendDefault({
                 objectType: "feed",
                 content: {
@@ -696,14 +621,8 @@ export default function ProductDetail() {
                     },
                 ],
             });
-
-            addDebugLog("✅ 카카오톡 공유 함수 호출 완료");
-            addDebugLog("💬 카카오톡 공유 팝업이 열려야 합니다!");
         } catch (error: any) {
-            const errorMsg = `❌ Exception 발생: ${error?.message || JSON.stringify(error)}`;
-            addDebugLog(errorMsg);
-            alert(`카카오톡 공유 실패\n\n${errorMsg}\n\n현재 도메인: ${window.location.hostname}`);
-
+            console.error("카카오톡 공유 실패:", error);
             // 실패 시 URL 복사로 대체
             await navigator.clipboard.writeText(window.location.href);
             alert("링크가 복사되었습니다!");
@@ -712,70 +631,6 @@ export default function ProductDetail() {
 
     return (
         <main className="bg-white">
-            {/* 🔍 모바일 디버그 패널 - 상단 고정 */}
-            {showDebug && (
-                <div className="fixed top-0 left-0 right-0 z-[99998] lg:hidden">
-                    <div className="w-full max-h-[40vh] bg-white shadow-2xl flex flex-col border-b-4 border-red-500">
-                        {/* 헤더 (고정) */}
-                        <div className="flex items-center justify-between p-3 border-b border-neutral-200 shrink-0 bg-red-50">
-                            <h3 className="text-sm font-bold">🐛 디버그 ({debugLogs.length})</h3>
-                            <div className="flex items-center gap-1">
-                                <button
-                                    onClick={() => {
-                                        const text = debugLogs.join('\n');
-                                        navigator.clipboard.writeText(text).then(() => {
-                                            alert('로그가 복사되었습니다!');
-                                        });
-                                    }}
-                                    className="px-2 py-1 bg-blue-500 text-white rounded text-xs font-semibold"
-                                >
-                                    복사
-                                </button>
-                                <button
-                                    onClick={() => {
-                                        if (confirm('로그를 모두 삭제하시겠습니까?')) {
-                                            setDebugLogs([]);
-                                            localStorage.removeItem('kakao_debug_logs');
-                                        }
-                                    }}
-                                    className="px-2 py-1 bg-red-500 text-white rounded text-xs font-semibold"
-                                >
-                                    삭제
-                                </button>
-                                <button
-                                    onClick={() => setShowDebug(false)}
-                                    className="px-2 py-1 bg-neutral-700 text-white rounded text-xs font-semibold"
-                                >
-                                    닫기
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* 로그 내용 (스크롤 가능) */}
-                        <div className="overflow-y-auto flex-1 p-2" style={{ WebkitOverflowScrolling: 'touch' }}>
-                            <div className="space-y-1 text-[10px] font-mono">
-                                {debugLogs.map((log, idx) => (
-                                    <div key={idx} className="p-1.5 bg-neutral-50 rounded break-all whitespace-pre-wrap">
-                                        {log}
-                                    </div>
-                                ))}
-                                {debugLogs.length === 0 && (
-                                    <div className="text-neutral-400 text-center py-4 text-xs">로그가 없습니다.</div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* 🔍 디버그 버튼 (모바일 하단에 고정) */}
-            <button
-                onClick={() => setShowDebug(true)}
-                className="fixed bottom-28 right-4 z-[9999] lg:hidden w-12 h-12 bg-red-500 text-white rounded-full shadow-lg flex items-center justify-center text-xs font-bold"
-            >
-                🐛
-            </button>
-
             <Container>
                 {/* ✅ 상단: 뒤로 */}
                 <div className="pt-6">
