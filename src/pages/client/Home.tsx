@@ -613,10 +613,10 @@ export default function Home() {
                             </p>
 
                             <div className="mt-6 space-y-4">
-                                {onsenTopCards.slice(0, 2).map((c) => (
+                                {onsenTopCards.slice(0, 3).map((c) => (
                                     <Link key={c.id} to={`/product/${c.id}`} state={{ product: c }} className="block">
                                         <div className="flex items-center gap-4 rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm hover:shadow-md">
-                                            <div className="w-20 overflow-hidden rounded-xl">
+                                            <div className="w-24 shrink-0 overflow-hidden rounded-xl">
                                                 <div className="aspect-[16/10] w-full overflow-hidden">
                                                     <img
                                                         src={getPublicSiteAssetUrl(c.img)}
