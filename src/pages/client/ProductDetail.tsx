@@ -672,6 +672,8 @@ export default function ProductDetail() {
         try {
             addDebugLog("💬 카카오톡 공유 실행");
             addDebugLog(`🌐 현재 URL: ${window.location.href}`);
+            addDebugLog(`📝 제목: ${baseTitle}`);
+            addDebugLog(`🖼️ 이미지: ${heroImg}`);
 
             window.Kakao.Share.sendDefault({
                 objectType: "feed",
@@ -693,20 +695,14 @@ export default function ProductDetail() {
                         },
                     },
                 ],
-                fail: function(error: any) {
-                    // 카카오 공유 실패 콜백
-                    const errorMsg = `❌ 카카오 공유 실패\n\n에러 코드: ${error.code}\n메시지: ${error.msg}\n\n현재 도메인: ${window.location.hostname}`;
-                    addDebugLog(errorMsg);
-                    alert(errorMsg);
-                },
-                success: function() {
-                    addDebugLog("✅ 카카오톡 공유 성공");
-                }
             });
+
+            addDebugLog("✅ 카카오톡 공유 함수 호출 완료");
+            addDebugLog("💬 카카오톡 공유 팝업이 열려야 합니다!");
         } catch (error: any) {
-            const errorMsg = `❌ Exception 발생\n\n${error?.message || error}\n\n로그를 확인하려면 디버그 버튼(🐛)을 누르세요.`;
-            addDebugLog(`❌ 카카오톡 공유 실패: ${error?.message || error}`);
-            alert(errorMsg);
+            const errorMsg = `❌ Exception 발생: ${error?.message || JSON.stringify(error)}`;
+            addDebugLog(errorMsg);
+            alert(`카카오톡 공유 실패\n\n${errorMsg}\n\n현재 도메인: ${window.location.hostname}`);
 
             // 실패 시 URL 복사로 대체
             await navigator.clipboard.writeText(window.location.href);
