@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import Container from "../../components/common/Container";
@@ -17,6 +17,11 @@ import { listActivePopupsForClient, type PopupRow } from "../../api/popups.clien
 import { useHomeOnsenSection, useHomeSpecialSection } from "../../hooks/useHomeSections";
 
 import { DesktopCarousel } from "../../components/common/DesktopCarousel";
+
+// ✅ 찜하기
+import { useSession } from "../../hooks/useSession";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { addFavorite, removeFavorite, listMyFavorites } from "../../api/favorites.api";
 
 // subtitle에서 #태그들을 파싱하는 유틸
 function parseHashtags(subtitle: string): string[] {
@@ -56,7 +61,15 @@ function SectionTitle({ left, right }: { left: string; right?: string }) {
     );
 }
 
-function ProductCard({ item }: { item: Card }) {
+function ProductCard({
+    item,
+    isFavorited,
+    onFavoriteToggle
+}: {
+    item: Card;
+    isFavorited: boolean;
+    onFavoriteToggle: (productId: string) => void;
+}) {
     return (
         <Link to={`/product/${item.id}`} state={{ product: item }} className="block">
             <article className="group overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm transition hover:shadow-md">
@@ -76,10 +89,10 @@ function ProductCard({ item }: { item: Card }) {
                         onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            alert("찜(데모)");
+                            onFavoriteToggle(item.id);
                         }}
                     >
-                        ♡
+                        {isFavorited ? "♥" : "♡"}
                     </button>
                 </div>
 
@@ -108,6 +121,7 @@ function ProductCard({ item }: { item: Card }) {
 }
 
 export default function Home() {
+    const nav = useNavigate();
     const productsQuery = useProducts();
 
     const specialCfgQ = useHomeSpecialSection();
@@ -115,6 +129,48 @@ export default function Home() {
 
     const specialCfg = specialCfgQ.data;
     const onsenCfg = onsenCfgQ.data;
+
+    // ✅ 찜하기 관련
+    const { session } = useSession();
+    const userId = session?.user?.id ?? null;
+    const qc = useQueryClient();
+
+    // 내가 찜한 상품 리스트 가져오기
+    const myFavoritesQuery = useQuery({
+        queryKey: ["favorites", "me", userId],
+        queryFn: () => listMyFavorites(String(userId)),
+        enabled: Boolean(userId),
+    });
+
+    const favoritedProductIds = useMemo(() => {
+        const list = myFavoritesQuery.data ?? [];
+        return new Set(list.map((fav) => fav.product_id));
+    }, [myFavoritesQuery.data]);
+
+    // 찜하기/취소 toggle
+    const toggleFavMutation = useMutation({
+        mutationFn: async ({ productId, isFav }: { productId: string; isFav: boolean }) => {
+            if (!userId) throw new Error("NOT_LOGGED_IN");
+            if (isFav) {
+                return removeFavorite(productId, userId);
+            } else {
+                return addFavorite(productId, userId);
+            }
+        },
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: ["favorites", "me", userId] });
+        },
+    });
+
+    const handleFavoriteToggle = (productId: string) => {
+        if (!userId) {
+            alert("로그인이 필요합니다.");
+            nav("/login");
+            return;
+        }
+        const isFav = favoritedProductIds.has(productId);
+        toggleFavMutation.mutate({ productId, isFav });
+    };
 
     const published = useMemo(() => {
         const items = productsQuery.data ?? [];
@@ -392,13 +448,27 @@ export default function Home() {
                                 {/* DESKTOP GRID */}
                                 <div className="mt-6 hidden md:grid md:grid-cols-4 md:gap-6">
                                     {specialCards.map((p) => (
-                                        <ProductCard key={p.id} item={p} />
+                                        <ProductCard
+                                            key={p.id}
+                                            item={p}
+                                            isFavorited={favoritedProductIds.has(p.id)}
+                                            onFavoriteToggle={handleFavoriteToggle}
+                                        />
                                     ))}
                                 </div>
 
                                 {/* MOBILE SLIDE */}
                                 <div className="mt-6 md:hidden">
-                                    <MobileSnapCarousel items={specialCards} renderItem={(p) => <ProductCard item={p} />} />
+                                    <MobileSnapCarousel
+                                        items={specialCards}
+                                        renderItem={(p) => (
+                                            <ProductCard
+                                                item={p}
+                                                isFavorited={favoritedProductIds.has(p.id)}
+                                                onFavoriteToggle={handleFavoriteToggle}
+                                            />
+                                        )}
+                                    />
                                 </div>
                             </>
                         ) : (
@@ -409,7 +479,11 @@ export default function Home() {
                                         items={specialCards}
                                         renderItem={(p) => (
                                             <div className="w-[260px] shrink-0 md:w-[280px]">
-                                                <ProductCard item={p} />
+                                                <ProductCard
+                                                    item={p}
+                                                    isFavorited={favoritedProductIds.has(p.id)}
+                                                    onFavoriteToggle={handleFavoriteToggle}
+                                                />
                                             </div>
                                         )}
                                     />
@@ -417,7 +491,16 @@ export default function Home() {
 
                                 {/* MOBILE: 기존 스냅 캐러셀 */}
                                 <div className="mt-6 md:hidden">
-                                    <MobileSnapCarousel items={specialCards} renderItem={(p) => <ProductCard item={p} />} />
+                                    <MobileSnapCarousel
+                                        items={specialCards}
+                                        renderItem={(p) => (
+                                            <ProductCard
+                                                item={p}
+                                                isFavorited={favoritedProductIds.has(p.id)}
+                                                onFavoriteToggle={handleFavoriteToggle}
+                                            />
+                                        )}
+                                    />
                                 </div>
                             </>
                         )}
@@ -451,13 +534,27 @@ export default function Home() {
                                 {/* DESKTOP GRID */}
                                 <div className="mt-8 hidden md:grid md:grid-cols-4 md:gap-6">
                                     {onsenTopCards.map((p) => (
-                                        <ProductCard key={p.id} item={p} />
+                                        <ProductCard
+                                            key={p.id}
+                                            item={p}
+                                            isFavorited={favoritedProductIds.has(p.id)}
+                                            onFavoriteToggle={handleFavoriteToggle}
+                                        />
                                     ))}
                                 </div>
 
                                 {/* MOBILE SLIDE */}
                                 <div className="mt-8 md:hidden">
-                                    <MobileSnapCarousel items={onsenTopCards} renderItem={(p) => <ProductCard item={p} />} />
+                                    <MobileSnapCarousel
+                                        items={onsenTopCards}
+                                        renderItem={(p) => (
+                                            <ProductCard
+                                                item={p}
+                                                isFavorited={favoritedProductIds.has(p.id)}
+                                                onFavoriteToggle={handleFavoriteToggle}
+                                            />
+                                        )}
+                                    />
                                 </div>
                             </>
                         ) : (
@@ -468,7 +565,11 @@ export default function Home() {
                                         items={onsenTopCards}
                                         renderItem={(p) => (
                                             <div className="w-[260px] shrink-0 md:w-[280px] h-full">
-                                                <ProductCard item={p} />
+                                                <ProductCard
+                                                    item={p}
+                                                    isFavorited={favoritedProductIds.has(p.id)}
+                                                    onFavoriteToggle={handleFavoriteToggle}
+                                                />
                                             </div>
                                         )}
                                     />
@@ -476,7 +577,16 @@ export default function Home() {
 
                                 {/* MOBILE SLIDE */}
                                 <div className="mt-8 md:hidden">
-                                    <MobileSnapCarousel items={onsenTopCards} renderItem={(p) => <ProductCard item={p} />} />
+                                    <MobileSnapCarousel
+                                        items={onsenTopCards}
+                                        renderItem={(p) => (
+                                            <ProductCard
+                                                item={p}
+                                                isFavorited={favoritedProductIds.has(p.id)}
+                                                onFavoriteToggle={handleFavoriteToggle}
+                                            />
+                                        )}
+                                    />
                                 </div>
                             </>
                         )}
