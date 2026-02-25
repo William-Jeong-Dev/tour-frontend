@@ -498,12 +498,30 @@ export default function ProductDetail() {
     const bookingMut = useCreateBooking(String(userId));
 
     // 🔍 모바일 디버그용 로그 상태
-    const [debugLogs, setDebugLogs] = useState<string[]>([]);
+    const [debugLogs, setDebugLogs] = useState<string[]>(() => {
+        // localStorage에서 이전 로그 복원
+        try {
+            const saved = localStorage.getItem('kakao_debug_logs');
+            return saved ? JSON.parse(saved) : [];
+        } catch {
+            return [];
+        }
+    });
     const [showDebug, setShowDebug] = useState(false);
 
     const addDebugLog = (message: string) => {
         console.log(message);
-        setDebugLogs((prev) => [...prev, `${new Date().toLocaleTimeString()}: ${message}`]);
+        const logEntry = `${new Date().toLocaleTimeString()}: ${message}`;
+        setDebugLogs((prev) => {
+            const newLogs = [...prev, logEntry];
+            // localStorage에 저장 (페이지 이동해도 유지)
+            try {
+                localStorage.setItem('kakao_debug_logs', JSON.stringify(newLogs));
+            } catch (e) {
+                console.error('로그 저장 실패:', e);
+            }
+            return newLogs;
+        });
     };
 
     const totalPrice = useMemo(() => {
@@ -653,6 +671,8 @@ export default function ProductDetail() {
         // Kakao SDK 사용
         try {
             addDebugLog("💬 카카오톡 공유 실행");
+            addDebugLog(`🌐 현재 URL: ${window.location.href}`);
+
             window.Kakao.Share.sendDefault({
                 objectType: "feed",
                 content: {
@@ -673,13 +693,24 @@ export default function ProductDetail() {
                         },
                     },
                 ],
+                fail: function(error: any) {
+                    // 카카오 공유 실패 콜백
+                    const errorMsg = `❌ 카카오 공유 실패\n\n에러 코드: ${error.code}\n메시지: ${error.msg}\n\n현재 도메인: ${window.location.hostname}`;
+                    addDebugLog(errorMsg);
+                    alert(errorMsg);
+                },
+                success: function() {
+                    addDebugLog("✅ 카카오톡 공유 성공");
+                }
             });
-            addDebugLog("✅ 카카오톡 공유 성공");
         } catch (error: any) {
+            const errorMsg = `❌ Exception 발생\n\n${error?.message || error}\n\n로그를 확인하려면 디버그 버튼(🐛)을 누르세요.`;
             addDebugLog(`❌ 카카오톡 공유 실패: ${error?.message || error}`);
+            alert(errorMsg);
+
             // 실패 시 URL 복사로 대체
             await navigator.clipboard.writeText(window.location.href);
-            alert("카카오톡 공유에 실패했습니다. 링크가 복사되었습니다!");
+            alert("링크가 복사되었습니다!");
         }
     };
 
@@ -692,7 +723,7 @@ export default function ProductDetail() {
                         {/* 헤더 (고정) */}
                         <div className="flex items-center justify-between p-3 border-b border-neutral-200 shrink-0 bg-red-50">
                             <h3 className="text-sm font-bold">🐛 디버그 ({debugLogs.length})</h3>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1">
                                 <button
                                     onClick={() => {
                                         const text = debugLogs.join('\n');
@@ -703,6 +734,17 @@ export default function ProductDetail() {
                                     className="px-2 py-1 bg-blue-500 text-white rounded text-xs font-semibold"
                                 >
                                     복사
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        if (confirm('로그를 모두 삭제하시겠습니까?')) {
+                                            setDebugLogs([]);
+                                            localStorage.removeItem('kakao_debug_logs');
+                                        }
+                                    }}
+                                    className="px-2 py-1 bg-red-500 text-white rounded text-xs font-semibold"
+                                >
+                                    삭제
                                 </button>
                                 <button
                                     onClick={() => setShowDebug(false)}
