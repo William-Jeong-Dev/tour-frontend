@@ -687,24 +687,50 @@ export default function ProductDetail() {
         <main className="bg-white">
             {/* 🔍 모바일 디버그 패널 */}
             {showDebug && (
-                <div className="fixed inset-0 z-[99999] bg-black/50 flex items-end lg:hidden">
-                    <div className="w-full max-h-[70vh] bg-white rounded-t-2xl p-4 overflow-y-auto">
-                        <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-lg font-bold">디버그 로그</h3>
-                            <button
-                                onClick={() => setShowDebug(false)}
-                                className="px-3 py-1 bg-neutral-200 rounded-lg text-sm font-semibold"
-                            >
-                                닫기
-                            </button>
+                <div
+                    className="fixed inset-0 z-[99999] bg-black/50 flex items-end lg:hidden"
+                    onClick={() => setShowDebug(false)}
+                >
+                    <div
+                        className="w-full max-h-[80vh] bg-white rounded-t-2xl flex flex-col"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* 헤더 (고정) */}
+                        <div className="flex items-center justify-between p-4 border-b border-neutral-200 shrink-0">
+                            <h3 className="text-lg font-bold">디버그 로그 ({debugLogs.length})</h3>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => {
+                                        const text = debugLogs.join('\n');
+                                        navigator.clipboard.writeText(text).then(() => {
+                                            alert('로그가 복사되었습니다!');
+                                        });
+                                    }}
+                                    className="px-3 py-1 bg-blue-500 text-white rounded-lg text-sm font-semibold"
+                                >
+                                    복사
+                                </button>
+                                <button
+                                    onClick={() => setShowDebug(false)}
+                                    className="px-3 py-1 bg-neutral-200 rounded-lg text-sm font-semibold"
+                                >
+                                    닫기
+                                </button>
+                            </div>
                         </div>
-                        <div className="space-y-1 text-xs font-mono">
-                            {debugLogs.map((log, idx) => (
-                                <div key={idx} className="p-2 bg-neutral-50 rounded">{log}</div>
-                            ))}
-                            {debugLogs.length === 0 && (
-                                <div className="text-neutral-400">로그가 없습니다.</div>
-                            )}
+
+                        {/* 로그 내용 (스크롤 가능) */}
+                        <div className="overflow-y-auto flex-1 p-4" style={{ WebkitOverflowScrolling: 'touch' }}>
+                            <div className="space-y-1 text-xs font-mono">
+                                {debugLogs.map((log, idx) => (
+                                    <div key={idx} className="p-2 bg-neutral-50 rounded break-all whitespace-pre-wrap">
+                                        {log}
+                                    </div>
+                                ))}
+                                {debugLogs.length === 0 && (
+                                    <div className="text-neutral-400 text-center py-8">로그가 없습니다.</div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
