@@ -685,19 +685,13 @@ export default function ProductDetail() {
 
     return (
         <main className="bg-white">
-            {/* 🔍 모바일 디버그 패널 */}
+            {/* 🔍 모바일 디버그 패널 - 상단 고정 */}
             {showDebug && (
-                <div
-                    className="fixed inset-0 z-[99999] bg-black/50 flex items-end lg:hidden"
-                    onClick={() => setShowDebug(false)}
-                >
-                    <div
-                        className="w-full max-h-[80vh] bg-white rounded-t-2xl flex flex-col"
-                        onClick={(e) => e.stopPropagation()}
-                    >
+                <div className="fixed top-0 left-0 right-0 z-[99998] lg:hidden">
+                    <div className="w-full max-h-[40vh] bg-white shadow-2xl flex flex-col border-b-4 border-red-500">
                         {/* 헤더 (고정) */}
-                        <div className="flex items-center justify-between p-4 border-b border-neutral-200 shrink-0">
-                            <h3 className="text-lg font-bold">디버그 로그 ({debugLogs.length})</h3>
+                        <div className="flex items-center justify-between p-3 border-b border-neutral-200 shrink-0 bg-red-50">
+                            <h3 className="text-sm font-bold">🐛 디버그 ({debugLogs.length})</h3>
                             <div className="flex items-center gap-2">
                                 <button
                                     onClick={() => {
@@ -706,13 +700,13 @@ export default function ProductDetail() {
                                             alert('로그가 복사되었습니다!');
                                         });
                                     }}
-                                    className="px-3 py-1 bg-blue-500 text-white rounded-lg text-sm font-semibold"
+                                    className="px-2 py-1 bg-blue-500 text-white rounded text-xs font-semibold"
                                 >
                                     복사
                                 </button>
                                 <button
                                     onClick={() => setShowDebug(false)}
-                                    className="px-3 py-1 bg-neutral-200 rounded-lg text-sm font-semibold"
+                                    className="px-2 py-1 bg-neutral-700 text-white rounded text-xs font-semibold"
                                 >
                                     닫기
                                 </button>
@@ -720,15 +714,15 @@ export default function ProductDetail() {
                         </div>
 
                         {/* 로그 내용 (스크롤 가능) */}
-                        <div className="overflow-y-auto flex-1 p-4" style={{ WebkitOverflowScrolling: 'touch' }}>
-                            <div className="space-y-1 text-xs font-mono">
+                        <div className="overflow-y-auto flex-1 p-2" style={{ WebkitOverflowScrolling: 'touch' }}>
+                            <div className="space-y-1 text-[10px] font-mono">
                                 {debugLogs.map((log, idx) => (
-                                    <div key={idx} className="p-2 bg-neutral-50 rounded break-all whitespace-pre-wrap">
+                                    <div key={idx} className="p-1.5 bg-neutral-50 rounded break-all whitespace-pre-wrap">
                                         {log}
                                     </div>
                                 ))}
                                 {debugLogs.length === 0 && (
-                                    <div className="text-neutral-400 text-center py-8">로그가 없습니다.</div>
+                                    <div className="text-neutral-400 text-center py-4 text-xs">로그가 없습니다.</div>
                                 )}
                             </div>
                         </div>
