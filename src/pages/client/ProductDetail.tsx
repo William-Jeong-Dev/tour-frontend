@@ -217,6 +217,13 @@ export function useCreateBooking(userId: string) {
     });
 }
 
+// Kakao SDK 타입 선언
+declare global {
+    interface Window {
+        Kakao: any;
+    }
+}
+
 export default function ProductDetail() {
     const nav = useNavigate();
     const { id } = useParams();
@@ -227,6 +234,17 @@ export default function ProductDetail() {
     const userId = session?.user?.id ?? null;
 
     const navProduct = (location.state as { product?: Card } | null)?.product;
+
+    // ✅ Kakao SDK 초기화
+    useEffect(() => {
+        if (window.Kakao && !window.Kakao.isInitialized()) {
+            // 카카오 앱 키가 환경변수에 있으면 초기화
+            const kakaoKey = import.meta.env.VITE_KAKAO_APP_KEY;
+            if (kakaoKey) {
+                window.Kakao.init(kakaoKey);
+            }
+        }
+    }, []);
 
     const favQuery = useQuery({
         queryKey: ["favorite", { productId: id, userId }],
@@ -431,6 +449,59 @@ export default function ProductDetail() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedDateISO]);
 
+    // ✅ 카카오톡 공유하기
+    const handleShareKakao = () => {
+        if (!window.Kakao || !window.Kakao.isInitialized()) {
+            // Kakao SDK가 없거나 초기화되지 않은 경우 Web Share API 사용
+            if (navigator.share) {
+                navigator.share({
+                    title: baseTitle,
+                    text: product?.description || "청원여행사 골프/여행 상품을 확인해보세요.",
+                    url: window.location.href,
+                }).catch((err) => {
+                    if (err.name !== "AbortError") {
+                        console.error("공유 실패:", err);
+                        // 대체: URL 복사
+                        navigator.clipboard.writeText(window.location.href).then(() => {
+                            alert("링크가 복사되었습니다!");
+                        });
+                    }
+                });
+            } else {
+                // Web Share API도 없으면 URL 복사
+                navigator.clipboard.writeText(window.location.href).then(() => {
+                    alert("링크가 복사되었습니다!");
+                }).catch(() => {
+                    alert("공유 기능을 사용할 수 없습니다.");
+                });
+            }
+            return;
+        }
+
+        // Kakao SDK 사용
+        window.Kakao.Share.sendDefault({
+            objectType: "feed",
+            content: {
+                title: baseTitle,
+                description: product?.description || "청원여행사 골프/여행 상품을 확인해보세요.",
+                imageUrl: heroImg,
+                link: {
+                    mobileWebUrl: window.location.href,
+                    webUrl: window.location.href,
+                },
+            },
+            buttons: [
+                {
+                    title: "상품 보러가기",
+                    link: {
+                        mobileWebUrl: window.location.href,
+                        webUrl: window.location.href,
+                    },
+                },
+            ],
+        });
+    };
+
     return (
         <main className="bg-white">
             <Container>
@@ -546,12 +617,14 @@ export default function ProductDetail() {
                                     <button
                                         type="button"
                                         className="rounded-2xl bg-yellow-400 px-4 py-3 text-sm font-extrabold text-neutral-900 hover:bg-yellow-300"
+                                        onClick={() => nav("/estimate")}
                                     >
                                         1:1 맞춤견적
                                     </button>
                                     <button
                                         type="button"
                                         className="rounded-2xl border border-neutral-300 bg-white px-4 py-3 text-sm font-bold text-neutral-800 hover:bg-neutral-50"
+                                        onClick={handleShareKakao}
                                     >
                                         공유하기
                                     </button>
