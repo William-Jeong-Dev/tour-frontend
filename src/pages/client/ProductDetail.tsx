@@ -483,33 +483,40 @@ export default function ProductDetail() {
         console.log("Kakao SDK:", window.Kakao ? "존재" : "없음");
         console.log("Kakao 초기화:", window.Kakao?.isInitialized() ? "완료" : "안됨");
 
+        // 🔍 모바일 디버깅용: 상태 확인
+        const debugInfo = `Kakao: ${window.Kakao ? "O" : "X"}\n초기화: ${window.Kakao?.isInitialized() ? "O" : "X"}\nShare: ${window.Kakao?.Share ? "O" : "X"}`;
+        console.log("🔍 디버그 정보:", debugInfo);
+
         if (!window.Kakao || !window.Kakao.isInitialized()) {
             console.warn("⚠️ Kakao SDK를 사용할 수 없습니다. 대체 방법 사용");
 
-            // Kakao SDK가 없거나 초기화되지 않은 경우 Web Share API 사용
-            if (navigator.share) {
-                console.log("📤 Web Share API 사용");
-                navigator.share({
-                    title: baseTitle,
-                    text: product?.description || "청원여행사 골프/여행 상품을 확인해보세요.",
-                    url: window.location.href,
-                }).catch((err) => {
-                    if (err.name !== "AbortError") {
-                        console.error("공유 실패:", err);
-                        // 대체: URL 복사
-                        navigator.clipboard.writeText(window.location.href).then(() => {
-                            alert("링크가 복사되었습니다!");
-                        });
-                    }
-                });
-            } else {
-                // Web Share API도 없으면 URL 복사
-                console.log("📋 URL 복사");
-                navigator.clipboard.writeText(window.location.href).then(() => {
-                    alert("링크가 복사되었습니다!");
-                }).catch(() => {
-                    alert("공유 기능을 사용할 수 없습니다.");
-                });
+            // 모바일 디버깅: 왜 Kakao를 못 쓰는지 알림
+            if (confirm(`디버그: Kakao SDK를 사용할 수 없습니다.\n\n${debugInfo}\n\n그래도 공유하시겠습니까? (Web Share API 사용)`)) {
+                // Kakao SDK가 없거나 초기화되지 않은 경우 Web Share API 사용
+                if (navigator.share) {
+                    console.log("📤 Web Share API 사용");
+                    navigator.share({
+                        title: baseTitle,
+                        text: product?.description || "청원여행사 골프/여행 상품을 확인해보세요.",
+                        url: window.location.href,
+                    }).catch((err) => {
+                        if (err.name !== "AbortError") {
+                            console.error("공유 실패:", err);
+                            // 대체: URL 복사
+                            navigator.clipboard.writeText(window.location.href).then(() => {
+                                alert("링크가 복사되었습니다!");
+                            });
+                        }
+                    });
+                } else {
+                    // Web Share API도 없으면 URL 복사
+                    console.log("📋 URL 복사");
+                    navigator.clipboard.writeText(window.location.href).then(() => {
+                        alert("링크가 복사되었습니다!");
+                    }).catch(() => {
+                        alert("공유 기능을 사용할 수 없습니다.");
+                    });
+                }
             }
             return;
         }
