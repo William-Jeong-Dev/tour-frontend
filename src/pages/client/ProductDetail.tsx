@@ -238,15 +238,24 @@ export default function ProductDetail() {
     // ✅ Kakao SDK 초기화
     useEffect(() => {
         const kakaoKey = import.meta.env.VITE_KAKAO_APP_KEY;
-        console.log("🔑 Kakao Key:", kakaoKey ? "존재함" : "없음");
+        // 실제 키 값 일부를 로그로 출력 (디버깅용)
+        console.log("🔑 Kakao Key:", kakaoKey ? `${kakaoKey.substring(0, 8)}...` : "❌ 없음");
+        console.log("🔑 전체 env:", import.meta.env);
 
         // SDK 로드 대기
         const initKakao = () => {
+            console.log("🔄 initKakao 함수 실행, window.Kakao:", !!window.Kakao);
+
             if (window.Kakao) {
                 if (!window.Kakao.isInitialized()) {
                     if (kakaoKey) {
-                        window.Kakao.init(kakaoKey);
-                        console.log("✅ Kakao SDK 초기화 완료");
+                        try {
+                            window.Kakao.init(kakaoKey);
+                            console.log("✅ Kakao SDK 초기화 완료");
+                            console.log("✅ 초기화 확인:", window.Kakao.isInitialized());
+                        } catch (error) {
+                            console.error("❌ Kakao SDK 초기화 실패:", error);
+                        }
                     } else {
                         console.warn("⚠️ VITE_KAKAO_APP_KEY 환경변수가 없습니다.");
                     }
