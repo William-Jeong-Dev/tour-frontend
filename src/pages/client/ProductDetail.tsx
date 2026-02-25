@@ -235,43 +235,92 @@ export default function ProductDetail() {
 
     const navProduct = (location.state as { product?: Card } | null)?.product;
 
-    // ✅ Kakao SDK 초기화
+    // ✅ Kakao SDK 동적 로드 및 초기화
     useEffect(() => {
         const kakaoKey = import.meta.env.VITE_KAKAO_APP_KEY;
-        // 실제 키 값 일부를 로그로 출력 (디버깅용)
         console.log("🔑 Kakao Key:", kakaoKey ? `${kakaoKey.substring(0, 8)}...` : "❌ 없음");
-        console.log("🔑 전체 env:", import.meta.env);
 
-        // SDK 로드 대기
-        const initKakao = () => {
-            console.log("🔄 initKakao 함수 실행, window.Kakao:", !!window.Kakao);
+        // Kakao SDK 동적 로드 함수
+        const loadKakaoSDK = () => {
+            return new Promise<void>((resolve, reject) => {
+                // 이미 로드되어 있으면 바로 resolve
+                if (window.Kakao) {
+                    console.log("✅ Kakao SDK 이미 로드됨");
+                    resolve();
+                    return;
+                }
 
-            if (window.Kakao) {
-                if (!window.Kakao.isInitialized()) {
-                    if (kakaoKey) {
-                        try {
+                // 이미 스크립트 태그가 있는지 확인
+                const existingScript = document.querySelector('script[src*="kakao"]');
+                if (existingScript) {
+                    console.log("🔄 기존 Kakao 스크립트 대기 중...");
+                    // 스크립트가 로드될 때까지 대기
+                    const checkLoaded = setInterval(() => {
+                        if (window.Kakao) {
+                            clearInterval(checkLoaded);
+                            console.log("✅ 기존 스크립트 로드 완료");
+                            resolve();
+                        }
+                    }, 100);
+                    // 10초 후 타임아웃
+                    setTimeout(() => {
+                        clearInterval(checkLoaded);
+                        if (!window.Kakao) {
+                            console.error("❌ Kakao SDK 로드 타임아웃");
+                            reject(new Error("SDK load timeout"));
+                        }
+                    }, 10000);
+                    return;
+                }
+
+                // 새로운 스크립트 태그 생성
+                console.log("📥 Kakao SDK 동적 로드 시작");
+                const script = document.createElement("script");
+                script.src = "https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js";
+                script.integrity = "sha384-TiCUE00h+2oT8G6dE++rQeEQr4FEMbkKDOGMxqYJNL1qvNg9fVFccgqGg5ijKpw/";
+                script.crossOrigin = "anonymous";
+                script.async = true;
+
+                script.onload = () => {
+                    console.log("✅ Kakao SDK 스크립트 로드 완료");
+                    resolve();
+                };
+
+                script.onerror = (error) => {
+                    console.error("❌ Kakao SDK 스크립트 로드 실패:", error);
+                    reject(error);
+                };
+
+                document.head.appendChild(script);
+            });
+        };
+
+        // SDK 로드 및 초기화
+        const initKakao = async () => {
+            try {
+                await loadKakaoSDK();
+
+                if (window.Kakao) {
+                    if (!window.Kakao.isInitialized()) {
+                        if (kakaoKey) {
                             window.Kakao.init(kakaoKey);
                             console.log("✅ Kakao SDK 초기화 완료");
                             console.log("✅ 초기화 확인:", window.Kakao.isInitialized());
-                        } catch (error) {
-                            console.error("❌ Kakao SDK 초기화 실패:", error);
+                        } else {
+                            console.warn("⚠️ VITE_KAKAO_APP_KEY 환경변수가 없습니다.");
                         }
                     } else {
-                        console.warn("⚠️ VITE_KAKAO_APP_KEY 환경변수가 없습니다.");
+                        console.log("✅ Kakao SDK 이미 초기화됨");
                     }
                 } else {
-                    console.log("✅ Kakao SDK 이미 초기화됨");
+                    console.error("❌ Kakao SDK 로드 후에도 window.Kakao가 없음");
                 }
-            } else {
-                console.warn("⚠️ Kakao SDK가 로드되지 않았습니다.");
-                // SDK 로드 재시도
-                setTimeout(initKakao, 100);
+            } catch (error) {
+                console.error("❌ Kakao SDK 초기화 실패:", error);
             }
         };
 
-        // 약간의 지연 후 초기화 (SDK 로드 대기)
-        const timer = setTimeout(initKakao, 100);
-        return () => clearTimeout(timer);
+        initKakao();
     }, []);
 
     const favQuery = useQuery({
@@ -478,45 +527,89 @@ export default function ProductDetail() {
     }, [selectedDateISO]);
 
     // ✅ 카카오톡 공유하기
-    const handleShareKakao = () => {
+    const handleShareKakao = async () => {
         console.log("📱 공유하기 버튼 클릭");
-        console.log("Kakao SDK:", window.Kakao ? "존재" : "없음");
-        console.log("Kakao 초기화:", window.Kakao?.isInitialized() ? "완료" : "안됨");
 
-        // 🔍 모바일 디버깅용: 상태 확인
-        const debugInfo = `Kakao: ${window.Kakao ? "O" : "X"}\n초기화: ${window.Kakao?.isInitialized() ? "O" : "X"}\nShare: ${window.Kakao?.Share ? "O" : "X"}`;
-        console.log("🔍 디버그 정보:", debugInfo);
+        // Kakao SDK 동적 로드 함수 (필요시)
+        const ensureKakaoSDK = async (): Promise<boolean> => {
+            // 이미 로드되어 있고 초기화되어 있으면 바로 true 반환
+            if (window.Kakao && window.Kakao.isInitialized()) {
+                console.log("✅ Kakao SDK 사용 가능");
+                return true;
+            }
 
-        if (!window.Kakao || !window.Kakao.isInitialized()) {
-            console.warn("⚠️ Kakao SDK를 사용할 수 없습니다. 대체 방법 사용");
+            // SDK가 없으면 로드 시도
+            if (!window.Kakao) {
+                console.log("📥 Kakao SDK 로드 시도...");
+                try {
+                    await new Promise<void>((resolve, reject) => {
+                        const script = document.createElement("script");
+                        script.src = "https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js";
+                        script.integrity = "sha384-TiCUE00h+2oT8G6dE++rQeEQr4FEMbkKDOGMxqYJNL1qvNg9fVFccgqGg5ijKpw/";
+                        script.crossOrigin = "anonymous";
+                        script.async = true;
+                        script.onload = () => resolve();
+                        script.onerror = () => reject(new Error("Failed to load Kakao SDK"));
+                        document.head.appendChild(script);
+                    });
 
-            // 모바일 디버깅: 왜 Kakao를 못 쓰는지 알림
-            if (confirm(`디버그: Kakao SDK를 사용할 수 없습니다.\n\n${debugInfo}\n\n그래도 공유하시겠습니까? (Web Share API 사용)`)) {
-                // Kakao SDK가 없거나 초기화되지 않은 경우 Web Share API 사용
-                if (navigator.share) {
-                    console.log("📤 Web Share API 사용");
-                    navigator.share({
+                    // SDK 로드 후 약간 대기
+                    await new Promise((resolve) => setTimeout(resolve, 100));
+                } catch (error) {
+                    console.error("❌ SDK 로드 실패:", error);
+                    return false;
+                }
+            }
+
+            // 초기화 시도
+            if (window.Kakao && !window.Kakao.isInitialized()) {
+                const kakaoKey = import.meta.env.VITE_KAKAO_APP_KEY;
+                if (kakaoKey) {
+                    try {
+                        window.Kakao.init(kakaoKey);
+                        console.log("✅ Kakao SDK 초기화 완료");
+                        return true;
+                    } catch (error) {
+                        console.error("❌ SDK 초기화 실패:", error);
+                        return false;
+                    }
+                } else {
+                    console.warn("⚠️ VITE_KAKAO_APP_KEY 환경변수가 없습니다.");
+                    return false;
+                }
+            }
+
+            return window.Kakao && window.Kakao.isInitialized();
+        };
+
+        // Kakao SDK 확인 및 로드
+        const kakaoReady = await ensureKakaoSDK();
+
+        if (!kakaoReady) {
+            console.warn("⚠️ Kakao SDK를 사용할 수 없습니다. Web Share API 사용");
+
+            // Kakao SDK가 없거나 초기화되지 않은 경우 Web Share API 사용
+            if (navigator.share) {
+                console.log("📤 Web Share API 사용");
+                try {
+                    await navigator.share({
                         title: baseTitle,
                         text: product?.description || "청원여행사 골프/여행 상품을 확인해보세요.",
                         url: window.location.href,
-                    }).catch((err) => {
-                        if (err.name !== "AbortError") {
-                            console.error("공유 실패:", err);
-                            // 대체: URL 복사
-                            navigator.clipboard.writeText(window.location.href).then(() => {
-                                alert("링크가 복사되었습니다!");
-                            });
-                        }
                     });
-                } else {
-                    // Web Share API도 없으면 URL 복사
-                    console.log("📋 URL 복사");
-                    navigator.clipboard.writeText(window.location.href).then(() => {
+                } catch (err: any) {
+                    if (err.name !== "AbortError") {
+                        console.error("공유 실패:", err);
+                        // 대체: URL 복사
+                        await navigator.clipboard.writeText(window.location.href);
                         alert("링크가 복사되었습니다!");
-                    }).catch(() => {
-                        alert("공유 기능을 사용할 수 없습니다.");
-                    });
+                    }
                 }
+            } else {
+                // Web Share API도 없으면 URL 복사
+                console.log("📋 URL 복사");
+                await navigator.clipboard.writeText(window.location.href);
+                alert("링크가 복사되었습니다!");
             }
             return;
         }
@@ -549,9 +642,8 @@ export default function ProductDetail() {
         } catch (error) {
             console.error("❌ 카카오톡 공유 실패:", error);
             // 실패 시 URL 복사로 대체
-            navigator.clipboard.writeText(window.location.href).then(() => {
-                alert("카카오톡 공유에 실패했습니다. 링크가 복사되었습니다!");
-            });
+            await navigator.clipboard.writeText(window.location.href);
+            alert("카카오톡 공유에 실패했습니다. 링크가 복사되었습니다!");
         }
     };
 
