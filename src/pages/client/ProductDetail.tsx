@@ -254,36 +254,38 @@ export default function ProductDetail() {
                 const existingScript = document.querySelector('script[src*="kakao"]');
                 if (existingScript) {
                     addDebugLog("🔄 기존 Kakao 스크립트 대기 중...");
+                    let attempts = 0;
+                    const maxAttempts = 50; // 5초 (100ms * 50)
+
                     // 스크립트가 로드될 때까지 대기
                     const checkLoaded = setInterval(() => {
+                        attempts++;
                         if (window.Kakao) {
                             clearInterval(checkLoaded);
                             addDebugLog("✅ 기존 스크립트 로드 완료");
                             resolve();
-                        }
-                    }, 100);
-                    // 10초 후 타임아웃
-                    setTimeout(() => {
-                        clearInterval(checkLoaded);
-                        if (!window.Kakao) {
-                            addDebugLog("❌ Kakao SDK 로드 타임아웃");
+                        } else if (attempts >= maxAttempts) {
+                            clearInterval(checkLoaded);
+                            addDebugLog(`❌ Kakao SDK 로드 타임아웃 (${attempts * 100}ms)`);
+                            addDebugLog("🔄 동적 로드 재시도...");
+                            // 기존 스크립트 제거하고 재시도하지 않고 reject
                             reject(new Error("SDK load timeout"));
                         }
-                    }, 10000);
+                    }, 100);
                     return;
                 }
 
-                // 새로운 스크립트 태그 생성
+                // 새로운 스크립트 태그 생성 (integrity 제거 - 모바일 호환성)
                 addDebugLog("📥 Kakao SDK 동적 로드 시작");
                 const script = document.createElement("script");
                 script.src = "https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js";
-                script.integrity = "sha384-TiCUE00h+2oT8G6dE++rQeEQr4FEMbkKDOGMxqYJNL1qvNg9fVFccgqGg5ijKpw/";
                 script.crossOrigin = "anonymous";
                 script.async = true;
 
                 script.onload = () => {
-                    addDebugLog("✅ Kakao SDK 스크립트 로드 완료");
-                    resolve();
+                    addDebugLog("✅ Kakao SDK 스크립트 로드 완료 (동적)");
+                    // 약간의 대기 시간 추가 (SDK 초기화 대기)
+                    setTimeout(() => resolve(), 200);
                 };
 
                 script.onerror = (error) => {
@@ -550,21 +552,41 @@ export default function ProductDetail() {
 
             // SDK가 없으면 로드 시도
             if (!window.Kakao) {
-                addDebugLog("📥 Kakao SDK 로드 시도...");
+                addDebugLog("📥 Kakao SDK 로드 시도 (버튼 클릭)...");
                 try {
                     await new Promise<void>((resolve, reject) => {
+                        // 이미 스크립트 태그가 있는지 재확인
+                        const existing = document.querySelector('script[src*="kakao"]');
+                        if (existing) {
+                            addDebugLog("⏳ 기존 스크립트 로드 대기...");
+                            // 최대 3초 대기
+                            let waited = 0;
+                            const waitInterval = setInterval(() => {
+                                if (window.Kakao) {
+                                    clearInterval(waitInterval);
+                                    resolve();
+                                } else if (waited >= 3000) {
+                                    clearInterval(waitInterval);
+                                    reject(new Error("Timeout waiting for existing script"));
+                                }
+                                waited += 100;
+                            }, 100);
+                            return;
+                        }
+
+                        // 새 스크립트 추가 (integrity 제거)
                         const script = document.createElement("script");
                         script.src = "https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js";
-                        script.integrity = "sha384-TiCUE00h+2oT8G6dE++rQeEQr4FEMbkKDOGMxqYJNL1qvNg9fVFccgqGg5ijKpw/";
                         script.crossOrigin = "anonymous";
                         script.async = true;
-                        script.onload = () => resolve();
+                        script.onload = () => {
+                            addDebugLog("✅ SDK 스크립트 추가됨");
+                            setTimeout(() => resolve(), 200);
+                        };
                         script.onerror = () => reject(new Error("Failed to load Kakao SDK"));
                         document.head.appendChild(script);
                     });
 
-                    // SDK 로드 후 약간 대기
-                    await new Promise((resolve) => setTimeout(resolve, 100));
                     addDebugLog("✅ SDK 로드 완료 (버튼 클릭 시)");
                 } catch (error: any) {
                     addDebugLog(`❌ SDK 로드 실패: ${error?.message || error}`);
