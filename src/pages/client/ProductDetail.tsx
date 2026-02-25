@@ -237,13 +237,32 @@ export default function ProductDetail() {
 
     // ✅ Kakao SDK 초기화
     useEffect(() => {
-        if (window.Kakao && !window.Kakao.isInitialized()) {
-            // 카카오 앱 키가 환경변수에 있으면 초기화
-            const kakaoKey = import.meta.env.VITE_KAKAO_APP_KEY;
-            if (kakaoKey) {
-                window.Kakao.init(kakaoKey);
+        const kakaoKey = import.meta.env.VITE_KAKAO_APP_KEY;
+        console.log("🔑 Kakao Key:", kakaoKey ? "존재함" : "없음");
+
+        // SDK 로드 대기
+        const initKakao = () => {
+            if (window.Kakao) {
+                if (!window.Kakao.isInitialized()) {
+                    if (kakaoKey) {
+                        window.Kakao.init(kakaoKey);
+                        console.log("✅ Kakao SDK 초기화 완료");
+                    } else {
+                        console.warn("⚠️ VITE_KAKAO_APP_KEY 환경변수가 없습니다.");
+                    }
+                } else {
+                    console.log("✅ Kakao SDK 이미 초기화됨");
+                }
+            } else {
+                console.warn("⚠️ Kakao SDK가 로드되지 않았습니다.");
+                // SDK 로드 재시도
+                setTimeout(initKakao, 100);
             }
-        }
+        };
+
+        // 약간의 지연 후 초기화 (SDK 로드 대기)
+        const timer = setTimeout(initKakao, 100);
+        return () => clearTimeout(timer);
     }, []);
 
     const favQuery = useQuery({
@@ -451,9 +470,16 @@ export default function ProductDetail() {
 
     // ✅ 카카오톡 공유하기
     const handleShareKakao = () => {
+        console.log("📱 공유하기 버튼 클릭");
+        console.log("Kakao SDK:", window.Kakao ? "존재" : "없음");
+        console.log("Kakao 초기화:", window.Kakao?.isInitialized() ? "완료" : "안됨");
+
         if (!window.Kakao || !window.Kakao.isInitialized()) {
+            console.warn("⚠️ Kakao SDK를 사용할 수 없습니다. 대체 방법 사용");
+
             // Kakao SDK가 없거나 초기화되지 않은 경우 Web Share API 사용
             if (navigator.share) {
+                console.log("📤 Web Share API 사용");
                 navigator.share({
                     title: baseTitle,
                     text: product?.description || "청원여행사 골프/여행 상품을 확인해보세요.",
@@ -469,6 +495,7 @@ export default function ProductDetail() {
                 });
             } else {
                 // Web Share API도 없으면 URL 복사
+                console.log("📋 URL 복사");
                 navigator.clipboard.writeText(window.location.href).then(() => {
                     alert("링크가 복사되었습니다!");
                 }).catch(() => {
@@ -479,27 +506,37 @@ export default function ProductDetail() {
         }
 
         // Kakao SDK 사용
-        window.Kakao.Share.sendDefault({
-            objectType: "feed",
-            content: {
-                title: baseTitle,
-                description: product?.description || "청원여행사 골프/여행 상품을 확인해보세요.",
-                imageUrl: heroImg,
-                link: {
-                    mobileWebUrl: window.location.href,
-                    webUrl: window.location.href,
-                },
-            },
-            buttons: [
-                {
-                    title: "상품 보러가기",
+        try {
+            console.log("💬 카카오톡 공유 실행");
+            window.Kakao.Share.sendDefault({
+                objectType: "feed",
+                content: {
+                    title: baseTitle,
+                    description: product?.description || "청원여행사 골프/여행 상품을 확인해보세요.",
+                    imageUrl: heroImg,
                     link: {
                         mobileWebUrl: window.location.href,
                         webUrl: window.location.href,
                     },
                 },
-            ],
-        });
+                buttons: [
+                    {
+                        title: "상품 보러가기",
+                        link: {
+                            mobileWebUrl: window.location.href,
+                            webUrl: window.location.href,
+                        },
+                    },
+                ],
+            });
+            console.log("✅ 카카오톡 공유 성공");
+        } catch (error) {
+            console.error("❌ 카카오톡 공유 실패:", error);
+            // 실패 시 URL 복사로 대체
+            navigator.clipboard.writeText(window.location.href).then(() => {
+                alert("카카오톡 공유에 실패했습니다. 링크가 복사되었습니다!");
+            });
+        }
     };
 
     return (
