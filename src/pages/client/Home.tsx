@@ -661,12 +661,6 @@ export default function Home() {
                     </div>
                 </section>
             </Container>
-
-            <div className="border-t border-neutral-200 bg-neutral-50">
-                <div className="mx-auto max-w-[1400px] px-6 py-10 text-sm text-neutral-500">
-                    하단 영역은 Footer 컴포넌트에서 대체하면 됩니다.
-                </div>
-            </div>
         </main>
     );
 }

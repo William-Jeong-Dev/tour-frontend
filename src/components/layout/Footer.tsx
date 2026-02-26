@@ -1,7 +1,21 @@
 import { Link } from "react-router-dom";
 import MobileBottomNav from "../common/MobileBottomNav";
+import { useFooterSettings } from "../../hooks/useFooterSettings";
 
 export default function Footer() {
+    const { data: settings, isLoading } = useFooterSettings();
+
+    if (isLoading || !settings) {
+        return (
+            <footer id="site-footer" className="mt-14 sm:mt-16 bg-neutral-50 pb-20 md:pb-0">
+                <div className="border-t border-neutral-200 py-20 text-center text-sm text-neutral-400">
+                    Loading...
+                </div>
+                <MobileBottomNav />
+            </footer>
+        );
+    }
+
     return (
         <footer id="site-footer" className="mt-14 sm:mt-16 bg-neutral-50 pb-20 md:pb-0">
             {/* 고객센터 바 */}
@@ -9,7 +23,10 @@ export default function Footer() {
                 <div className="mx-auto flex max-w-[1400px] flex-col gap-4 px-4 sm:px-6 py-6 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <div className="text-base font-semibold">
-                            고객센터 <span className="ml-2 text-[#1C8B7B]">051-747-8207 , 010-8688-8810</span>
+                            고객센터{" "}
+                            <span className="ml-2 text-[#1C8B7B]">
+                                {settings.customerService.phone1} , {settings.customerService.phone2}
+                            </span>
                         </div>
                         <div className="mt-1 text-sm text-neutral-500">
                             평일 09:00 ~ 18:00 · 업무시간 외 문의는 상담 채널로 남겨주세요.
@@ -37,35 +54,45 @@ export default function Footer() {
                 <div className="mx-auto max-w-[1400px] px-4 sm:px-6 py-10">
                     <div className="text-sm text-neutral-500">
                         {/* 로고 */}
-                        <img src="/card_thumbnail.svg" alt="TOUR" className="h-20 w-auto" />
+                        <img src={settings.logo} alt="TOUR" className="h-20 w-auto" />
 
                         {/* 링크 (bold) */}
                         <div className="mt-3 font-semibold text-neutral-700">
-                            <a className="hover:text-neutral-900" href="/notices">공지사항</a>
+                            <a className="hover:text-neutral-900" href="/notices">
+                                공지사항
+                            </a>
                             <span className="mx-2 text-neutral-300">|</span>
-                            <a className="hover:text-neutral-900" href="/terms">이용약관</a>
+                            <a className="hover:text-neutral-900" href="/terms">
+                                이용약관
+                            </a>
                             <span className="mx-2 text-neutral-300">|</span>
-                            <a className="hover:text-neutral-900" href="/privacy">개인정보처리방침</a>
+                            <a className="hover:text-neutral-900" href="/privacy">
+                                개인정보처리방침
+                            </a>
                             <span className="mx-2 text-neutral-300">|</span>
-                            <a className="hover:text-neutral-900" href="/insurance">해외여행자보험</a>
+                            <a className="hover:text-neutral-900" href="/insurance">
+                                해외여행자보험
+                            </a>
                         </div>
 
                         {/* 사업자 정보: 지정한 줄 구성 */}
                         <div className="mt-5 space-y-1 leading-relaxed">
                             <div>
-                                상호: 청원여행사 · 대표: 김동현 · 주소: 부산광역시 해운대구 해운대로 216 2층
+                                상호: {settings.companyInfo.name} · 대표: {settings.companyInfo.representative} · 주소:{" "}
+                                {settings.companyInfo.address}
                             </div>
                             <div>
-                                대표번호: (051) 747-8207 · 이메일: chungwon87@naver.com · 팩스: (051) 747-8204 ·
-                                사업자등록번호: 473-15-00667 · 통신판매업신고번호: 제2023-부산해운대-1696호
+                                대표번호: {settings.companyInfo.phone} · 이메일: {settings.companyInfo.email} · 팩스:{" "}
+                                {settings.companyInfo.fax} · 사업자등록번호: {settings.companyInfo.businessNumber} ·
+                                통신판매업신고번호: {settings.companyInfo.onlineBusinessNumber}
                             </div>
-                            <div>관광사업자등록번호: 제2017-000026호</div>
+                            <div>관광사업자등록번호: {settings.companyInfo.tourLicense}</div>
                         </div>
 
                         {/* 하단 문구 */}
                         <div className="mt-6 space-y-1">
-                            <div>Copyright @ 청원여행사 All Rights Reserved.</div>
-                            <div>Powered by Findvalue Crop</div>
+                            <div>{settings.copyright}</div>
+                            <div>{settings.poweredBy}</div>
                         </div>
                     </div>
                 </div>

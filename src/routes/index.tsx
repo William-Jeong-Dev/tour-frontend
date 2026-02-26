@@ -28,6 +28,7 @@ import AdminNotices from "../pages/admin/AdminNotices";
 import AdminNoticeEdit from "../pages/admin/AdminNoticeEdit";
 
 import AdminBranding from "../pages/admin/AdminBranding";
+import AdminFooter from "../pages/admin/AdminFooter";
 
 import AdminUsers from "../pages/admin/AdminUsers";
 import AdminUserDetail from "../pages/admin/AdminUserDetail";
@@ -111,6 +112,7 @@ export const router = createBrowserRouter([
             { path: "home-sections", element: <AdminHomeSections /> },
 
             { path: "settings/branding", element: <AdminBranding /> },
+            { path: "settings/footer", element: <AdminFooter /> },
 
             { path: "users", element: <AdminUsers /> },
             { path: "users/:id", element: <AdminUserDetail /> },
