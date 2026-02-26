@@ -67,7 +67,7 @@ const TABS: Array<{ key: TabKey; label: string }> = [
     { key: "assets", label: "원본문서" },
 ];
 
-const REGIONS = ["일본", "제주", "동남아", "유럽"] as const;
+const REGIONS = ["일본", "중국", "제주", "동남아", "유럽"] as const;
 
 const STATUSES: Array<{ value: ProductStatus; label: string }> = [
     { value: "DRAFT", label: "임시" },
