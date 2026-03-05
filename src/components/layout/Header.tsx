@@ -159,14 +159,17 @@ export default function Header() {
 
                             <div className="flex items-center gap-2">
                                 <a
-                                    href="http://pf.kakao.com/_qFxdqX"
+                                    href="https://pf.kakao.com/_qFxdqX"
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     aria-label="카카오톡 채널"
-                                    className="inline-flex h-9 w-9 items-center justify-center"
-                                    onClick={() => setMobileMenuOpen(false)}
+                                    className="inline-flex h-9 w-9 items-center justify-center touch-manipulation active:scale-95 transition-transform"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setMobileMenuOpen(false);
+                                    }}
                                 >
-                                    <img src={KakaoLogo} alt="KakaoTalk" className="h-6 w-6 object-contain opacity-95" loading="eager" />
+                                    <img src={KakaoLogo} alt="KakaoTalk" className="h-6 w-6 object-contain opacity-95 pointer-events-none" loading="eager" />
                                 </a>
                                 <a
                                     href="https://www.instagram.com/chungwon.tour/"
@@ -348,7 +351,7 @@ export default function Header() {
                     <div className="hidden md:flex w-[260px] items-center justify-end pr-2">
                         <div className="flex items-center gap-3">
                             <a
-                                href="http://pf.kakao.com/_qFxdqX"
+                                href="https://pf.kakao.com/_qFxdqX"
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="inline-flex items-center justify-center"
@@ -358,7 +361,7 @@ export default function Header() {
                                 <img
                                     src={KakaoLogo}
                                     alt="KakaoTalk"
-                                    className="h-7 w-7 object-contain opacity-90 hover:opacity-100"
+                                    className="h-7 w-7 object-contain opacity-90 hover:opacity-100 pointer-events-none"
                                     loading="eager"
                                 />
                             </a>
