@@ -26,20 +26,6 @@ export default function KakaoFloating() {
         setShowTop(false);
     };
 
-    // 카카오톡 채팅방 열기
-    const openKakaoChat = () => {
-        // 모바일에서 카카오톡 앱으로 열기 시도
-        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-
-        if (isMobile) {
-            // 모바일: 앱 스킴 시도 후 웹 폴백
-            window.location.href = "https://pf.kakao.com/_qFxdqX/chat";
-        } else {
-            // PC: 새 창으로 열기
-            window.open("https://pf.kakao.com/_qFxdqX/chat", "_blank", "noopener,noreferrer");
-        }
-    };
-
     return (
         <>
             {/* 모바일 맨 위로 버튼 - 하단 네비게이션 바 위에 위치 */}
@@ -76,14 +62,15 @@ export default function KakaoFloating() {
                 </button>
 
                 {/* 카카오 */}
-                <button
-                    type="button"
-                    onClick={openKakaoChat}
+                <a
+                    href="https://pf.kakao.com/_qFxdqX/chat"
+                    target="_blank"
+                    rel="noopener noreferrer"
                     aria-label="카카오 상담"
                     className="h-14 w-14 rounded-full bg-[#FEE500] shadow-lg ring-1 ring-black/10 hover:brightness-95 active:scale-[0.98] transition flex items-center justify-center"
                 >
                     <img src={KakaoEmoji} alt="Kakao" className="h-9 w-9 object-contain" />
-                </button>
+                </a>
 
                 {/* 전화 */}
                 <a
