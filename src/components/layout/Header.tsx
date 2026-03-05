@@ -159,8 +159,9 @@ export default function Header() {
 
                             <div className="flex items-center gap-2">
                                 <a
-                                    href="#"
-                                    onClick={(e) => e.preventDefault()}
+                                    href="http://pf.kakao.com/_qFxdqX/chat"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
                                     aria-label="카카오톡"
                                     className="inline-flex h-9 w-9 items-center justify-center"
                                 >
@@ -344,8 +345,9 @@ export default function Header() {
                     <div className="hidden md:flex w-[260px] items-center justify-end pr-2">
                         <div className="flex items-center gap-3">
                             <a
-                                href="#"
-                                onClick={(e) => e.preventDefault()}
+                                href="http://pf.kakao.com/_qFxdqX/chat"
+                                target="_blank"
+                                rel="noopener noreferrer"
                                 className="inline-flex items-center justify-center"
                                 aria-label="카카오톡"
                                 title="카카오톡"

@@ -27,7 +27,7 @@ export default function KakaoFloating() {
     };
 
     // ✅ 여기에 실제 카카오 상담 링크가 있으면 바꿔줘
-    const kakaoLink = "https://pf.kakao.com/";
+    const kakaoLink = "http://pf.kakao.com/_qFxdqX/chat";
 
     return (
         <>
