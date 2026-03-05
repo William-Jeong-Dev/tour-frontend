@@ -159,11 +159,12 @@ export default function Header() {
 
                             <div className="flex items-center gap-2">
                                 <a
-                                    href="http://pf.kakao.com/_qFxdqX/chat"
+                                    href="http://pf.kakao.com/_qFxdqX"
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    aria-label="카카오톡"
+                                    aria-label="카카오톡 채널"
                                     className="inline-flex h-9 w-9 items-center justify-center"
+                                    onClick={() => setMobileMenuOpen(false)}
                                 >
                                     <img src={KakaoLogo} alt="KakaoTalk" className="h-6 w-6 object-contain opacity-95" loading="eager" />
                                 </a>
@@ -173,6 +174,7 @@ export default function Header() {
                                     rel="noopener noreferrer"
                                     aria-label="인스타그램"
                                     className="inline-flex h-9 w-9 items-center justify-center"
+                                    onClick={() => setMobileMenuOpen(false)}
                                 >
                                     <img src={InstaIcon} alt="Instagram" className="h-6 w-6 object-contain opacity-95" loading="eager" />
                                 </a>
@@ -182,6 +184,7 @@ export default function Header() {
                                     rel="noopener noreferrer"
                                     aria-label="블로그"
                                     className="inline-flex h-9 w-9 items-center justify-center"
+                                    onClick={() => setMobileMenuOpen(false)}
                                 >
                                     <img src={BlogIcon} alt="Blog" className="h-6 w-6 object-contain opacity-95" loading="eager" />
                                 </a>
@@ -345,12 +348,12 @@ export default function Header() {
                     <div className="hidden md:flex w-[260px] items-center justify-end pr-2">
                         <div className="flex items-center gap-3">
                             <a
-                                href="http://pf.kakao.com/_qFxdqX/chat"
+                                href="http://pf.kakao.com/_qFxdqX"
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="inline-flex items-center justify-center"
-                                aria-label="카카오톡"
-                                title="카카오톡"
+                                aria-label="카카오톡 채널"
+                                title="카카오톡 채널"
                             >
                                 <img
                                     src={KakaoLogo}
