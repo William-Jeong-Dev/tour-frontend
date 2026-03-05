@@ -6,29 +6,33 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// .env.local 파일 읽기
-const envPath = path.join(__dirname, '..', '.env.local');
-let supabaseUrl = 'https://wekgpjpkxjxoeledqhbe.supabase.co';
-let supabaseKey = '';
+// 환경 변수 읽기 (Vercel 또는 로컬)
+let supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://wekgpjpkxjxoeledqhbe.supabase.co';
+let supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || '';
 
-try {
-    const envContent = fs.readFileSync(envPath, 'utf-8');
-    const lines = envContent.split('\n');
+// 로컬 환경에서 .env.local 파일 읽기 (환경 변수가 없을 때만)
+if (!supabaseKey) {
+    try {
+        const envPath = path.join(__dirname, '..', '.env.local');
+        const envContent = fs.readFileSync(envPath, 'utf-8');
+        const lines = envContent.split('\n');
 
-    for (const line of lines) {
-        const trimmed = line.trim();
-        if (trimmed.startsWith('VITE_SUPABASE_URL=')) {
-            supabaseUrl = trimmed.split('=')[1].replace(/['"]/g, '').trim();
-        } else if (trimmed.startsWith('VITE_SUPABASE_ANON_KEY=')) {
-            supabaseKey = trimmed.split('=')[1].replace(/['"]/g, '').trim();
+        for (const line of lines) {
+            const trimmed = line.trim();
+            if (trimmed.startsWith('VITE_SUPABASE_URL=')) {
+                supabaseUrl = trimmed.split('=')[1].replace(/['"]/g, '').trim();
+            } else if (trimmed.startsWith('VITE_SUPABASE_ANON_KEY=')) {
+                supabaseKey = trimmed.split('=')[1].replace(/['"]/g, '').trim();
+            }
         }
+    } catch (err) {
+        console.warn('⚠️  .env.local 파일을 읽을 수 없습니다.');
     }
-} catch (err) {
-    console.warn('⚠️  .env.local 파일을 읽을 수 없습니다. 기본값을 사용합니다.');
 }
 
 if (!supabaseKey) {
     console.error('❌ Supabase API 키가 설정되지 않았습니다.');
+    console.error('Vercel 환경 변수에 VITE_SUPABASE_URL과 VITE_SUPABASE_ANON_KEY를 설정해주세요.');
     process.exit(1);
 }
 
