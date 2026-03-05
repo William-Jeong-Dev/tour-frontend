@@ -26,6 +26,12 @@ export default function KakaoFloating() {
         setShowTop(false);
     };
 
+    const openKakaoChat = (e: React.MouseEvent<HTMLAnchorElement>) => {
+        e.preventDefault();
+        // 채팅 URL로 이동 (http 프로토콜 사용)
+        window.open("http://pf.kakao.com/_qFxdqX/chat", "_blank");
+    };
+
     return (
         <>
             {/* 모바일 맨 위로 버튼 - 하단 네비게이션 바 위에 위치 */}
@@ -63,9 +69,8 @@ export default function KakaoFloating() {
 
                 {/* 카카오 */}
                 <a
-                    href="https://pf.kakao.com/_qFxdqX/chat"
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    href="http://pf.kakao.com/_qFxdqX/chat"
+                    onClick={openKakaoChat}
                     aria-label="카카오 상담"
                     className="h-14 w-14 rounded-full bg-[#FEE500] shadow-lg ring-1 ring-black/10 hover:brightness-95 active:scale-[0.98] transition flex items-center justify-center"
                 >
