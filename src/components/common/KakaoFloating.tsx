@@ -2,6 +2,13 @@ import { useEffect, useState } from "react";
 import KakaoEmoji from "../../assets/kakao.png";
 import PhoneIcon from "../../assets/phone.png";
 
+// Kakao SDK 타입 선언
+declare global {
+    interface Window {
+        Kakao: any;
+    }
+}
+
 export default function KakaoFloating() {
     const [showTop, setShowTop] = useState(false);
 
@@ -27,9 +34,21 @@ export default function KakaoFloating() {
     };
 
     const openKakaoChat = (e: React.MouseEvent<HTMLAnchorElement>) => {
-        e.preventDefault();
-        // 채팅 URL로 이동 (http 프로토콜 사용)
-        window.open("http://pf.kakao.com/_qFxdqX/chat", "_blank");
+        // Kakao SDK가 있으면 사용
+        if (window.Kakao && window.Kakao.Channel) {
+            try {
+                e.preventDefault();
+                window.Kakao.Channel.chat({
+                    channelPublicId: '_qFxdqX'
+                });
+                return;
+            } catch (error) {
+                console.log('Kakao SDK chat failed, using default link behavior');
+            }
+        }
+
+        // SDK가 없으면 기본 링크 동작 사용 (e.preventDefault 하지 않음)
+        // 브라우저가 알아서 처리하도록 함
     };
 
     return (
@@ -69,7 +88,9 @@ export default function KakaoFloating() {
 
                 {/* 카카오 */}
                 <a
-                    href="http://pf.kakao.com/_qFxdqX/chat"
+                    href="http://pf.kakao.com/_qFxdqX"
+                    target="_blank"
+                    rel="noopener noreferrer"
                     onClick={openKakaoChat}
                     aria-label="카카오 상담"
                     className="h-14 w-14 rounded-full bg-[#FEE500] shadow-lg ring-1 ring-black/10 hover:brightness-95 active:scale-[0.98] transition flex items-center justify-center"
