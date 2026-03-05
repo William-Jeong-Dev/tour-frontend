@@ -34,6 +34,48 @@
 
     <!-- Kakao SDK - integrity 제거 (모바일 호환성) -->
     <script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js" crossorigin="anonymous"></script>
+
+    <!-- 구조화데이터: 여행사 정보 -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "TravelAgency",
+        "name": "청원여행사",
+        "url": "https://www.chungwontour.com",
+        "logo": "https://wekgpjpkxjxoeledqhbe.supabase.co/storage/v1/object/public/site-assets/footer/eb217399-b063-4f2f-ab87-36f8facfcf01.png",
+        "telephone": "+82-51-747-8207",
+        "email": "chungwon87@naver.com",
+        "faxNumber": "+82-51-747-8204",
+        "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "해운대로 216 2층",
+            "addressLocality": "해운대구",
+            "addressRegion": "부산광역시",
+            "addressCountry": "KR"
+        },
+        "founder": {
+            "@type": "Person",
+            "name": "김동현"
+        },
+        "identifier": [
+            {
+                "@type": "PropertyValue",
+                "name": "사업자등록번호",
+                "value": "473-15-00667"
+            },
+            {
+                "@type": "PropertyValue",
+                "name": "통신판매업신고번호",
+                "value": "제2023-부산해운대-1696호"
+            },
+            {
+                "@type": "PropertyValue",
+                "name": "관광사업자등록번호",
+                "value": "제2017-000026호"
+            }
+        ]
+    }
+    </script>
 </head>
 
 <body>

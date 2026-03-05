@@ -139,6 +139,73 @@ export default function ThemeProductsPage() {
     const [searchParams] = useSearchParams();
     const currentAreaSlug = (searchParams.get("area") ?? "").trim();
 
+    // JSON-LD 구조화데이터 생성
+    const getJsonLd = () => {
+        const baseUrl = "https://www.chungwontour.com";
+        const themeUrl = `${baseUrl}/theme/${theme.slug}`;
+
+        if (theme.slug === "japan-golf") {
+            return {
+                "@context": "https://schema.org",
+                "@type": "ItemList",
+                "name": "일본 골프 투어 상품 목록",
+                "url": themeUrl,
+                "numberOfItems": 35,
+                "itemListElement": [
+                    {
+                        "@type": "ListItem",
+                        "position": 1,
+                        "name": "규슈 일본 골프 투어",
+                        "url": themeUrl
+                    },
+                    {
+                        "@type": "ListItem",
+                        "position": 2,
+                        "name": "간사이 일본 골프 투어",
+                        "url": themeUrl
+                    },
+                    {
+                        "@type": "ListItem",
+                        "position": 3,
+                        "name": "도쿄 일본 골프 투어",
+                        "url": themeUrl
+                    },
+                    {
+                        "@type": "ListItem",
+                        "position": 4,
+                        "name": "홋카이도 일본 골프 투어",
+                        "url": themeUrl
+                    },
+                    {
+                        "@type": "ListItem",
+                        "position": 5,
+                        "name": "시코쿠 일본 골프 투어",
+                        "url": themeUrl
+                    }
+                ]
+            };
+        } else if (theme.slug === "china-golf") {
+            return {
+                "@context": "https://schema.org",
+                "@type": "ItemList",
+                "name": "중국 골프 투어 상품 목록",
+                "url": themeUrl,
+                "numberOfItems": 1,
+                "itemListElement": [
+                    {
+                        "@type": "ListItem",
+                        "position": 1,
+                        "name": "중국 골프 여행 상품",
+                        "url": `${baseUrl}/product/5899f8ae-6085-4d5d-b2fc-179ce7e8fd53`
+                    }
+                ]
+            };
+        }
+        return null;
+    };
+
+    const jsonLd = getJsonLd();
+
     const goArea = (areaSlug?: string) => {
         // ✅ url을 /theme/:slug?area=xxx 로 유지 (새로고침/공유에도 유지됨)
         const sp = new URLSearchParams(searchParams);
@@ -151,9 +218,18 @@ export default function ThemeProductsPage() {
     const areaSlugify = (s: string) => slugifyKoreanLoose(s);
 
     return (
-        <main className="mx-auto w-full max-w-[1400px] px-6 py-8">
-            {/* 헤더 */}
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <>
+            {/* JSON-LD 구조화데이터 */}
+            {jsonLd && (
+                <script
+                    type="application/ld+json"
+                    dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+                />
+            )}
+
+            <main className="mx-auto w-full max-w-[1400px] px-6 py-8">
+                {/* 헤더 */}
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                     <h1 className="text-2xl font-extrabold">{theme.name}</h1>
                     <p className="mt-1 text-sm text-black/60">총 {products.length}개 상품</p>
@@ -259,6 +335,7 @@ export default function ThemeProductsPage() {
                     ))}
                 </div>
             )}
-        </main>
+            </main>
+        </>
     );
 }
