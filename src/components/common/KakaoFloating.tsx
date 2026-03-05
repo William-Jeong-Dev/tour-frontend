@@ -88,7 +88,7 @@ export default function KakaoFloating() {
 
                 {/* 카카오 */}
                 <a
-                    href="http://pf.kakao.com/_qFxdqX"
+                    href="http://pf.kakao.com/_qFxdqX/chat"
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={openKakaoChat}
