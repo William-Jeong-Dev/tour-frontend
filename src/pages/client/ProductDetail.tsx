@@ -511,6 +511,65 @@ export default function ProductDetail() {
     }, [selectedDateISO]);
 
     // ✅ 카카오톡 공유하기
+    // JSON-LD 구조화데이터 생성
+    const getBreadcrumbJsonLd = () => {
+        if (!product || !themeQuery.data) return null;
+
+        const baseUrl = "https://www.chungwontour.com";
+        const theme = themeQuery.data as { id: string; name: string; slug: string };
+
+        return {
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+                {
+                    "@type": "ListItem",
+                    "position": 1,
+                    "name": "청원여행사",
+                    "item": baseUrl
+                },
+                {
+                    "@type": "ListItem",
+                    "position": 2,
+                    "name": theme.name,
+                    "item": `${baseUrl}/theme/${theme.slug}`
+                },
+                {
+                    "@type": "ListItem",
+                    "position": 3,
+                    "name": product.title || "골프 여행 상품",
+                    "item": `${baseUrl}/product/${id}`
+                }
+            ]
+        };
+    };
+
+    const getProductJsonLd = () => {
+        if (!product) return null;
+
+        const baseUrl = "https://www.chungwontour.com";
+
+        return {
+            "@context": "https://schema.org",
+            "@type": "Product",
+            "name": product.title || "골프 여행 상품",
+            "description": product.description || "청원여행사 골프 여행 패키지",
+            "brand": {
+                "@type": "Brand",
+                "name": "청원여행사"
+            },
+            "offers": {
+                "@type": "Offer",
+                "url": `${baseUrl}/product/${id}`,
+                "priceCurrency": "KRW",
+                "availability": "https://schema.org/InStock"
+            }
+        };
+    };
+
+    const breadcrumbJsonLd = getBreadcrumbJsonLd();
+    const productJsonLd = getProductJsonLd();
+
     const handleShareKakao = async () => {
         // Kakao SDK 동적 로드 함수 (필요시)
         const ensureKakaoSDK = async (): Promise<boolean> => {
@@ -630,8 +689,25 @@ export default function ProductDetail() {
     };
 
     return (
-        <main className="bg-white">
-            <Container>
+        <>
+            {/* JSON-LD 구조화데이터: Breadcrumb */}
+            {breadcrumbJsonLd && (
+                <script
+                    type="application/ld+json"
+                    dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+                />
+            )}
+
+            {/* JSON-LD 구조화데이터: Product */}
+            {productJsonLd && (
+                <script
+                    type="application/ld+json"
+                    dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }}
+                />
+            )}
+
+            <main className="bg-white">
+                <Container>
                 {/* ✅ 상단: 뒤로 */}
                 <div className="pt-6">
                     <div className="flex items-center justify-between gap-3">
@@ -1287,7 +1363,8 @@ export default function ProductDetail() {
                     </div>
                 </div>
             </Container>
-        </main>
+            </main>
+        </>
     );
 }
 
