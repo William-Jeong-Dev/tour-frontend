@@ -36,7 +36,7 @@ function PhoneIcon({ className }: { className?: string }) {
 export default function MobileBottomNav() {
     const location = useLocation();
     const navigate = useNavigate();
-    const kakaoLink = "https://pf.kakao.com/";
+    const kakaoLink = "http://pf.kakao.com/_qFxdqX/chat";
 
     const handleHomeClick = () => {
         navigate("/");

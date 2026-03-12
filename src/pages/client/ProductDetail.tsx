@@ -738,7 +738,14 @@ export default function ProductDetail() {
                             {/* ✅ 여기 닫는 div 누락되면 전체가 망가짐 */}
                             <div className="mt-4 flex flex-wrap items-end gap-3">
                                 <div className="text-sm text-neutral-500">성인 1인 기준</div>
-                                <div className="text-2xl font-extrabold text-neutral-900">{heroPriceText}</div>
+                                {heroPriceText === "상담 문의" || heroPriceText === "가격문의" ? (
+                                    <div className="text-2xl font-extrabold text-neutral-900">{heroPriceText}</div>
+                                ) : (
+                                    <div className="flex items-baseline gap-1">
+                                        <div className="text-2xl font-extrabold text-neutral-900">{heroPriceText}</div>
+                                        <div className="text-sm text-neutral-500">부터~</div>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="mt-6 overflow-hidden rounded-3xl border border-neutral-200 bg-white">
@@ -770,12 +777,17 @@ export default function ProductDetail() {
 
                                         <div className="flex items-center justify-between">
                                             <div className="text-xs text-neutral-500">행사금액</div>
-                                            <div className="text-lg font-extrabold text-neutral-900">
-                                                {selectedDeparture?.status === "INQUIRY"
-                                                    ? "가격문의"
-                                                    : selectedDeparture
-                                                        ? `${krw(selectedDeparture.priceAdult ?? 0)}원`
-                                                        : "—"}
+                                            <div className="flex items-baseline gap-1">
+                                                {selectedDeparture?.status === "INQUIRY" ? (
+                                                    <div className="text-lg font-extrabold text-neutral-900">가격문의</div>
+                                                ) : selectedDeparture ? (
+                                                    <>
+                                                        <div className="text-lg font-extrabold text-neutral-900">{krw(selectedDeparture.priceAdult ?? 0)}</div>
+                                                        <div className="text-xs text-neutral-500">원 부터~</div>
+                                                    </>
+                                                ) : (
+                                                    <div className="text-lg font-extrabold text-neutral-900">—</div>
+                                                )}
                                             </div>
                                         </div>
 
@@ -985,7 +997,6 @@ export default function ProductDetail() {
                                             ) : (
                                                 selectedDateDepartures.map((ev) => {
                                                     const isSelected = ev.id === selectedDepartureId;
-                                                    const priceText = ev.status === "INQUIRY" ? "가격문의" : `${krw(ev.priceAdult)}원`;
                                                     return (
                                                         <button
                                                             key={ev.id}
@@ -1017,7 +1028,16 @@ export default function ProductDetail() {
 
                                                                 <div className="shrink-0 text-right">
                                                                     <div className="text-xs text-neutral-500">상품금액</div>
-                                                                    <div className="mt-1 text-base font-extrabold text-neutral-900">{priceText}</div>
+                                                                    <div className="mt-1 flex items-baseline justify-end gap-1">
+                                                                        {ev.status === "INQUIRY" ? (
+                                                                            <div className="text-base font-extrabold text-neutral-900">가격문의</div>
+                                                                        ) : (
+                                                                            <>
+                                                                                <div className="text-base font-extrabold text-neutral-900">{krw(ev.priceAdult)}</div>
+                                                                                <div className="text-xs text-neutral-500">원 부터~</div>
+                                                                            </>
+                                                                        )}
+                                                                    </div>
                                                                     <div className="mt-3 inline-flex rounded-xl bg-[#2E97F2] px-4 py-2 text-xs font-extrabold text-white">
                                                                         선택됨
                                                                     </div>
@@ -1047,11 +1067,16 @@ export default function ProductDetail() {
                                     </div>
 
                                     <div className="mt-4 flex flex-col items-stretch justify-between gap-3 rounded-2xl border border-neutral-200 bg-neutral-50 p-4 md:flex-row md:items-center">
-                                        <div className="text-sm font-semibold text-neutral-600">
-                                            총 금액{" "}
-                                            <span className="ml-2 text-2xl font-extrabold text-neutral-900">
-                        {totalPrice === null ? "가격문의" : `${krw(totalPrice)}원`}
-                      </span>
+                                        <div className="flex items-baseline gap-2">
+                                            <span className="text-sm font-semibold text-neutral-600">총 금액</span>
+                                            {totalPrice === null ? (
+                                                <span className="text-2xl font-extrabold text-neutral-900">가격문의</span>
+                                            ) : (
+                                                <>
+                                                    <span className="text-2xl font-extrabold text-neutral-900">{krw(totalPrice)}</span>
+                                                    <span className="text-sm text-neutral-500">원 부터~</span>
+                                                </>
+                                            )}
                                         </div>
                                         <button
                                             type="button"
