@@ -1422,12 +1422,10 @@ const POLICY_ITEMS = [
 ];
 
 const REFUND_TABLE = [
-    { period: "여행 시작 30일 전까지", rate: "전액 환불" },
-    { period: "여행 시작 29일 ~ 20일 전", rate: "여행요금의 10% 배상" },
-    { period: "여행 시작 19일 ~ 10일 전", rate: "여행요금의 15% 배상" },
-    { period: "여행 시작 9일 ~ 8일 전", rate: "여행요금의 20% 배상" },
-    { period: "여행 시작 7일 ~ 1일 전", rate: "여행요금의 30% 배상" },
-    { period: "여행 당일 취소", rate: "여행요금의 50% 배상" },
+    { period: "출발 21일~15일전", rate: "총액 10%" },
+    { period: "출발 14일~8일전", rate: "총액 30%" },
+    { period: "출발 7일~4일전", rate: "총액 50%" },
+    { period: "출발 3일전~당일", rate: "총액 100%" },
 ];
 
 function PolicyAccordion() {
@@ -1483,10 +1481,9 @@ function PolicyAccordion() {
                                         </table>
                                     </div>
                                     <p className="mt-4 text-xs leading-5 text-neutral-500">
-                                        ※ 항공권, 숙박 등 선결제된 비용은 해당 업체의 환불규정에 따릅니다.
+                                        ※ 현지사정에 의해 추가 캔슬챠지가 발생할수 있습니다.
                                         <br />
-                                        ※ 성수기(명절, 연휴 등)에는 별도의 취소 규정이 적용될 수 있습니다.
-                                        <br />※ 여행자의 개별 귀책사유로 인한 취소 시 실비용이 추가 공제될 수 있습니다.
+                                        ※ 천재지변을 제외한 개인사정 또는 우천 시 캔슬의 경우 그린피 환불은 불가합니다.
                                     </p>
                                 </div>
                             ) : (
