@@ -139,11 +139,11 @@ export default function EstimatePage() {
                                         type="number"
                                         min={1}
                                         className="mt-2 w-full rounded-xl border border-neutral-200 px-4 py-3 text-sm outline-none focus:border-neutral-400"
-                                        value={form.people_count}
+                                        value={form.people_count || ""}
                                         onChange={(e) =>
                                             setForm((p) => ({
                                                 ...p,
-                                                people_count: Number(e.target.value || 1),
+                                                people_count: parseInt(e.target.value, 10) || 0,
                                             }))
                                         }
                                     />
