@@ -484,8 +484,17 @@ export default function MyPage() {
 
                                             <div className="min-w-0 flex-1">
                                                 <div className="text-sm font-extrabold text-neutral-900 line-clamp-1">{title}</div>
-                                                <div className="mt-1 text-xs text-neutral-500">
-                                                    {region} · {priceText}
+                                                <div className="mt-1 flex items-baseline gap-1 text-sm text-neutral-500">
+                                                    <span>{region}</span>
+                                                    <span>·</span>
+                                                    {priceText === "상담 문의" || priceText === "가격문의" ? (
+                                                        <span className="font-bold">{priceText}</span>
+                                                    ) : (
+                                                        <>
+                                                            <span className="font-bold">{priceText}</span>
+                                                            <span className="text-xs">~</span>
+                                                        </>
+                                                    )}
                                                 </div>
                                                 <div className="mt-1 text-[11px] text-neutral-400">찜한 시각(KST): {f.created_at_kst ?? "-"}</div>
                                             </div>

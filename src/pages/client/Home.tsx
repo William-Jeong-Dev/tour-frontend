@@ -110,9 +110,16 @@ function ProductCard({
                     <div className="min-w-0 text-base font-semibold text-neutral-900 overflow-hidden text-ellipsis whitespace-nowrap">
                         {item.title}
                     </div>
-                    <div className="mt-2 text-base font-extrabold text-neutral-900">
-                        {item.price}
-                    </div>
+                    {item.price === "상담 문의" || item.price === "가격문의" ? (
+                        <div className="mt-2 text-lg font-extrabold text-neutral-900">
+                            {item.price}
+                        </div>
+                    ) : (
+                        <div className="mt-2 flex items-baseline gap-1">
+                            <span className="text-lg font-extrabold text-neutral-900">{item.price}</span>
+                            <span className="text-sm text-black/60">~</span>
+                        </div>
+                    )}
                 </div>
 
             </article>

@@ -53,7 +53,14 @@ export default function SearchPage() {
                                             </div>
                                             <div className="p-4">
                                                 <div className="line-clamp-2 text-base font-semibold text-neutral-900">{p.title}</div>
-                                                <div className="mt-2 text-sm font-extrabold text-neutral-900">{p.priceText ?? "상담 문의"}</div>
+                                                {(p.priceText ?? "상담 문의") === "상담 문의" || (p.priceText ?? "상담 문의") === "가격문의" ? (
+                                                    <div className="mt-2 text-lg font-extrabold text-neutral-900">{p.priceText ?? "상담 문의"}</div>
+                                                ) : (
+                                                    <div className="mt-2 flex items-baseline gap-1">
+                                                        <span className="text-lg font-extrabold text-neutral-900">{p.priceText}</span>
+                                                        <span className="text-sm text-black/60">~</span>
+                                                    </div>
+                                                )}
                                                 <div className="mt-1 text-xs text-neutral-500">{p.region ?? ""}</div>
                                             </div>
                                         </article>

@@ -326,7 +326,14 @@ export default function ThemeProductsPage() {
                                 ) : null}
 
                                 {p.price_text ? (
-                                    <div className="mt-3 text-sm font-extrabold">{p.price_text}</div>
+                                    p.price_text === "상담 문의" || p.price_text === "가격문의" ? (
+                                        <div className="mt-3 text-lg font-extrabold">{p.price_text}</div>
+                                    ) : (
+                                        <div className="mt-3 flex items-baseline gap-1">
+                                            <span className="text-lg font-extrabold">{p.price_text}</span>
+                                            <span className="text-sm text-black/60">~</span>
+                                        </div>
+                                    )
                                 ) : (
                                     <div className="mt-3 text-sm text-black/40">가격 정보 없음</div>
                                 )}
