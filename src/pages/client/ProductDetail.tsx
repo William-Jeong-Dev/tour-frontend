@@ -822,6 +822,24 @@ export default function ProductDetail() {
                                             </button>
                                         </div>
 
+                                        {/* PC용 버튼 */}
+                                        <div className="hidden lg:grid grid-cols-2 gap-3 pt-2">
+                                            <button
+                                                type="button"
+                                                className="rounded-xl bg-yellow-400 px-4 py-3 text-sm font-extrabold text-neutral-900 hover:bg-yellow-300"
+                                                onClick={() => nav("/estimate")}
+                                            >
+                                                1:1 맞춤견적
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className="rounded-xl border border-neutral-300 bg-white px-4 py-3 text-sm font-bold text-neutral-800 hover:bg-neutral-50"
+                                                onClick={handleShareKakao}
+                                            >
+                                                공유하기
+                                            </button>
+                                        </div>
+
                                         <div className="pt-2 text-xs text-neutral-500">
                                             상품코드 : HSG0002 <span className="mx-2 text-neutral-300">|</span> 행사코드 : {id ?? "—"}
                                         </div>
