@@ -841,7 +841,7 @@ export default function ProductDetail() {
                                         </div>
 
                                         <div className="pt-2 text-xs text-neutral-500">
-                                            상품코드 : HSG0002 <span className="mx-2 text-neutral-300">|</span> 행사코드 : {id ?? "—"}
+                                            상품코드 : HSG0002
                                         </div>
                                     </div>
                                 </div>
