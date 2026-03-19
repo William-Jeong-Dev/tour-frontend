@@ -290,9 +290,6 @@ export default function Header() {
             (PC) 1줄: 로고 위 우측 메뉴 (현재 안 보이던 부분)
            ======================= */}
                 <div className="hidden md:flex items-center justify-end gap-4 pt-3 pb-2 text-sm font-semibold text-white/90">
-                    <Link to="/events" className="hover:text-white">
-                        기획전/이벤트
-                    </Link>
                     <Link to="/notices" className="hover:text-white">
                         공지사항
                     </Link>

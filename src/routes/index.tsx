@@ -18,6 +18,9 @@ import ClientLogin from "../pages/client/ClientLogin";
 import MyPage from "../pages/client/MyPage";
 import SupportPage from "../pages/client/SupportPage";
 import FaqPage from "../pages/client/FaqPage";
+import TermsPage from "../pages/client/TermsPage";
+import PrivacyPage from "../pages/client/PrivacyPage";
+import InsurancePage from "../pages/client/InsurancePage";
 
 import AdminBookings from "../pages/admin/AdminBookings";
 
@@ -88,6 +91,10 @@ export const router = createBrowserRouter([
             { path: "/search", element: <SearchPage /> },
 
             { path: "/estimate", element: <EstimatePage /> },
+
+            { path: "/terms", element: <TermsPage /> },
+            { path: "/privacy", element: <PrivacyPage /> },
+            { path: "/insurance", element: <InsurancePage /> },
         ],
     },
 

@@ -58,21 +58,21 @@ export default function Footer() {
 
                         {/* 링크 (bold) */}
                         <div className="mt-3 font-semibold text-neutral-700">
-                            <a className="hover:text-neutral-900" href="/notices">
+                            <Link className="hover:text-neutral-900" to="/notices">
                                 공지사항
-                            </a>
+                            </Link>
                             <span className="mx-2 text-neutral-300">|</span>
-                            <a className="hover:text-neutral-900" href="/terms">
+                            <Link className="hover:text-neutral-900" to="/terms">
                                 이용약관
-                            </a>
+                            </Link>
                             <span className="mx-2 text-neutral-300">|</span>
-                            <a className="hover:text-neutral-900" href="/privacy">
+                            <Link className="hover:text-neutral-900" to="/privacy">
                                 개인정보처리방침
-                            </a>
+                            </Link>
                             <span className="mx-2 text-neutral-300">|</span>
-                            <a className="hover:text-neutral-900" href="/insurance">
+                            <Link className="hover:text-neutral-900" to="/insurance">
                                 해외여행자보험
-                            </a>
+                            </Link>
                         </div>
 
                         {/* 사업자 정보: 지정한 줄 구성 */}
