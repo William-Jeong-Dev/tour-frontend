@@ -94,17 +94,13 @@ export default function Header() {
                 <div className="relative z-30 flex items-center justify-between py-3 md:hidden">
                     {/* 로고 */}
                     <Link to="/" aria-label="홈으로" className="flex items-center">
-                        {logoUrl ? (
+                        {logoUrl && (
                             <img
                                 src={logoUrl}
                                 alt="청원여행사"
                                 className="h-10 w-auto max-w-[180px] object-contain"
                                 loading="eager"
                             />
-                        ) : (
-                            <div className="leading-tight text-white">
-                                <div className="text-base font-extrabold">청원여행사</div>
-                            </div>
                         )}
                     </Link>
 
@@ -326,18 +322,13 @@ export default function Header() {
                             "pointer-events-auto",
                         ].join(" ")}
                     >
-                        {logoUrl ? (
+                        {logoUrl && (
                             <img
                                 src={logoUrl}
                                 alt="청원여행사"
                                 className="h-11 md:h-20 w-auto max-w-[240px] md:max-w-[420px] object-contain"
                                 loading="eager"
                             />
-                        ) : (
-                            <div className="leading-tight text-white text-center">
-                                <div className="text-base md:text-lg font-extrabold">청원여행사</div>
-                                <div className="text-xs font-semibold text-white/80">청원 여행사 스타일 데모</div>
-                            </div>
                         )}
                     </Link>
 
