@@ -7,6 +7,7 @@ import { useProducts } from "../../hooks/useProducts";
 import type { Product } from "../../types/product";
 
 import { useHeroSlides } from "../../hooks/useHeroSlides";
+import { useHeroSlides2 } from "../../hooks/useHeroSlides2";
 import { defaultHeroSlides } from "./HomeHeroDefaults";
 import { getPublicSiteAssetUrl } from "../../api/siteSettings.api";
 
@@ -219,6 +220,17 @@ export default function Home() {
     // ✅ HERO 슬라이드: DB에서 읽고 없으면 defaultHeroSlides 사용
     const heroQuery = useHeroSlides(defaultHeroSlides);
     const slides = heroQuery.slides ?? defaultHeroSlides; // 안전장치
+
+    // ✅ HERO 슬라이드2 (따끈따끈 온천 골프용)
+    const defaultHeroSlides2 = [{
+        id: "default_onsen_1",
+        title: "따끈따끈 온천 골프",
+        tags: "따뜻한 온천욕과 가이세키 코스 요리로 온천골프 만끽 🥰",
+        heroImage: "https://images.unsplash.com/photo-1500375592092-40eb2168fd21?auto=format&fit=crop&w=1600&q=80",
+        cards: [],
+    }];
+    const heroQuery2 = useHeroSlides2(defaultHeroSlides2);
+    const slides2 = heroQuery2.slides ?? defaultHeroSlides2;
 
     const [heroIndex, setHeroIndex] = useState(0);
     const intervalRef = useRef<number | null>(null);
@@ -600,73 +612,94 @@ export default function Home() {
                     </section>
                 ) : null}
 
-                {/* BIG FEATURE */}
-                <section className="py-8 md:py-10 pb-12 md:pb-16">
-                    <div className="grid grid-cols-12 items-start gap-6 md:gap-10">
-                        <div className="col-span-12 md:col-span-6">
-                            <div className="overflow-hidden rounded-3xl">
-                                <img
-                                    className="h-[260px] md:h-[380px] w-full object-cover"
-                                    src="https://images.unsplash.com/photo-1500375592092-40eb2168fd21?auto=format&fit=crop&w=1600&q=80"
-                                    alt="feature"
-                                />
+                {/* BIG FEATURE - 따끈따끈 온천 골프 (히어로 슬라이드2) */}
+                {slides2.length > 0 ? (
+                    <section className="py-8 md:py-10 pb-12 md:pb-16">
+                        {slides2.map((slide) => (
+                            <div key={slide.id} className="grid grid-cols-12 items-start gap-6 md:gap-10">
+                                <div className="col-span-12 md:col-span-6">
+                                    <div className="overflow-hidden rounded-3xl">
+                                        <img
+                                            className="h-[260px] md:h-[380px] w-full object-cover"
+                                            src={slide.heroImage.startsWith("http") ? slide.heroImage : getPublicSiteAssetUrl(slide.heroImage)}
+                                            alt={slide.title}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="col-span-12 md:col-span-6">
+                                    <h3 className="text-2xl font-extrabold text-neutral-900">{slide.title}</h3>
+                                    <p className="mt-2 text-base text-neutral-500">
+                                        {slide.tags}
+                                    </p>
+
+                                    <div className="mt-6 space-y-4">
+                                        {slide.cards.length > 0 ? (
+                                            slide.cards.slice(0, 3).map((c) => (
+                                                <Link key={c.id} to={`/product/${c.productId || c.id}`} state={{ product: c }} className="block">
+                                                    <div className="flex items-center gap-4 rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm hover:shadow-md">
+                                                        <div className="w-24 shrink-0 overflow-hidden rounded-xl">
+                                                            <div className="aspect-[16/10] w-full overflow-hidden">
+                                                                <img
+                                                                    src={c.img.startsWith("http") ? c.img : getPublicSiteAssetUrl(c.img)}
+                                                                    alt={c.title}
+                                                                    className="h-full w-full object-cover object-center"
+                                                                />
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="min-w-0">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="rounded-md bg-emerald-50 px-2 py-1 text-xs md:text-sm font-bold text-emerald-700">
+                                                                    {c.badge ?? "추천"}
+                                                                </span>
+                                                                <span className="rounded-md bg-sky-50 px-2 py-1 text-xs md:text-sm font-bold text-sky-700">
+                                                                    상품
+                                                                </span>
+                                                            </div>
+                                                            <div className="mt-2 line-clamp-1 text-base font-semibold text-neutral-900">{c.title}</div>
+                                                            <div className="mt-1 text-base font-extrabold text-neutral-900">{c.price}</div>
+                                                        </div>
+                                                    </div>
+                                                </Link>
+                                            ))
+                                        ) : (
+                                            // 카드가 없으면 기존처럼 onsenTopCards 사용
+                                            onsenTopCards.slice(0, 3).map((c) => (
+                                                <Link key={c.id} to={`/product/${c.id}`} state={{ product: c }} className="block">
+                                                    <div className="flex items-center gap-4 rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm hover:shadow-md">
+                                                        <div className="w-24 shrink-0 overflow-hidden rounded-xl">
+                                                            <div className="aspect-[16/10] w-full overflow-hidden">
+                                                                <img
+                                                                    src={getPublicSiteAssetUrl(c.img)}
+                                                                    alt={c.title}
+                                                                    className="h-full w-full object-cover object-center"
+                                                                />
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="min-w-0">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="rounded-md bg-emerald-50 px-2 py-1 text-xs md:text-sm font-bold text-emerald-700">
+                                                                    {c.badge ?? "추천"}
+                                                                </span>
+                                                                <span className="rounded-md bg-sky-50 px-2 py-1 text-xs md:text-sm font-bold text-sky-700">
+                                                                    상품
+                                                                </span>
+                                                            </div>
+                                                            <div className="mt-2 line-clamp-1 text-base font-semibold text-neutral-900">{c.title}</div>
+                                                            <div className="mt-1 text-base font-extrabold text-neutral-900">{c.price}</div>
+                                                        </div>
+                                                    </div>
+                                                </Link>
+                                            ))
+                                        )}
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-
-                        <div className="col-span-12 md:col-span-6">
-                            <h3 className="text-2xl font-extrabold text-neutral-900">따끈따끈 온천 골프 ⛳️</h3>
-                            <p className="mt-2 text-base text-neutral-500">
-                                따뜻한 온천욕과 가이세키 코스 요리로 온천골프 만끽 🥰
-                            </p>
-
-                            <div className="mt-6 space-y-4">
-                                {onsenTopCards.slice(0, 3).map((c) => (
-                                    <Link key={c.id} to={`/product/${c.id}`} state={{ product: c }} className="block">
-                                        <div className="flex items-center gap-4 rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm hover:shadow-md">
-                                            <div className="w-24 shrink-0 overflow-hidden rounded-xl">
-                                                <div className="aspect-[16/10] w-full overflow-hidden">
-                                                    <img
-                                                        src={getPublicSiteAssetUrl(c.img)}
-                                                        alt={c.title}
-                                                        className="h-full w-full object-cover object-center"
-                                                    />
-                                                </div>
-                                            </div>
-
-                                            <div className="min-w-0">
-                                                <div className="flex items-center gap-2">
-                          <span className="rounded-md bg-emerald-50 px-2 py-1 text-xs md:text-sm font-bold text-emerald-700">
-                            {c.badge ?? "추천"}
-                          </span>
-                                                    <span className="rounded-md bg-sky-50 px-2 py-1 text-xs md:text-sm font-bold text-sky-700">
-                            상품
-                          </span>
-                                                </div>
-                                                <div className="mt-2 line-clamp-1 text-base font-semibold text-neutral-900">{c.title}</div>
-                                                <div className="mt-1 text-base font-extrabold text-neutral-900">{c.price}</div>
-                                            </div>
-                                        </div>
-                                    </Link>
-                                ))}
-                            </div>
-
-                            <div className="mt-6 flex items-center gap-3 text-neutral-400">
-                                <button
-                                    type="button"
-                                    className="grid h-9 w-9 place-items-center rounded-full border border-neutral-200 bg-white hover:bg-neutral-50"
-                                >
-                                    ←
-                                </button>
-                                <button
-                                    type="button"
-                                    className="grid h-9 w-9 place-items-center rounded-full border border-neutral-200 bg-white hover:bg-neutral-50"
-                                >
-                                    →
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </section>
+                        ))}
+                    </section>
+                ) : null}
             </Container>
         </main>
     );

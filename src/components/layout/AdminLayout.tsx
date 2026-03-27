@@ -13,6 +13,7 @@ const NAVS = [
     { to: "/admin/settings/branding", label: "브랜딩(로고)" },
     { to: "/admin/settings/footer", label: "Footer 관리" },
     { to: "/admin/hero-slides", label: "히어로 슬라이드" },
+    { to: "/admin/hero-slides2", label: "히어로 슬라이드2" },
     { to: "/admin/home-sections", label: "홈 섹션 관리" },
     { to: "/admin/themes", label: "카테고리(테마) 관리" },
     { to: "/admin/areas", label: "지역 관리" },

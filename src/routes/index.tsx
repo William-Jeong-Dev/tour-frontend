@@ -37,6 +37,7 @@ import AdminUsers from "../pages/admin/AdminUsers";
 import AdminUserDetail from "../pages/admin/AdminUserDetail";
 
 import HeroSlideAdminPage from "../pages/admin/HeroSlidesAdminPage";
+import HeroSlides2AdminPage from "../pages/admin/HeroSlides2AdminPage";
 
 import SearchPage from "../pages/client/SearchPage";
 
@@ -115,6 +116,7 @@ export const router = createBrowserRouter([
 
             // ✅ HERO 슬라이드 관리 라우트
             { path: "hero-slides", element: <HeroSlideAdminPage /> },
+            { path: "hero-slides2", element: <HeroSlides2AdminPage /> },
 
             { path: "home-sections", element: <AdminHomeSections /> },
 
