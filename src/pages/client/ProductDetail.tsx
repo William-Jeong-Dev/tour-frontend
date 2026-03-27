@@ -664,7 +664,7 @@ export default function ProductDetail() {
                 try {
                     await navigator.share({
                         title: baseTitle,
-                        text: product?.description || "청원여행사 골프/여행 상품을 확인해보세요.",
+                        text: "청원여행사는 일본/중국 등 골프 여행을 전문적으로 운영하는 골프 여행 전문 여행사로, 규슈, 간사이, 도쿄, 홋카이도 등 다양한 지역의 골프 패키지를 제공하며, 고객 맞춤형 일정 설계가 가능합니다.\n골프장 예약부터 숙소, 이동까지 한 번에 제공하는 통합 골프 여행 서비스를 제공합니다.",
                         url: window.location.href,
                     });
                 } catch (err: any) {
@@ -687,7 +687,7 @@ export default function ProductDetail() {
                 objectType: "feed",
                 content: {
                     title: baseTitle,
-                    description: product?.description || "청원여행사 골프/여행 상품을 확인해보세요.",
+                    description: "청원여행사는 일본/중국 등 골프 여행을 전문적으로 운영하는 골프 여행 전문 여행사로, 규슈, 간사이, 도쿄, 홋카이도 등 다양한 지역의 골프 패키지를 제공하며, 고객 맞춤형 일정 설계가 가능합니다.\n골프장 예약부터 숙소, 이동까지 한 번에 제공하는 통합 골프 여행 서비스를 제공합니다.",
                     imageUrl: heroImg,
                     link: {
                         mobileWebUrl: window.location.href,
