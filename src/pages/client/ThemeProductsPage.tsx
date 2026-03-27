@@ -109,7 +109,7 @@ export async function themeProductsLoader({ params, request }: LoaderFunctionArg
         .from("products")
         .select("*")
         .eq("theme_id", theme.id)
-        .neq("status", "DRAFT") // 고객페이지에선 초안 숨김
+        .eq("status", "PUBLISHED") // 공개된 상품만 표시
         .order("updated_at", { ascending: false });
 
     if (selectedArea?.id) {

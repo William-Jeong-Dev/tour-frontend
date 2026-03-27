@@ -570,6 +570,30 @@ export default function ProductDetail() {
     const breadcrumbJsonLd = getBreadcrumbJsonLd();
     const productJsonLd = getProductJsonLd();
 
+    // ✅ 숨김/비공개 상품 접근 차단
+    if (!productQuery.isLoading && product && product.status !== "PUBLISHED") {
+        return (
+            <main className="bg-white">
+                <Container>
+                    <div className="flex min-h-[60vh] flex-col items-center justify-center py-16 text-center">
+                        <div className="text-6xl">🔒</div>
+                        <h1 className="mt-6 text-2xl font-extrabold text-neutral-900">상품을 찾을 수 없습니다</h1>
+                        <p className="mt-3 text-sm text-neutral-600">
+                            요청하신 상품은 현재 공개되지 않았거나 존재하지 않습니다.
+                        </p>
+                        <button
+                            type="button"
+                            onClick={() => nav("/")}
+                            className="mt-6 rounded-xl bg-[#2E97F2] px-6 py-3 text-sm font-bold text-white hover:brightness-95"
+                        >
+                            홈으로 돌아가기
+                        </button>
+                    </div>
+                </Container>
+            </main>
+        );
+    }
+
     const handleShareKakao = async () => {
         // Kakao SDK 동적 로드 함수 (필요시)
         const ensureKakaoSDK = async (): Promise<boolean> => {
