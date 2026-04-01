@@ -1126,11 +1126,6 @@ export default function ProductDetail() {
                                             className="rounded-2xl bg-[#2E97F2] px-6 py-3 text-sm font-extrabold text-white hover:brightness-95 disabled:opacity-60"
                                             disabled={bookingSubmitting}
                                             onClick={async () => {
-                                                if (!userId) {
-                                                    nav("/login", { state: { redirectTo: location.pathname } });
-                                                    return;
-                                                }
-
                                                 const peopleCount = adult + child + infant;
 
                                                 if (peopleCount <= 0) {
@@ -1140,6 +1135,24 @@ export default function ProductDetail() {
 
                                                 if (!selectedDateISO) {
                                                     alert("출발일을 선택해 주세요.");
+                                                    return;
+                                                }
+
+                                                const memoUser = `선택 행사ID: ${selectedDepartureId || "-"} / 성인:${adult}, 아동:${child}, 유아:${infant}`;
+
+                                                // 로그인하지 않은 경우 예약 정보와 함께 로그인 페이지로 이동
+                                                if (!userId) {
+                                                    nav("/login", {
+                                                        state: {
+                                                            redirectTo: location.pathname,
+                                                            bookingInfo: {
+                                                                productTitle: baseTitle,
+                                                                travelDate: selectedDateISO,
+                                                                peopleCount: Math.max(1, peopleCount),
+                                                                memo: memoUser,
+                                                            },
+                                                        },
+                                                    });
                                                     return;
                                                 }
 
@@ -1157,8 +1170,6 @@ export default function ProductDetail() {
                                                     const userName = userProfile.name || "미입력";
                                                     const userPhone = userProfile.phone || "미입력";
                                                     const userEmail = userProfile.email || session?.user?.email || null;
-
-                                                    const memoUser = `선택 행사ID: ${selectedDepartureId || "-"} / 성인:${adult}, 아동:${child}, 유아:${infant}`;
 
                                                     // 메일 전송
                                                     await sendBookingEmail({

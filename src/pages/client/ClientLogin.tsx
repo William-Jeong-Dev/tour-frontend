@@ -2,8 +2,16 @@ import { useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Container from "../../components/common/Container";
 import { supabase } from "../../lib/supabase";
+import GuestBookingModal from "../../components/booking/GuestBookingModal";
 
 type Mode = "login" | "signup";
+
+type BookingInfo = {
+    productTitle: string;
+    travelDate: string;
+    peopleCount: number;
+    memo: string;
+};
 
 // ✅ 이메일 정규화 (공백/개행/유니코드 이슈 방지)
 function normalizeEmail(input: string) {
@@ -22,7 +30,11 @@ export default function ClientLogin() {
     const redirectTo =
         (location.state as { redirectTo?: string } | null)?.redirectTo ?? "/";
 
+    const bookingInfo =
+        (location.state as { bookingInfo?: BookingInfo } | null)?.bookingInfo ?? null;
+
     const [mode, setMode] = useState<Mode>("login");
+    const [showGuestBookingModal, setShowGuestBookingModal] = useState(false);
     const title = useMemo(() => (mode === "login" ? "로그인" : "회원가입"), [mode]);
 
     const [email, setEmail] = useState("");
@@ -200,6 +212,16 @@ export default function ClientLogin() {
                             {loading ? "처리 중..." : mode === "login" ? "로그인" : "회원가입"}
                         </button>
 
+                        {bookingInfo ? (
+                            <button
+                                type="button"
+                                onClick={() => setShowGuestBookingModal(true)}
+                                className="w-full rounded-2xl bg-yellow-400 px-6 py-3 text-sm font-extrabold text-neutral-900 hover:bg-yellow-300"
+                            >
+                                비회원으로 요청
+                            </button>
+                        ) : null}
+
                         <button
                             type="button"
                             onClick={() => nav(-1)}
@@ -210,6 +232,18 @@ export default function ClientLogin() {
                     </form>
                 </div>
             </Container>
+
+            {bookingInfo ? (
+                <GuestBookingModal
+                    isOpen={showGuestBookingModal}
+                    onClose={() => setShowGuestBookingModal(false)}
+                    onSuccess={() => {
+                        setShowGuestBookingModal(false);
+                        nav("/");
+                    }}
+                    bookingInfo={bookingInfo}
+                />
+            ) : null}
         </main>
     );
 }
