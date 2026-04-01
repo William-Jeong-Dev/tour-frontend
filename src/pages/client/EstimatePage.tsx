@@ -366,6 +366,8 @@ export default function EstimatePage() {
                                                 memo: mergedMemo ? mergedMemo : null,
                                                 privacy_agreed: privacyAgreed,
                                                 marketing_agreed: marketingAgreed,
+                                                travel_regions: travelRegions.length ? travelRegions.join(", ") : "미입력",
+                                                call_time: callTime.trim() || "미입력",
                                             };
 
                                             await sendEstimateEmail(payload);

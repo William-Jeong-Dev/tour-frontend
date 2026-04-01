@@ -12,6 +12,17 @@ export type CreateBookingPayload = {
     memo_user?: string | null;
 };
 
+// 예약 메일 전송용 페이로드
+export type BookingEmailPayload = {
+    product_title: string;
+    user_name: string;
+    user_phone: string;
+    user_email?: string | null;
+    travel_date: string;
+    people_count: number;
+    memo_user?: string | null;
+};
+
 export async function createBooking(user_id: string, payload: CreateBookingPayload) {
     const { data, error } = await supabase
         .from("bookings")
@@ -100,4 +111,23 @@ export async function cancelMyBooking(bookingId: string, userId: string) {
 
     if (error) throw error;
     return data;
+}
+
+import { sendBookingEmail as sendEmailViaEmailJS } from "../utils/emailService";
+
+const RECEIVE_EMAIL = "chungwon87@naver.com";
+
+export async function sendBookingEmail(payload: BookingEmailPayload) {
+    // EmailJS를 사용하여 이메일 전송
+    await sendEmailViaEmailJS({
+        to_email: RECEIVE_EMAIL,
+        subject: `[예약 요청] ${payload.product_title} - ${payload.user_name}님의 예약`,
+        product_title: payload.product_title,
+        user_name: payload.user_name,
+        user_phone: payload.user_phone,
+        user_email: payload.user_email || "미입력",
+        travel_date: payload.travel_date,
+        people_count: payload.people_count,
+        memo: payload.memo_user || "없음",
+    });
 }

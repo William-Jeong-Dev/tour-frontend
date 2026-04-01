@@ -9,7 +9,8 @@ import { getThemeById } from "../../api/themes.api";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { useSession } from "../../hooks/useSession";
 import { addFavorite, removeFavorite, isFavorited } from "../../api/favorites.api";
-import { createBooking } from "../../api/bookings.api";
+import { sendBookingEmail } from "../../api/bookings.api";
+import { supabase } from "../../lib/supabase";
 
 type Card = {
     id: string;
@@ -206,15 +207,16 @@ function QtyControl({
     );
 }
 
-export function useCreateBooking(userId: string) {
-    const qc = useQueryClient();
+// 사용자 프로필 조회 함수
+async function getUserProfile(userId: string) {
+    const { data, error } = await supabase
+        .from("profiles")
+        .select("name, phone, email")
+        .eq("user_id", userId)
+        .maybeSingle();
 
-    return useMutation({
-        mutationFn: (payload: any) => createBooking(userId, payload),
-        onSuccess: async () => {
-            await qc.invalidateQueries({ queryKey: ["bookings", "me"] });
-        },
-    });
+    if (error) throw error;
+    return data;
 }
 
 // Kakao SDK 타입 선언
@@ -475,8 +477,7 @@ export default function ProductDetail() {
     const [adult, setAdult] = useState(1);
     const [child, setChild] = useState(0);
     const [infant, setInfant] = useState(0);
-
-    const bookingMut = useCreateBooking(String(userId));
+    const [bookingSubmitting, setBookingSubmitting] = useState(false);
 
     const totalPrice = useMemo(() => {
         if (!selectedDeparture || selectedDeparture.status === "INQUIRY") return null;
@@ -1123,8 +1124,8 @@ export default function ProductDetail() {
                                         <button
                                             type="button"
                                             className="rounded-2xl bg-[#2E97F2] px-6 py-3 text-sm font-extrabold text-white hover:brightness-95 disabled:opacity-60"
-                                            disabled={bookingMut.isPending}
-                                            onClick={() => {
+                                            disabled={bookingSubmitting}
+                                            onClick={async () => {
                                                 if (!userId) {
                                                     nav("/login", { state: { redirectTo: location.pathname } });
                                                     return;
@@ -1142,26 +1143,48 @@ export default function ProductDetail() {
                                                     return;
                                                 }
 
-                                                bookingMut.mutate(
-                                                    {
-                                                        product_id: String(id),
+                                                try {
+                                                    setBookingSubmitting(true);
+
+                                                    // 사용자 프로필 정보 가져오기
+                                                    const userProfile = await getUserProfile(String(userId));
+
+                                                    if (!userProfile) {
+                                                        alert("사용자 정보를 찾을 수 없습니다. 마이페이지에서 프로필을 등록해주세요.");
+                                                        return;
+                                                    }
+
+                                                    const userName = userProfile.name || "미입력";
+                                                    const userPhone = userProfile.phone || "미입력";
+                                                    const userEmail = userProfile.email || session?.user?.email || null;
+
+                                                    const memoUser = `선택 행사ID: ${selectedDepartureId || "-"} / 성인:${adult}, 아동:${child}, 유아:${infant}`;
+
+                                                    // 메일 전송
+                                                    await sendBookingEmail({
+                                                        product_title: baseTitle,
+                                                        user_name: userName,
+                                                        user_phone: userPhone,
+                                                        user_email: userEmail,
                                                         travel_date: selectedDateISO,
                                                         people_count: Math.max(1, peopleCount),
-                                                        memo_user: `선택 행사ID: ${selectedDepartureId || "-"} / 성인:${adult}, 아동:${child}, 유아:${infant}`,
-                                                    },
-                                                    {
-                                                        onSuccess: () => {
-                                                            alert("예약 접수가 완료되었습니다.");
-                                                            // nav("/mypage"); // 원하면 이동
-                                                        },
-                                                        onError: (e: any) => {
-                                                            alert(e?.message ?? "예약 접수에 실패했습니다.");
-                                                        },
-                                                    }
-                                                );
+                                                        memo_user: memoUser,
+                                                    });
+
+                                                    alert("예약 요청이 접수되었습니다. 담당자가 확인 후 연락드리겠습니다.");
+
+                                                    // 인원 초기화
+                                                    setAdult(1);
+                                                    setChild(0);
+                                                    setInfant(0);
+                                                } catch (e: any) {
+                                                    alert(e?.message ?? "예약 접수에 실패했습니다.");
+                                                } finally {
+                                                    setBookingSubmitting(false);
+                                                }
                                             }}
                                         >
-                                            {bookingMut.isPending ? "접수 중..." : "예약하기"}
+                                            {bookingSubmitting ? "접수 중..." : "예약하기"}
                                         </button>
                                     </div>
                                 </div>
