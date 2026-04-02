@@ -28,13 +28,13 @@ export default function KakaoFloating() {
 
     return (
         <>
-            {/* 모바일 맨 위로 버튼 - 하단 네비게이션 바 위에 위치 */}
+            {/* 모바일 맨 위로 버튼 - 예약 버튼 위에 위치 */}
             <button
                 type="button"
                 onClick={goTop}
                 aria-label="맨 위로"
                 className={[
-                    "fixed right-4 bottom-20 z-[99998] md:hidden",
+                    "fixed right-4 bottom-[180px] z-[99998] md:hidden",
                     "h-10 w-10 rounded-full bg-white shadow-lg ring-1 ring-black/10 hover:bg-neutral-50 active:scale-[0.98] transition",
                     showTop
                         ? "opacity-100 translate-y-0 pointer-events-auto"

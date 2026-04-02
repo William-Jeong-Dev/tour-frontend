@@ -12,6 +12,7 @@ import { addFavorite, removeFavorite, isFavorited } from "../../api/favorites.ap
 import { createBooking, sendBookingEmail } from "../../api/bookings.api";
 import { supabase } from "../../lib/supabase";
 import ProfileInfoModal from "../../components/booking/ProfileInfoModal";
+import BookingConfirmationModal from "../../components/booking/BookingConfirmationModal";
 
 type Card = {
     id: string;
@@ -186,7 +187,9 @@ function QtyControl({
     return (
         <div className="rounded-2xl border border-neutral-200 bg-white p-4">
             <div className="text-xs font-semibold text-neutral-500">{label}</div>
-            {hint ? <div className="mt-1 text-[11px] text-neutral-400">{hint}</div> : null}
+            <div className="mt-1 h-[16px] text-[11px] text-neutral-400">
+                {hint || "\u00A0"}
+            </div>
             <div className="mt-3 flex items-center justify-between gap-3">
                 <button
                     type="button"
@@ -476,8 +479,6 @@ export default function ProductDetail() {
 
     // 인원/총액
     const [adult, setAdult] = useState(1);
-    const [child, setChild] = useState(0);
-    const [infant, setInfant] = useState(0);
     const [bookingSubmitting, setBookingSubmitting] = useState(false);
     const [showProfileModal, setShowProfileModal] = useState(false);
     const [pendingBookingData, setPendingBookingData] = useState<{
@@ -486,16 +487,133 @@ export default function ProductDetail() {
         peopleCount: number;
         memo: string;
     } | null>(null);
+    const [showConfirmationModal, setShowConfirmationModal] = useState(false);
+    const [confirmationData, setConfirmationData] = useState<{
+        bookingId?: string;
+        productTitle: string;
+        travelDate: string;
+        peopleCount: number;
+        customerName: string;
+        customerPhone: string;
+        totalPrice: number | null;
+    } | null>(null);
 
     const totalPrice = useMemo(() => {
         if (!selectedDeparture || selectedDeparture.status === "INQUIRY") return null;
         return adult * (selectedDeparture.priceAdult ?? 0);
     }, [selectedDeparture, adult]);
 
+    // 예약하기 핸들러
+    const handleBooking = async () => {
+        const peopleCount = adult;
+
+        if (peopleCount <= 0) {
+            alert("인원을 선택해 주세요.");
+            return;
+        }
+
+        if (!selectedDateISO) {
+            alert("출발일을 선택해 주세요.");
+            return;
+        }
+
+        const memoUser = `선택 행사ID: ${selectedDepartureId || "-"} / 성인:${adult}명`;
+
+        // 로그인하지 않은 경우 예약 정보와 함께 로그인 페이지로 이동
+        if (!userId) {
+            nav("/login", {
+                state: {
+                    redirectTo: location.pathname,
+                    bookingInfo: {
+                        productId: String(id),
+                        productTitle: baseTitle,
+                        travelDate: selectedDateISO,
+                        peopleCount: Math.max(1, peopleCount),
+                        memo: memoUser,
+                    },
+                },
+            });
+            return;
+        }
+
+        try {
+            setBookingSubmitting(true);
+
+            // 사용자 프로필 정보 가져오기
+            const userProfile = await getUserProfile(String(userId));
+
+            if (!userProfile) {
+                alert("사용자 정보를 찾을 수 없습니다. 마이페이지에서 프로필을 등록해주세요.");
+                setBookingSubmitting(false);
+                return;
+            }
+
+            // 이름이나 전화번호가 없으면 모달 띄우기
+            if (!userProfile.name?.trim() || !userProfile.phone?.trim()) {
+                setPendingBookingData({
+                    productId: String(id),
+                    travelDate: selectedDateISO,
+                    peopleCount: Math.max(1, peopleCount),
+                    memo: memoUser,
+                });
+                setShowProfileModal(true);
+                setBookingSubmitting(false);
+                return;
+            }
+
+            const userName = userProfile.name;
+            const userPhone = userProfile.phone;
+            const userEmail = userProfile.email || session?.user?.email || null;
+
+            // DB에 예약 데이터 insert
+            const bookingResult = await createBooking(String(userId), {
+                product_id: String(id),
+                travel_date: selectedDateISO,
+                people_count: Math.max(1, peopleCount),
+                contact_name: userName,
+                contact_phone: userPhone,
+                memo_user: memoUser,
+            });
+
+            // 메일 전송
+            await sendBookingEmail({
+                product_title: baseTitle,
+                user_name: userName,
+                user_phone: userPhone,
+                user_email: userEmail,
+                travel_date: selectedDateISO,
+                people_count: Math.max(1, peopleCount),
+                memo_user: memoUser,
+            });
+
+            // 인원 초기화
+            setAdult(1);
+
+            // 예약 완료 모달 표시
+            setConfirmationData({
+                bookingId: bookingResult?.id,
+                productTitle: baseTitle,
+                travelDate: selectedDateISO,
+                peopleCount: Math.max(1, peopleCount),
+                customerName: userName,
+                customerPhone: userPhone,
+                totalPrice: totalPrice,
+            });
+            setShowConfirmationModal(true);
+        } catch (e: any) {
+            alert(e?.message ?? "예약 접수에 실패했습니다.");
+        } finally {
+            setBookingSubmitting(false);
+        }
+    };
+
     // 스크롤 시 헤더 밑 탭바 shadow 느낌
     const [tabShadow, setTabShadow] = useState(false);
+
     useEffect(() => {
-        const onScroll = () => setTabShadow(window.scrollY > 16);
+        const onScroll = () => {
+            setTabShadow(window.scrollY > 16);
+        };
         onScroll();
         window.addEventListener("scroll", onScroll, { passive: true });
         return () => window.removeEventListener("scroll", onScroll);
@@ -787,6 +905,30 @@ export default function ProductDetail() {
                                 </div>
                             </div>
 
+                            {/* 모바일: 찜하기/공유하기 버튼 */}
+                            <div className="mt-4 grid grid-cols-2 gap-3 lg:hidden">
+                                <button
+                                    type="button"
+                                    className="rounded-xl border border-neutral-300 bg-white px-4 py-3 text-sm font-bold text-neutral-800 hover:bg-neutral-50"
+                                    onClick={() => {
+                                        if (!userId) {
+                                            nav("/login", { state: { redirectTo: location.pathname } });
+                                            return;
+                                        }
+                                        toggleFav.mutate();
+                                    }}
+                                >
+                                    {session ? (isFav ? "찜취소 ♥" : "찜하기 ♡") : "찜하기 ♡"}
+                                </button>
+                                <button
+                                    type="button"
+                                    className="rounded-xl border border-neutral-300 bg-white px-4 py-3 text-sm font-bold text-neutral-800 hover:bg-neutral-50"
+                                    onClick={handleShareKakao}
+                                >
+                                    공유하기
+                                </button>
+                            </div>
+
                             {/* 상품 소개 */}
                             {product?.description ? (
                                 <div className="mt-6 rounded-2xl border border-neutral-200 bg-white p-5">
@@ -798,8 +940,8 @@ export default function ProductDetail() {
                             ) : null}
                         </div>
 
-                        {/* 오른쪽: "선택중인 행사" */}
-                        <aside className="col-span-12 lg:col-span-5">
+                        {/* 오른쪽: "선택중인 행사" - 데스크톱만 표시 */}
+                        <aside className="hidden lg:block col-span-12 lg:col-span-5">
                             <div className="lg:sticky lg:top-28">
                                 <div className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
                                     <div className="text-base font-extrabold text-neutral-900">선택중인 행사</div>
@@ -978,7 +1120,7 @@ export default function ProductDetail() {
 
                                     <div className="mt-4 grid grid-cols-1 gap-6 md:grid-cols-2">
                                         {[m1, m2].map((m, idx) => (
-                                            <div key={idx} className="rounded-2xl border border-neutral-200 p-4">
+                                            <div key={idx} className={`rounded-2xl border border-neutral-200 p-4 ${idx === 1 ? 'hidden md:block' : ''}`}>
                                                 <div className="text-center text-sm font-extrabold text-neutral-900">
                                                     {m.start.getFullYear()}년 {String(m.start.getMonth() + 1).padStart(2, "0")}월
                                                 </div>
@@ -1101,23 +1243,34 @@ export default function ProductDetail() {
                                         </div>
                                     </div>
 
-                                    <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3">
-                                        <QtyControl label="성인 (만 12세 이상)" value={adult} onChange={setAdult} />
-                                        <QtyControl
-                                            label="아동 (만 12세 미만)"
-                                            value={child}
-                                            onChange={setChild}
-                                            hint="(데모) 아동 요금 0원"
-                                        />
-                                        <QtyControl
-                                            label="유아 (만 2세 미만)"
-                                            value={infant}
-                                            onChange={setInfant}
-                                            hint="(데모) 유아 요금 0원"
-                                        />
+                                    {/* 인원 선택 */}
+                                    <div className="mt-6">
+                                        <div className="flex items-baseline justify-between">
+                                            <span className="text-sm font-semibold text-neutral-900">
+                                                성인 {adult}명
+                                            </span>
+                                            <div className="flex items-baseline gap-2">
+                                                <span className="text-xs text-neutral-500">1인 기준</span>
+                                                {selectedDeparture?.status === "INQUIRY" ? (
+                                                    <span className="text-base font-extrabold text-neutral-900">가격문의</span>
+                                                ) : selectedDeparture ? (
+                                                    <>
+                                                        <span className="text-base font-extrabold text-neutral-900">{krw(selectedDeparture.priceAdult ?? 0)}</span>
+                                                        <span className="text-xs text-neutral-500">원</span>
+                                                    </>
+                                                ) : (
+                                                    <span className="text-base font-extrabold text-neutral-900">—</span>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div className="mt-3 rounded-xl border border-neutral-200 bg-white p-4">
+                                            <QtyControl label="성인 (만 12세 이상)" value={adult} onChange={setAdult} />
+                                        </div>
                                     </div>
 
-                                    <div className="mt-4 flex flex-col items-stretch justify-between gap-3 rounded-2xl border border-neutral-200 bg-neutral-50 p-4 md:flex-row md:items-center">
+                                    {/* 총 금액 + 예약하기 버튼 (PC만 표시) */}
+                                    <div className="mt-4 hidden lg:flex flex-col items-stretch justify-between gap-3 rounded-2xl border border-neutral-200 bg-neutral-50 p-4 md:flex-row md:items-center">
                                         <div className="flex items-baseline gap-2">
                                             <span className="text-sm font-semibold text-neutral-600">총 금액</span>
                                             {totalPrice === null ? (
@@ -1133,100 +1286,7 @@ export default function ProductDetail() {
                                             type="button"
                                             className="rounded-2xl bg-[#2E97F2] px-6 py-3 text-sm font-extrabold text-white hover:brightness-95 disabled:opacity-60"
                                             disabled={bookingSubmitting}
-                                            onClick={async () => {
-                                                const peopleCount = adult + child + infant;
-
-                                                if (peopleCount <= 0) {
-                                                    alert("인원을 선택해 주세요.");
-                                                    return;
-                                                }
-
-                                                if (!selectedDateISO) {
-                                                    alert("출발일을 선택해 주세요.");
-                                                    return;
-                                                }
-
-                                                const memoUser = `선택 행사ID: ${selectedDepartureId || "-"} / 성인:${adult}, 아동:${child}, 유아:${infant}`;
-
-                                                // 로그인하지 않은 경우 예약 정보와 함께 로그인 페이지로 이동
-                                                if (!userId) {
-                                                    nav("/login", {
-                                                        state: {
-                                                            redirectTo: location.pathname,
-                                                            bookingInfo: {
-                                                                productId: String(id),
-                                                                productTitle: baseTitle,
-                                                                travelDate: selectedDateISO,
-                                                                peopleCount: Math.max(1, peopleCount),
-                                                                memo: memoUser,
-                                                            },
-                                                        },
-                                                    });
-                                                    return;
-                                                }
-
-                                                try {
-                                                    setBookingSubmitting(true);
-
-                                                    // 사용자 프로필 정보 가져오기
-                                                    const userProfile = await getUserProfile(String(userId));
-
-                                                    if (!userProfile) {
-                                                        alert("사용자 정보를 찾을 수 없습니다. 마이페이지에서 프로필을 등록해주세요.");
-                                                        setBookingSubmitting(false);
-                                                        return;
-                                                    }
-
-                                                    // 이름이나 전화번호가 없으면 모달 띄우기
-                                                    if (!userProfile.name?.trim() || !userProfile.phone?.trim()) {
-                                                        setPendingBookingData({
-                                                            productId: String(id),
-                                                            travelDate: selectedDateISO,
-                                                            peopleCount: Math.max(1, peopleCount),
-                                                            memo: memoUser,
-                                                        });
-                                                        setShowProfileModal(true);
-                                                        setBookingSubmitting(false);
-                                                        return;
-                                                    }
-
-                                                    const userName = userProfile.name;
-                                                    const userPhone = userProfile.phone;
-                                                    const userEmail = userProfile.email || session?.user?.email || null;
-
-                                                    // DB에 예약 데이터 insert
-                                                    await createBooking(String(userId), {
-                                                        product_id: String(id),
-                                                        travel_date: selectedDateISO,
-                                                        people_count: Math.max(1, peopleCount),
-                                                        contact_name: userName,
-                                                        contact_phone: userPhone,
-                                                        memo_user: memoUser,
-                                                    });
-
-                                                    // 메일 전송
-                                                    await sendBookingEmail({
-                                                        product_title: baseTitle,
-                                                        user_name: userName,
-                                                        user_phone: userPhone,
-                                                        user_email: userEmail,
-                                                        travel_date: selectedDateISO,
-                                                        people_count: Math.max(1, peopleCount),
-                                                        memo_user: memoUser,
-                                                    });
-
-                                                    alert("예약 요청이 접수되었습니다. 담당자가 확인 후 연락드리겠습니다.");
-
-                                                    // 인원 초기화
-                                                    setAdult(1);
-                                                    setChild(0);
-                                                    setInfant(0);
-                                                } catch (e: any) {
-                                                    alert(e?.message ?? "예약 접수에 실패했습니다.");
-                                                } finally {
-                                                    setBookingSubmitting(false);
-                                                }
-                                            }}
+                                            onClick={handleBooking}
                                         >
                                             {bookingSubmitting ? "접수 중..." : "예약하기"}
                                         </button>
@@ -1321,6 +1381,86 @@ export default function ProductDetail() {
                                     </ul>
                                 </div>
                             </section>
+
+                            {/* 모바일: "선택중인 행사" - 상품선택 뒤에 표시 */}
+                            <aside className="lg:hidden mt-10">
+                                <div className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
+                                    <div className="text-base font-extrabold text-neutral-900">선택중인 행사</div>
+                                    <div className="mt-3 h-px w-full bg-neutral-200" />
+
+                                    <div className="mt-4 space-y-3">
+                                        <div className="text-sm font-semibold text-neutral-900 line-clamp-2">{baseTitle}</div>
+
+                                        <div className="flex items-center justify-between">
+                                            <div className="text-xs text-neutral-500">행사금액</div>
+                                            <div className="flex items-baseline gap-1">
+                                                {selectedDeparture?.status === "INQUIRY" ? (
+                                                    <div className="text-lg font-extrabold text-neutral-900">가격문의</div>
+                                                ) : selectedDeparture ? (
+                                                    <>
+                                                        <div className="text-lg font-extrabold text-neutral-900">{krw(selectedDeparture.priceAdult ?? 0)}</div>
+                                                        <div className="text-xs text-neutral-500">원 부터~</div>
+                                                    </>
+                                                ) : (
+                                                    <div className="text-lg font-extrabold text-neutral-900">—</div>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center justify-between">
+                                            <div className="text-xs text-neutral-500">상태</div>
+                                            <div>{selectedDeparture ? <StatusPill status={selectedDeparture.status} /> : null}</div>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-3 pt-2">
+                                            <button
+                                                type="button"
+                                                className="rounded-xl border border-neutral-300 bg-white px-4 py-3 text-sm font-bold text-neutral-800 hover:bg-neutral-50"
+                                                onClick={() => {
+                                                    if (!userId) {
+                                                        nav("/login", { state: { redirectTo: location.pathname } });
+                                                        return;
+                                                    }
+                                                    toggleFav.mutate();
+                                                }}
+                                            >
+                                                {session ? (isFav ? "찜취소 ♥" : "찜하기 ♡") : "찜하기 ♡"}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className="rounded-xl bg-neutral-800 px-4 py-3 text-sm font-extrabold text-white hover:bg-neutral-700"
+                                                onClick={() => {
+                                                    setActive("select");
+                                                    scrollToTab("select");
+                                                }}
+                                            >
+                                                다른 출발일 보기
+                                            </button>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-3 pt-2">
+                                            <button
+                                                type="button"
+                                                className="rounded-2xl bg-yellow-400 px-4 py-3 text-sm font-extrabold text-neutral-900 hover:bg-yellow-300"
+                                                onClick={() => nav("/estimate")}
+                                            >
+                                                1:1 맞춤견적
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className="rounded-2xl border border-neutral-300 bg-white px-4 py-3 text-sm font-bold text-neutral-800 hover:bg-neutral-50"
+                                                onClick={handleShareKakao}
+                                            >
+                                                공유하기
+                                            </button>
+                                        </div>
+
+                                        <div className="pt-2 text-xs text-neutral-500">
+                                            상품코드 : HSG0002
+                                        </div>
+                                    </div>
+                                </div>
+                            </aside>
 
                             {/* 여행일정 */}
                             <section
@@ -1498,6 +1638,49 @@ export default function ProductDetail() {
                 </div>
             </Container>
 
+            {/* 모바일 하단 고정 예약하기 버튼 */}
+            <div className="fixed left-0 right-0 bottom-[60px] z-40 lg:hidden">
+                <div className="mx-auto max-w-screen-xl px-4 pb-3">
+                    <div className="rounded-2xl bg-white shadow-[0_-4px_20px_rgba(0,0,0,0.15)] p-4">
+                        <div className="flex items-center justify-between gap-3">
+                            <div className="min-w-0 flex-1">
+                                <div className="text-xs text-neutral-500">총 예상 금액</div>
+                                <div className="mt-1 flex items-baseline gap-1">
+                                    {totalPrice === null ? (
+                                        <span className="text-xl font-extrabold text-neutral-900">가격문의</span>
+                                    ) : (
+                                        <>
+                                            <span className="text-xl font-extrabold text-neutral-900">{krw(totalPrice)}</span>
+                                            <span className="text-xs text-neutral-500">원</span>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                className="shrink-0 rounded-xl bg-[#2E97F2] px-6 py-3 text-sm font-extrabold text-white hover:brightness-95 disabled:opacity-60"
+                                disabled={bookingSubmitting}
+                                onClick={handleBooking}
+                            >
+                                {bookingSubmitting ? "접수 중..." : "예약하기"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* 예약 완료 확인 모달 */}
+            {confirmationData && (
+                <BookingConfirmationModal
+                    isOpen={showConfirmationModal}
+                    onClose={() => {
+                        setShowConfirmationModal(false);
+                        setConfirmationData(null);
+                    }}
+                    bookingData={confirmationData}
+                />
+            )}
+
             {/* 프로필 정보 입력 모달 */}
             <ProfileInfoModal
                 isOpen={showProfileModal}
@@ -1545,8 +1728,6 @@ export default function ProductDetail() {
                         setShowProfileModal(false);
                         setPendingBookingData(null);
                         setAdult(1);
-                        setChild(0);
-                        setInfant(0);
                     } catch (e: any) {
                         throw new Error(e?.message ?? "예약 접수에 실패했습니다.");
                     }

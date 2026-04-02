@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { createBooking, sendBookingEmail } from "../../api/bookings.api";
+import BookingConfirmationModal from "./BookingConfirmationModal";
 
 type GuestBookingModalProps = {
     isOpen: boolean;
@@ -24,8 +25,25 @@ export default function GuestBookingModal({
     const [phone, setPhone] = useState("");
     const [email, setEmail] = useState("");
     const [submitting, setSubmitting] = useState(false);
+    const [showConfirmationModal, setShowConfirmationModal] = useState(false);
+    const [confirmationData, setConfirmationData] = useState<{
+        bookingId?: string;
+        productTitle: string;
+        travelDate: string;
+        peopleCount: number;
+        customerName: string;
+        customerPhone: string;
+        totalPrice: number | null;
+    } | null>(null);
 
     if (!isOpen) return null;
+
+    const handleConfirmationClose = () => {
+        setShowConfirmationModal(false);
+        setConfirmationData(null);
+        onSuccess(); // 성공 후 처리 (폼 초기화 등)
+        onClose(); // 게스트 예약 모달 닫기
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -39,7 +57,7 @@ export default function GuestBookingModal({
             setSubmitting(true);
 
             // DB에 예약 데이터 insert (비회원은 user_id를 null로)
-            await createBooking(null, {
+            const bookingResult = await createBooking(null, {
                 product_id: bookingInfo.productId,
                 travel_date: bookingInfo.travelDate,
                 people_count: bookingInfo.peopleCount,
@@ -59,8 +77,17 @@ export default function GuestBookingModal({
                 memo_user: bookingInfo.memo,
             });
 
-            alert("예약 요청이 접수되었습니다. 담당자가 확인 후 연락드리겠습니다.");
-            onSuccess();
+            // 예약 확인 모달 데이터 설정
+            setConfirmationData({
+                bookingId: bookingResult?.id,
+                productTitle: bookingInfo.productTitle,
+                travelDate: bookingInfo.travelDate,
+                peopleCount: bookingInfo.peopleCount,
+                customerName: name.trim(),
+                customerPhone: phone.trim(),
+                totalPrice: null, // 비회원은 가격 정보 없음
+            });
+            setShowConfirmationModal(true);
         } catch (e: any) {
             alert(e?.message ?? "예약 접수에 실패했습니다.");
         } finally {
@@ -69,83 +96,94 @@ export default function GuestBookingModal({
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-            <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-                <h2 className="text-xl font-extrabold text-neutral-900">비회원 예약 요청</h2>
-                <p className="mt-2 text-sm text-neutral-600">
-                    예약 정보를 입력해주세요. 담당자가 확인 후 연락드립니다.
-                </p>
+        <>
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+                <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+                    <h2 className="text-xl font-extrabold text-neutral-900">비회원 예약 요청</h2>
+                    <p className="mt-2 text-sm text-neutral-600">
+                        예약 정보를 입력해주세요. 담당자가 확인 후 연락드립니다.
+                    </p>
 
-                <div className="mt-4 rounded-xl bg-neutral-50 p-4">
-                    <div className="text-xs font-semibold text-neutral-500">예약 정보</div>
-                    <div className="mt-2 space-y-1 text-sm text-neutral-800">
-                        <div>상품: {bookingInfo.productTitle}</div>
-                        <div>출발일: {bookingInfo.travelDate}</div>
-                        <div>인원: {bookingInfo.peopleCount}명</div>
+                    <div className="mt-4 rounded-xl bg-neutral-50 p-4">
+                        <div className="text-xs font-semibold text-neutral-500">예약 정보</div>
+                        <div className="mt-2 space-y-1 text-sm text-neutral-800">
+                            <div>상품: {bookingInfo.productTitle}</div>
+                            <div>출발일: {bookingInfo.travelDate}</div>
+                            <div>인원: {bookingInfo.peopleCount}명</div>
+                        </div>
                     </div>
+
+                    <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+                        <div>
+                            <label className="text-xs font-semibold text-neutral-600">
+                                이름 (필수)
+                            </label>
+                            <input
+                                className="mt-2 w-full rounded-xl border border-neutral-200 px-4 py-3 text-sm outline-none focus:border-neutral-400"
+                                type="text"
+                                required
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                placeholder="홍길동"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="text-xs font-semibold text-neutral-600">
+                                연락처 (필수)
+                            </label>
+                            <input
+                                className="mt-2 w-full rounded-xl border border-neutral-200 px-4 py-3 text-sm outline-none focus:border-neutral-400"
+                                type="tel"
+                                required
+                                value={phone}
+                                onChange={(e) => setPhone(e.target.value)}
+                                placeholder="010-1234-5678"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="text-xs font-semibold text-neutral-600">
+                                이메일 (선택)
+                            </label>
+                            <input
+                                className="mt-2 w-full rounded-xl border border-neutral-200 px-4 py-3 text-sm outline-none focus:border-neutral-400"
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                placeholder="email@example.com"
+                            />
+                        </div>
+
+                        <div className="flex gap-3">
+                            <button
+                                type="button"
+                                onClick={onClose}
+                                disabled={submitting}
+                                className="flex-1 rounded-xl border border-neutral-300 bg-white px-4 py-3 text-sm font-bold text-neutral-800 hover:bg-neutral-50 disabled:opacity-60"
+                            >
+                                취소
+                            </button>
+                            <button
+                                type="submit"
+                                disabled={submitting}
+                                className="flex-1 rounded-xl bg-[#2E97F2] px-4 py-3 text-sm font-extrabold text-white hover:brightness-95 disabled:opacity-60"
+                            >
+                                {submitting ? "전송 중..." : "예약 요청"}
+                            </button>
+                        </div>
+                    </form>
                 </div>
-
-                <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-                    <div>
-                        <label className="text-xs font-semibold text-neutral-600">
-                            이름 (필수)
-                        </label>
-                        <input
-                            className="mt-2 w-full rounded-xl border border-neutral-200 px-4 py-3 text-sm outline-none focus:border-neutral-400"
-                            type="text"
-                            required
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            placeholder="홍길동"
-                        />
-                    </div>
-
-                    <div>
-                        <label className="text-xs font-semibold text-neutral-600">
-                            연락처 (필수)
-                        </label>
-                        <input
-                            className="mt-2 w-full rounded-xl border border-neutral-200 px-4 py-3 text-sm outline-none focus:border-neutral-400"
-                            type="tel"
-                            required
-                            value={phone}
-                            onChange={(e) => setPhone(e.target.value)}
-                            placeholder="010-1234-5678"
-                        />
-                    </div>
-
-                    <div>
-                        <label className="text-xs font-semibold text-neutral-600">
-                            이메일 (선택)
-                        </label>
-                        <input
-                            className="mt-2 w-full rounded-xl border border-neutral-200 px-4 py-3 text-sm outline-none focus:border-neutral-400"
-                            type="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            placeholder="email@example.com"
-                        />
-                    </div>
-
-                    <div className="flex gap-3">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            disabled={submitting}
-                            className="flex-1 rounded-xl border border-neutral-300 bg-white px-4 py-3 text-sm font-bold text-neutral-800 hover:bg-neutral-50 disabled:opacity-60"
-                        >
-                            취소
-                        </button>
-                        <button
-                            type="submit"
-                            disabled={submitting}
-                            className="flex-1 rounded-xl bg-[#2E97F2] px-4 py-3 text-sm font-extrabold text-white hover:brightness-95 disabled:opacity-60"
-                        >
-                            {submitting ? "전송 중..." : "예약 요청"}
-                        </button>
-                    </div>
-                </form>
             </div>
-        </div>
+
+            {/* 예약 확인 모달 */}
+            {confirmationData && (
+                <BookingConfirmationModal
+                    isOpen={showConfirmationModal}
+                    onClose={handleConfirmationClose}
+                    bookingData={confirmationData}
+                />
+            )}
+        </>
     );
 }
