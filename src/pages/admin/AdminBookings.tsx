@@ -219,6 +219,12 @@ export default function AdminBookings() {
                 setLocalHidden((m) => ({ ...m, [bookingId]: true }));
             }
             await updateMut.mutateAsync({ id: bookingId, patch });
+
+            // 상태 변경 성공 시 메시지 표시
+            if (isStatusChange && patch.status) {
+                const statusText = STATUS_LABEL[patch.status] ?? patch.status;
+                alert(`예약 상태가 "${statusText}"(으)로 변경되었습니다.\n\n"전체" 필터에서 확인하실 수 있습니다.`);
+            }
         } catch (e) {
             if (isStatusChange && statusFilter !== "ALL") {
                 setLocalHidden((m) => {

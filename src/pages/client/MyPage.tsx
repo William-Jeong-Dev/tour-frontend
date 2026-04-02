@@ -431,9 +431,7 @@ export default function MyPage() {
                                                     >
                                                         예약 취소
                                                     </button>
-                                                ) : (
-                                                    <div className="text-[11px] font-bold text-neutral-400">{b.status === "CONFIRMED" ? "확정 건은 문의" : ""}</div>
-                                                )}
+                                                ) : null}
                                             </div>
                                         </Link>
                                     );
