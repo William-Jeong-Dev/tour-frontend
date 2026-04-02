@@ -11,8 +11,8 @@ import { useSession } from "../../hooks/useSession";
 import { addFavorite, removeFavorite, isFavorited } from "../../api/favorites.api";
 import { createBooking, sendBookingEmail } from "../../api/bookings.api";
 import { supabase } from "../../lib/supabase";
-import ProfileInfoModal from "../../components/booking/ProfileInfoModal";
 import BookingConfirmationModal from "../../components/booking/BookingConfirmationModal";
+import GuestBookingModal from "../../components/booking/GuestBookingModal";
 
 type Card = {
     id: string;
@@ -480,12 +480,17 @@ export default function ProductDetail() {
     // 인원/총액
     const [adult, setAdult] = useState(1);
     const [bookingSubmitting, setBookingSubmitting] = useState(false);
-    const [showProfileModal, setShowProfileModal] = useState(false);
+    const [showGuestModal, setShowGuestModal] = useState(false);
     const [pendingBookingData, setPendingBookingData] = useState<{
         productId: string;
+        productTitle: string;
         travelDate: string;
         peopleCount: number;
         memo: string;
+        showInputFields?: boolean;
+        initialName?: string;
+        initialPhone?: string;
+        initialEmail?: string;
     } | null>(null);
     const [showConfirmationModal, setShowConfirmationModal] = useState(false);
     const [confirmationData, setConfirmationData] = useState<{
@@ -519,20 +524,17 @@ export default function ProductDetail() {
 
         const memoUser = `선택 행사ID: ${selectedDepartureId || "-"} / 성인:${adult}명`;
 
-        // 로그인하지 않은 경우 예약 정보와 함께 로그인 페이지로 이동
+        // 로그인하지 않은 경우 GuestBookingModal 표시 (정보 입력 필요)
         if (!userId) {
-            nav("/login", {
-                state: {
-                    redirectTo: location.pathname,
-                    bookingInfo: {
-                        productId: String(id),
-                        productTitle: baseTitle,
-                        travelDate: selectedDateISO,
-                        peopleCount: Math.max(1, peopleCount),
-                        memo: memoUser,
-                    },
-                },
+            setPendingBookingData({
+                productId: String(id),
+                productTitle: baseTitle,
+                travelDate: selectedDateISO,
+                peopleCount: Math.max(1, peopleCount),
+                memo: memoUser,
+                showInputFields: true,
             });
+            setShowGuestModal(true);
             return;
         }
 
@@ -542,67 +544,41 @@ export default function ProductDetail() {
             // 사용자 프로필 정보 가져오기
             const userProfile = await getUserProfile(String(userId));
 
-            if (!userProfile) {
-                alert("사용자 정보를 찾을 수 없습니다. 마이페이지에서 프로필을 등록해주세요.");
-                setBookingSubmitting(false);
-                return;
-            }
-
-            // 이름이나 전화번호가 없으면 모달 띄우기
-            if (!userProfile.name?.trim() || !userProfile.phone?.trim()) {
+            // 이름이나 전화번호가 없으면 GuestBookingModal 표시 (정보 입력 필요)
+            if (!userProfile || !userProfile.name?.trim() || !userProfile.phone?.trim()) {
                 setPendingBookingData({
                     productId: String(id),
+                    productTitle: baseTitle,
                     travelDate: selectedDateISO,
                     peopleCount: Math.max(1, peopleCount),
                     memo: memoUser,
+                    showInputFields: true,
                 });
-                setShowProfileModal(true);
+                setShowGuestModal(true);
                 setBookingSubmitting(false);
                 return;
             }
 
+            // 정보가 있는 회원: GuestBookingModal 표시 (동의만 필요)
             const userName = userProfile.name;
             const userPhone = userProfile.phone;
             const userEmail = userProfile.email || session?.user?.email || null;
 
-            // DB에 예약 데이터 insert
-            const bookingResult = await createBooking(String(userId), {
-                product_id: String(id),
-                travel_date: selectedDateISO,
-                people_count: Math.max(1, peopleCount),
-                contact_name: userName,
-                contact_phone: userPhone,
-                memo_user: memoUser,
-            });
-
-            // 메일 전송
-            await sendBookingEmail({
-                product_title: baseTitle,
-                user_name: userName,
-                user_phone: userPhone,
-                user_email: userEmail,
-                travel_date: selectedDateISO,
-                people_count: Math.max(1, peopleCount),
-                memo_user: memoUser,
-            });
-
-            // 인원 초기화
-            setAdult(1);
-
-            // 예약 완료 모달 표시
-            setConfirmationData({
-                bookingId: bookingResult?.id,
+            setPendingBookingData({
+                productId: String(id),
                 productTitle: baseTitle,
                 travelDate: selectedDateISO,
                 peopleCount: Math.max(1, peopleCount),
-                customerName: userName,
-                customerPhone: userPhone,
-                totalPrice: totalPrice,
+                memo: memoUser,
+                showInputFields: false,
+                initialName: userName,
+                initialPhone: userPhone,
+                initialEmail: userEmail || "",
             });
-            setShowConfirmationModal(true);
+            setShowGuestModal(true);
+            setBookingSubmitting(false);
         } catch (e: any) {
             alert(e?.message ?? "예약 접수에 실패했습니다.");
-        } finally {
             setBookingSubmitting(false);
         }
     };
@@ -1160,7 +1136,7 @@ export default function ProductDetail() {
                                                                         : "border-transparent hover:border-neutral-200 hover:bg-neutral-50",
                                                                 ].join(" ")}
                                                             >
-                                                                <div className="text-xs font-bold text-neutral-800">{cell.date.getDate()}</div>
+                                                                <div className="text-sm font-bold text-neutral-800">{cell.date.getDate()}</div>
                                                                 <div className="mt-0.5 text-[10px] font-bold text-neutral-500 whitespace-nowrap overflow-hidden text-ellipsis leading-none tracking-tight">
                                                                     {cheapest === null
                                                                         ? ""
@@ -1383,7 +1359,7 @@ export default function ProductDetail() {
                             </section>
 
                             {/* 모바일: "선택중인 행사" - 상품선택 뒤에 표시 */}
-                            <aside className="lg:hidden mt-10">
+                            <aside className="hidden lg:hidden mt-10">
                                 <div className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
                                     <div className="text-base font-extrabold text-neutral-900">선택중인 행사</div>
                                     <div className="mt-3 h-px w-full bg-neutral-200" />
@@ -1681,58 +1657,26 @@ export default function ProductDetail() {
                 />
             )}
 
-            {/* 프로필 정보 입력 모달 */}
-            <ProfileInfoModal
-                isOpen={showProfileModal}
-                onClose={() => {
-                    setShowProfileModal(false);
-                    setPendingBookingData(null);
-                }}
-                onSubmit={async (name: string, phone: string) => {
-                    if (!userId || !pendingBookingData) return;
-
-                    try {
-                        // 프로필 업데이트
-                        const { error: updateError } = await supabase
-                            .from("profiles")
-                            .update({ name, phone })
-                            .eq("user_id", userId);
-
-                        if (updateError) throw updateError;
-
-                        // 예약 진행
-                        const userEmail = session?.user?.email || null;
-
-                        await createBooking(String(userId), {
-                            product_id: pendingBookingData.productId,
-                            travel_date: pendingBookingData.travelDate,
-                            people_count: pendingBookingData.peopleCount,
-                            contact_name: name,
-                            contact_phone: phone,
-                            memo_user: pendingBookingData.memo,
-                        });
-
-                        await sendBookingEmail({
-                            product_title: baseTitle,
-                            user_name: name,
-                            user_phone: phone,
-                            user_email: userEmail,
-                            travel_date: pendingBookingData.travelDate,
-                            people_count: pendingBookingData.peopleCount,
-                            memo_user: pendingBookingData.memo,
-                        });
-
-                        alert("예약 요청이 접수되었습니다. 담당자가 확인 후 연락드리겠습니다.");
-
-                        // 상태 초기화
-                        setShowProfileModal(false);
+            {/* 게스트 예약 모달 (비회원, 회원 정보 없음, 회원 정보 있음 모두) */}
+            {pendingBookingData && (
+                <GuestBookingModal
+                    isOpen={showGuestModal}
+                    onClose={() => {
+                        setShowGuestModal(false);
                         setPendingBookingData(null);
+                        setBookingSubmitting(false);
+                    }}
+                    onSuccess={() => {
                         setAdult(1);
-                    } catch (e: any) {
-                        throw new Error(e?.message ?? "예약 접수에 실패했습니다.");
-                    }
-                }}
-            />
+                    }}
+                    bookingInfo={pendingBookingData}
+                    userId={userId}
+                    showInputFields={pendingBookingData.showInputFields ?? true}
+                    initialName={pendingBookingData.initialName}
+                    initialPhone={pendingBookingData.initialPhone}
+                    initialEmail={pendingBookingData.initialEmail}
+                />
+            )}
             </main>
         </>
     );

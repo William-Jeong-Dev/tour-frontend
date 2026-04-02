@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createBooking, sendBookingEmail } from "../../api/bookings.api";
 import BookingConfirmationModal from "./BookingConfirmationModal";
+import { supabase } from "../../lib/supabase";
 
 type GuestBookingModalProps = {
     isOpen: boolean;
@@ -13,6 +14,11 @@ type GuestBookingModalProps = {
         peopleCount: number;
         memo: string;
     };
+    userId?: string | null; // 로그인된 사용자 ID (선택)
+    initialName?: string; // 회원의 기존 이름
+    initialPhone?: string; // 회원의 기존 전화번호
+    initialEmail?: string; // 회원의 기존 이메일
+    showInputFields?: boolean; // true면 입력 필드 표시, false면 숨김 (정보가 있는 회원)
 };
 
 export default function GuestBookingModal({
@@ -20,11 +26,18 @@ export default function GuestBookingModal({
     onClose,
     onSuccess,
     bookingInfo,
+    userId = null,
+    initialName = "",
+    initialPhone = "",
+    initialEmail = "",
+    showInputFields = true,
 }: GuestBookingModalProps) {
-    const [name, setName] = useState("");
-    const [phone, setPhone] = useState("");
-    const [email, setEmail] = useState("");
+    const [name, setName] = useState(initialName);
+    const [phone, setPhone] = useState(initialPhone);
+    const [email, setEmail] = useState(initialEmail);
     const [submitting, setSubmitting] = useState(false);
+    const [privacyAgreed, setPrivacyAgreed] = useState(false);
+    const [marketingAgreed, setMarketingAgreed] = useState(false);
     const [showConfirmationModal, setShowConfirmationModal] = useState(false);
     const [confirmationData, setConfirmationData] = useState<{
         bookingId?: string;
@@ -35,6 +48,13 @@ export default function GuestBookingModal({
         customerPhone: string;
         totalPrice: number | null;
     } | null>(null);
+
+    // 초기값이 변경되면 state 업데이트
+    useEffect(() => {
+        setName(initialName);
+        setPhone(initialPhone);
+        setEmail(initialEmail);
+    }, [initialName, initialPhone, initialEmail]);
 
     if (!isOpen) return null;
 
@@ -53,11 +73,26 @@ export default function GuestBookingModal({
             return;
         }
 
+        if (!privacyAgreed) {
+            alert("개인정보 수집 및 이용에 동의해주세요.");
+            return;
+        }
+
         try {
             setSubmitting(true);
 
-            // DB에 예약 데이터 insert (비회원은 user_id를 null로)
-            const bookingResult = await createBooking(null, {
+            // 로그인된 사용자의 경우 프로필 업데이트
+            if (userId) {
+                const { error: updateError } = await supabase
+                    .from("profiles")
+                    .update({ name: name.trim(), phone: phone.trim() })
+                    .eq("user_id", userId);
+
+                if (updateError) throw updateError;
+            }
+
+            // DB에 예약 데이터 insert (로그인 사용자는 user_id 포함, 비회원은 null)
+            const bookingResult = await createBooking(userId, {
                 product_id: bookingInfo.productId,
                 travel_date: bookingInfo.travelDate,
                 people_count: bookingInfo.peopleCount,
@@ -85,7 +120,7 @@ export default function GuestBookingModal({
                 peopleCount: bookingInfo.peopleCount,
                 customerName: name.trim(),
                 customerPhone: phone.trim(),
-                totalPrice: null, // 비회원은 가격 정보 없음
+                totalPrice: null,
             });
             setShowConfirmationModal(true);
         } catch (e: any) {
@@ -98,10 +133,14 @@ export default function GuestBookingModal({
     return (
         <>
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-                <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-                    <h2 className="text-xl font-extrabold text-neutral-900">비회원 예약 요청</h2>
+                <div className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl bg-white p-6 shadow-xl">
+                    <h2 className="text-xl font-extrabold text-neutral-900">
+                        {showInputFields ? "예약 요청" : "예약 확인"}
+                    </h2>
                     <p className="mt-2 text-sm text-neutral-600">
-                        예약 정보를 입력해주세요. 담당자가 확인 후 연락드립니다.
+                        {showInputFields
+                            ? "예약 정보를 입력해주세요. 담당자가 확인 후 연락드립니다."
+                            : "예약 전 동의 사항을 확인해주세요."}
                     </p>
 
                     <div className="mt-4 rounded-xl bg-neutral-50 p-4">
@@ -114,45 +153,121 @@ export default function GuestBookingModal({
                     </div>
 
                     <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-                        <div>
-                            <label className="text-xs font-semibold text-neutral-600">
-                                이름 (필수)
-                            </label>
-                            <input
-                                className="mt-2 w-full rounded-xl border border-neutral-200 px-4 py-3 text-sm outline-none focus:border-neutral-400"
-                                type="text"
-                                required
-                                value={name}
-                                onChange={(e) => setName(e.target.value)}
-                                placeholder="홍길동"
-                            />
+                        {showInputFields && (
+                            <>
+                                <div>
+                                    <label className="text-xs font-semibold text-neutral-600">
+                                        이름 (필수)
+                                    </label>
+                                    <input
+                                        className="mt-2 w-full rounded-xl border border-neutral-200 px-4 py-3 text-sm outline-none focus:border-neutral-400"
+                                        type="text"
+                                        required
+                                        value={name}
+                                        onChange={(e) => setName(e.target.value)}
+                                        placeholder="홍길동"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="text-xs font-semibold text-neutral-600">
+                                        연락처 (필수)
+                                    </label>
+                                    <input
+                                        className="mt-2 w-full rounded-xl border border-neutral-200 px-4 py-3 text-sm outline-none focus:border-neutral-400"
+                                        type="tel"
+                                        required
+                                        value={phone}
+                                        onChange={(e) => setPhone(e.target.value)}
+                                        placeholder="010-1234-5678"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="text-xs font-semibold text-neutral-600">
+                                        이메일 (선택)
+                                    </label>
+                                    <input
+                                        className="mt-2 w-full rounded-xl border border-neutral-200 px-4 py-3 text-sm outline-none focus:border-neutral-400"
+                                        type="email"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        placeholder="email@example.com"
+                                    />
+                                </div>
+                            </>
+                        )}
+
+                        {/* 개인정보 수집 및 이용 동의 (필수) */}
+                        <div className="mt-4">
+                            <div className="rounded-xl border border-neutral-200 p-4">
+                                <label className="flex items-start gap-3 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={privacyAgreed}
+                                        onChange={(e) => setPrivacyAgreed(e.target.checked)}
+                                        className="mt-1 h-4 w-4 accent-blue-500"
+                                    />
+                                    <div className="flex-1">
+                                        <span className="text-sm font-bold text-neutral-800">
+                                            개인정보 수집 및 이용 동의 (필수)
+                                        </span>
+                                    </div>
+                                </label>
+                                <div className="mt-3 max-h-32 overflow-y-auto rounded-lg bg-neutral-50 p-3 text-xs text-neutral-600 leading-relaxed">
+                                    <p className="font-semibold mb-2">청원여행사는 예약 문의 및 여행 상담을 위해 아래와 같이 개인정보를 수집·이용합니다.</p>
+
+                                    <p className="font-semibold mt-3">1. 수집 항목</p>
+                                    <p>- 필수 항목: 이름, 휴대전화번호, 여행 일정 정보</p>
+                                    <p>- 선택 항목: 이메일</p>
+
+                                    <p className="font-semibold mt-3">2. 수집 및 이용 목적</p>
+                                    <p>- 여행 상담 및 예약 진행 관리</p>
+                                    <p>- 여행 일정 안내</p>
+                                    <p>- 고객 문의 응대 및 민원 처리</p>
+
+                                    <p className="font-semibold mt-3">3. 보유 및 이용 기간</p>
+                                    <p>- 상담 및 여행 진행 종료 후 즉시 파기</p>
+                                    <p>- 단, 관련 법령에 따라 일정 기간 보관이 필요한 경우 해당 기간 동안 보관</p>
+
+                                    <p className="mt-3 text-neutral-500">※ 귀하는 개인정보 수집 및 이용에 대한 동의를 거부할 권리가 있습니다. 단, 필수 항목에 대한 동의를 거부할 경우 예약 접수가 제한될 수 있습니다.</p>
+                                </div>
+                            </div>
                         </div>
 
+                        {/* 마케팅 정보 수신 동의 (선택) */}
                         <div>
-                            <label className="text-xs font-semibold text-neutral-600">
-                                연락처 (필수)
-                            </label>
-                            <input
-                                className="mt-2 w-full rounded-xl border border-neutral-200 px-4 py-3 text-sm outline-none focus:border-neutral-400"
-                                type="tel"
-                                required
-                                value={phone}
-                                onChange={(e) => setPhone(e.target.value)}
-                                placeholder="010-1234-5678"
-                            />
-                        </div>
+                            <div className="rounded-xl border border-neutral-200 p-4">
+                                <label className="flex items-start gap-3 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={marketingAgreed}
+                                        onChange={(e) => setMarketingAgreed(e.target.checked)}
+                                        className="mt-1 h-4 w-4 accent-blue-500"
+                                    />
+                                    <div className="flex-1">
+                                        <span className="text-sm font-bold text-neutral-800">
+                                            마케팅 정보 수신 동의 (선택)
+                                        </span>
+                                    </div>
+                                </label>
+                                <div className="mt-3 max-h-32 overflow-y-auto rounded-lg bg-neutral-50 p-3 text-xs text-neutral-600 leading-relaxed">
+                                    <p className="font-semibold mb-2">청원여행사는 신규 여행 상품, 프로모션, 이벤트 및 할인 정보 등을 문자(SMS), 카카오톡, 이메일 등을 통해 안내드릴 수 있습니다.</p>
 
-                        <div>
-                            <label className="text-xs font-semibold text-neutral-600">
-                                이메일 (선택)
-                            </label>
-                            <input
-                                className="mt-2 w-full rounded-xl border border-neutral-200 px-4 py-3 text-sm outline-none focus:border-neutral-400"
-                                type="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                placeholder="email@example.com"
-                            />
+                                    <p className="font-semibold mt-3">1. 수집 항목</p>
+                                    <p>- 이름, 휴대전화번호, 이메일</p>
+
+                                    <p className="font-semibold mt-3">2. 이용 목적</p>
+                                    <p>- 신규 여행 상품 안내</p>
+                                    <p>- 이벤트 및 프로모션 정보 제공</p>
+                                    <p>- 맞춤형 여행 상품 추천</p>
+
+                                    <p className="font-semibold mt-3">3. 보유 및 이용 기간</p>
+                                    <p>- 동의 철회 시까지</p>
+
+                                    <p className="mt-3 text-neutral-500">※ 귀하는 마케팅 정보 수신에 대한 동의를 거부할 권리가 있으며, 동의를 거부하셔도 예약 서비스 이용에는 제한이 없습니다.</p>
+                                </div>
+                            </div>
                         </div>
 
                         <div className="flex gap-3">
