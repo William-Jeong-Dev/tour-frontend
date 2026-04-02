@@ -1154,6 +1154,7 @@ export default function ProductDetail() {
                                                         state: {
                                                             redirectTo: location.pathname,
                                                             bookingInfo: {
+                                                                productId: String(id),
                                                                 productTitle: baseTitle,
                                                                 travelDate: selectedDateISO,
                                                                 peopleCount: Math.max(1, peopleCount),

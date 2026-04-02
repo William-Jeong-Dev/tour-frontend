@@ -7,6 +7,7 @@ import GuestBookingModal from "../../components/booking/GuestBookingModal";
 type Mode = "login" | "signup";
 
 type BookingInfo = {
+    productId: string;
     productTitle: string;
     travelDate: string;
     peopleCount: number;

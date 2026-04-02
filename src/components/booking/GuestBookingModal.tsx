@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { createBooking, sendBookingEmail } from "../../api/bookings.api";
-import { useLocation } from "react-router-dom";
 
 type GuestBookingModalProps = {
     isOpen: boolean;
     onClose: () => void;
     onSuccess: () => void;
     bookingInfo: {
+        productId: string;
         productTitle: string;
         travelDate: string;
         peopleCount: number;
@@ -20,7 +20,6 @@ export default function GuestBookingModal({
     onSuccess,
     bookingInfo,
 }: GuestBookingModalProps) {
-    const location = useLocation();
     const [name, setName] = useState("");
     const [phone, setPhone] = useState("");
     const [email, setEmail] = useState("");
@@ -39,18 +38,9 @@ export default function GuestBookingModal({
         try {
             setSubmitting(true);
 
-            // 현재 URL에서 상품 ID 추출
-            const productIdMatch = location.pathname.match(/\/product\/([^/]+)/);
-            const productId = productIdMatch ? productIdMatch[1] : null;
-
-            if (!productId) {
-                alert("상품 정보를 찾을 수 없습니다.");
-                return;
-            }
-
             // DB에 예약 데이터 insert (비회원은 user_id를 null로)
             await createBooking(null, {
-                product_id: productId,
+                product_id: bookingInfo.productId,
                 travel_date: bookingInfo.travelDate,
                 people_count: bookingInfo.peopleCount,
                 contact_name: name.trim(),
