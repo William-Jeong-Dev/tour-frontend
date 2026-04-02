@@ -359,8 +359,17 @@ export default function AdminBookings() {
                                                 <div className="mt-2 rounded-xl border border-neutral-900 bg-neutral-950/50 p-3">
                                                     <div className="text-[11px] font-bold text-neutral-400">고객 정보</div>
                                                     <div className="mt-1 text-xs text-neutral-200">
-                                                        {u?.name ?? "-"} / {u?.phone ?? "-"} / {u?.email ?? "-"}
+                                                        {u?.name || b.contact_name || "-"} / {u?.phone || b.contact_phone || "-"} / {u?.email ?? "-"}
                                                     </div>
+                                                    {b.user_id ? (
+                                                        <div className="mt-1 text-[10px] text-neutral-500">
+                                                            회원 ID: {b.user_id}
+                                                        </div>
+                                                    ) : (
+                                                        <div className="mt-1 text-[10px] text-amber-400">
+                                                            비회원 예약
+                                                        </div>
+                                                    )}
 
                                                     {b.memo_user ? (
                                                         <div className="mt-2 text-xs text-neutral-300">

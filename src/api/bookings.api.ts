@@ -23,7 +23,7 @@ export type BookingEmailPayload = {
     memo_user?: string | null;
 };
 
-export async function createBooking(user_id: string, payload: CreateBookingPayload) {
+export async function createBooking(user_id: string | null, payload: CreateBookingPayload) {
     const { data, error } = await supabase
         .from("bookings")
         .insert({
@@ -42,7 +42,7 @@ export async function getMyBookings(user_id: string) {
     const { data, error } = await supabase
         .from("bookings")
         .select(`
-          id, status, travel_date, return_date, people_count, created_at,
+          id, status, travel_date, people_count, created_at,
           products:product_id ( id, title, region, thumbnail_path, thumbnail_url )
         `)
 
@@ -67,7 +67,7 @@ export async function getAdminBookings(
     let q = supabase
         .from("bookings")
         .select(`
-          id,user_id,product_id,status,travel_date,return_date,people_count,memo_user,memo_admin,created_at,updated_at,
+          id,user_id,product_id,status,travel_date,people_count,contact_name,contact_phone,memo_user,memo_admin,created_at,updated_at,
           products:products(id,title,region,thumbnail_path,thumbnail_url),
           profiles:profiles(user_id,email,name,phone)
         `, { count: "exact" })

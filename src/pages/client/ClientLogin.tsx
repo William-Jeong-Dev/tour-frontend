@@ -60,6 +60,12 @@ export default function ClientLogin() {
             if (mode === "login") {
                 const { error } = await supabase.auth.signInWithPassword({ email: emailN, password });
                 if (error) throw error;
+
+                // 예약 정보가 있으면 안내 메시지 표시
+                if (bookingInfo) {
+                    alert("로그인 성공! 상품 페이지로 돌아가서 예약 버튼을 다시 클릭해주세요.");
+                }
+
                 nav(redirectTo, { replace: true });
                 return;
             }
@@ -69,10 +75,24 @@ export default function ClientLogin() {
 
             const uid = data.user?.id;
             if (uid) {
-                await supabase.from("profiles").update({ name: name || null, phone: phone || null }).eq("user_id", uid);
+                // upsert를 사용하여 profiles 테이블에 정보 저장
+                await supabase.from("profiles").upsert({
+                    user_id: uid,
+                    email: emailN,
+                    name: name.trim() || null,
+                    phone: phone.trim() || null,
+                }, {
+                    onConflict: "user_id"
+                });
             }
 
             setInfo("회원가입이 완료됐어요. 이메일 인증이 필요하면 메일함을 확인해 주세요.");
+
+            // 예약 정보가 있으면 안내 메시지 표시
+            if (bookingInfo) {
+                alert("회원가입 성공! 상품 페이지로 돌아가서 예약 버튼을 다시 클릭해주세요.");
+            }
+
             nav(redirectTo, { replace: true });
         } catch (e: any) {
             setErr(e?.message ?? `${title}에 실패했습니다.`);
