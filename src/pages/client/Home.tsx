@@ -299,6 +299,9 @@ export default function Home() {
 
     return (
         <main className="bg-white">
+            {/* SEO: 검색엔진 인식용 대표 텍스트 */}
+            <h1 className="sr-only">일본·중국 골프여행 전문 청원여행사</h1>
+
             {/* ✅ POPUP (홈 진입 시 자동 표시) */}
             {currentPopup ? (
                 <SitePopup
@@ -326,14 +329,14 @@ export default function Home() {
                         <div className="w-full max-w-[1400px] px-6 py-4 md:py-0">
                             <div className="md:h-full md:flex md:items-center">
                                 <div className="w-full max-w-[580px] ml-0 md:ml-16 lg:ml-24 xl:ml-28 flex flex-col justify-center items-start text-left">
-                                    <h1 className="text-3xl md:text-4xl font-extrabold leading-tight tracking-tight text-[#2E97F2]">
+                                    <h2 className="text-3xl md:text-4xl font-extrabold leading-tight tracking-tight text-[#2E97F2]">
                                         {active.title.split("\n").map((line, idx) => (
                                             <span key={idx}>
                         {line}
                                                 <br />
                       </span>
                                         ))}
-                                    </h1>
+                                    </h2>
 
                                     <p className="mt-3 text-sm md:text-base text-neutral-500">{active.tags}</p>
 
@@ -449,6 +452,15 @@ export default function Home() {
 
             {/* ✅ HERO 아래부터는 Container */}
             <Container>
+                {/* SEO 브랜드 소개 텍스트 */}
+                <section className="pt-6 pb-2">
+                    <p className="text-sm leading-relaxed text-neutral-500">
+                        청원여행사는 일본 및 중국 골프여행을 전문으로 운영하는 여행사입니다.
+                        규슈, 간사이, 도쿄, 홋카이도, 청도 등 다양한 지역 골프패키지를 제공하며,
+                        항공, 숙소, 라운드, 이동을 포함한 맞춤 골프투어 서비스를 제공합니다.
+                    </p>
+                </section>
+
                 {/* SPECIAL */}
                 {specialCfg?.enabled !== false ? (
                     <section className="py-7 md:py-9">
