@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { deleteProduct, listProducts } from "../../api/products.api";
+import { getProductRegions, saveProductRegions } from "../../api/siteSettings.api";
 
 function fmtUpdatedAt(iso: string) {
     try {
@@ -18,10 +19,12 @@ function fmtUpdatedAt(iso: string) {
 }
 
 export default function AdminProductList() {
+    const qc = useQueryClient();
     const [q, setQ] = useState("");
     const [region, setRegion] = useState("전체");
-
     const [status, setStatus] = useState<"전체" | "PUBLISHED" | "DRAFT" | "HIDDEN">("전체");
+    const [showRegionMgr, setShowRegionMgr] = useState(false);
+    const [newRegion, setNewRegion] = useState("");
 
     const query = useQuery({
         queryKey: ["admin-products", { q, region, status }],
@@ -33,8 +36,34 @@ export default function AdminProductList() {
             }),
     });
 
+    const regionsQuery = useQuery({
+        queryKey: ["product-regions"],
+        queryFn: getProductRegions,
+        staleTime: 60_000,
+    });
+
+    const regionList = regionsQuery.data ?? [];
+    const regions = useMemo(() => ["전체", ...regionList], [regionList]);
+
+    const saveMutation = useMutation({
+        mutationFn: saveProductRegions,
+        onSuccess: () => qc.invalidateQueries({ queryKey: ["product-regions"] }),
+    });
+
+    const onAddRegion = async () => {
+        const trimmed = newRegion.trim();
+        if (!trimmed || regionList.includes(trimmed)) return;
+        await saveMutation.mutateAsync([...regionList, trimmed]);
+        setNewRegion("");
+    };
+
+    const onDeleteRegion = async (name: string) => {
+        if (!confirm(`"${name}" 지역을 삭제할까요?`)) return;
+        await saveMutation.mutateAsync(regionList.filter((r) => r !== name));
+        if (region === name) setRegion("전체");
+    };
+
     const items = query.data ?? [];
-    const regions = useMemo(() => ["전체", "일본", "제주", "동남아", "유럽"], []);
 
     const statusOptions = useMemo(
         () => [
@@ -94,7 +123,16 @@ export default function AdminProductList() {
                     </select>
                 </div>
                 <div>
-                    <div className="mb-2 text-sm text-neutral-300">지역</div>
+                    <div className="mb-2 flex items-center justify-between">
+                        <span className="text-sm text-neutral-300">지역</span>
+                        <button
+                            type="button"
+                            onClick={() => setShowRegionMgr((v) => !v)}
+                            className="text-xs text-neutral-500 underline hover:text-neutral-200"
+                        >
+                            {showRegionMgr ? "닫기" : "지역 관리"}
+                        </button>
+                    </div>
                     <select
                         value={region}
                         onChange={(e) => setRegion(e.target.value)}
@@ -108,6 +146,56 @@ export default function AdminProductList() {
                     </select>
                 </div>
             </div>
+
+            {showRegionMgr && (
+                <div className="mt-3 rounded-xl border border-neutral-800 bg-neutral-950/30 p-4">
+                    <div className="mb-3 text-sm font-bold text-neutral-200">지역(레거시) 관리</div>
+                    {regionsQuery.isLoading ? (
+                        <div className="text-xs text-neutral-400">불러오는 중...</div>
+                    ) : (
+                        <>
+                            <div className="mb-4 flex flex-wrap gap-2">
+                                {regionList.map((r) => (
+                                    <span
+                                        key={r}
+                                        className="flex items-center gap-1 rounded-full border border-neutral-700 bg-neutral-900 px-3 py-1 text-xs text-neutral-200"
+                                    >
+                                        {r}
+                                        <button
+                                            type="button"
+                                            onClick={() => onDeleteRegion(r)}
+                                            className="ml-1 text-neutral-500 hover:text-rose-400"
+                                            aria-label={`${r} 삭제`}
+                                        >
+                                            ✕
+                                        </button>
+                                    </span>
+                                ))}
+                                {regionList.length === 0 && (
+                                    <span className="text-xs text-neutral-500">등록된 지역이 없습니다.</span>
+                                )}
+                            </div>
+                            <div className="flex gap-2">
+                                <input
+                                    value={newRegion}
+                                    onChange={(e) => setNewRegion(e.target.value)}
+                                    onKeyDown={(e) => e.key === "Enter" && onAddRegion()}
+                                    placeholder="새 지역 입력 (예: 미주)"
+                                    className="flex-1 rounded-xl border border-neutral-800 bg-neutral-950/40 px-4 py-2 text-sm outline-none"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={onAddRegion}
+                                    disabled={saveMutation.isPending || !newRegion.trim()}
+                                    className="rounded-xl bg-neutral-50 px-4 py-2 text-sm font-bold text-neutral-950 disabled:opacity-40"
+                                >
+                                    추가
+                                </button>
+                            </div>
+                        </>
+                    )}
+                </div>
+            )}
 
             {/* Content */}
             <div className="mt-6">

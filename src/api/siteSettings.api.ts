@@ -3,6 +3,31 @@ import { supabase } from "../lib/supabase";
 const BUCKET = "site-assets";
 const PRODUCT_THUMB_BUCKET = "product-thumbnails";
 
+const REGIONS_KEY = "product_regions";
+export const DEFAULT_REGIONS = ["일본", "중국", "제주", "동남아", "유럽"];
+
+export async function getProductRegions(): Promise<string[]> {
+    const { data, error } = await supabase
+        .from("site_settings")
+        .select("value")
+        .eq("key", REGIONS_KEY)
+        .maybeSingle();
+    if (error) throw error;
+    if (!data?.value) return DEFAULT_REGIONS;
+    try {
+        const parsed = JSON.parse(data.value);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed as string[];
+    } catch {}
+    return DEFAULT_REGIONS;
+}
+
+export async function saveProductRegions(regions: string[]): Promise<void> {
+    const { error } = await supabase
+        .from("site_settings")
+        .upsert({ key: REGIONS_KEY, value: JSON.stringify(regions) }, { onConflict: "key" });
+    if (error) throw error;
+}
+
 export async function getSiteSetting(key: string): Promise<string> {
     const { data, error } = await supabase
         .from("site_settings")

@@ -23,6 +23,7 @@ import {
     uploadProductThumbnail,
 } from "../../api/products.api";
 
+import { getProductRegions } from "../../api/siteSettings.api";
 import { supabase } from "../../lib/supabase";
 
 const BUCKET_NAME = "product-thumbnails";
@@ -66,8 +67,6 @@ const TABS: Array<{ key: TabKey; label: string }> = [
     { key: "detail", label: "상세설명" },
     { key: "assets", label: "원본문서" },
 ];
-
-const REGIONS = ["일본", "중국", "제주", "동남아", "유럽"] as const;
 
 const STATUSES: Array<{ value: ProductStatus; label: string }> = [
     { value: "DRAFT", label: "임시" },
@@ -115,6 +114,14 @@ export default function AdminProductEdit({ mode }: { mode: "create" | "edit" }) 
         if (mode === "create") nav(`/admin/products/new/${next}`);
         else nav(`/admin/products/${id}/${next}`);
     };
+
+    /* ---------- regions (legacy) ---------- */
+    const regionsQuery = useQuery({
+        queryKey: ["product-regions"],
+        queryFn: getProductRegions,
+        staleTime: 60_000,
+    });
+    const REGIONS = regionsQuery.data ?? [];
 
     /* ---------- themes ---------- */
     type ThemeRow = { id: string; name: string; slug: string; sort_order?: number | null };
