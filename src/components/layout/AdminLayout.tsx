@@ -17,6 +17,7 @@ const NAVS = [
     { to: "/admin/home-sections", label: "홈 섹션 관리" },
     { to: "/admin/themes", label: "카테고리(테마) 관리" },
     { to: "/admin/areas", label: "지역 관리" },
+    { to: "/admin/regions", label: "지역(레거시) 관리" },
     { to: "/admin/products", label: "상품 관리" },
     { to: "/admin/notices", label: "공지사항" },
     { to: "/admin/users", label: "회원 현황" },

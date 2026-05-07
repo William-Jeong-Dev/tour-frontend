@@ -44,6 +44,7 @@ import SearchPage from "../pages/client/SearchPage";
 import  InquiriesAdminPage from "../pages/admin/InquiriesAdminPage";
 
 import AdminAreas from "../pages/admin/AdminAreas";
+import AdminRegions from "../pages/admin/AdminRegions";
 
 import AdminPopups from "../pages/admin/AdminPopupsPage";
 
@@ -139,6 +140,7 @@ export const router = createBrowserRouter([
             { path: "inquiries", element: <InquiriesAdminPage /> },
 
             { path: "areas", element: <AdminAreas /> },
+            { path: "regions", element: <AdminRegions /> },
 
             { path: "popups", element: <AdminPopups /> },
 

@@ -1476,9 +1476,9 @@ export default function ProductDetail() {
                                                                     <td className="px-3 py-2 font-semibold">{isFirstRowOfDay ? `${day.dayNo}일차` : ""}</td>
                                                                     <td className="px-3 py-2">{row.transport || "-"}</td>
                                                                     <td className="hidden px-3 py-2 md:table-cell">{row.time || "-"}</td>
-                                                                    <td className="px-3 py-2 whitespace-pre-wrap leading-5">{row.content || row.place || "-"}</td>
+                                                                    <td className="px-3 py-2 whitespace-pre-wrap leading-6">{row.content || row.place || "-"}</td>
                                                                     <td className="px-3 py-2">
-                                                                        <div className="leading-5">
+                                                                        <div className="leading-6">
                                                                             <div>조식 : {getMealText(row.mealMorning)}</div>
                                                                             <div>중식 : {getMealText(row.mealLunch)}</div>
                                                                             <div>석식 : {getMealText(row.mealDinner)}</div>
