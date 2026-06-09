@@ -44,67 +44,169 @@
     <!-- Kakao SDK - integrity 제거 (모바일 호환성) -->
     <script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js" crossorigin="anonymous"></script>
 
-    <!-- 구조화데이터: 여행사 정보 -->
+    <!-- 구조화데이터: 여행사 정보 (@graph: Organization / WebSite / Service / ItemList / FAQ) -->
     <script type="application/ld+json">
     {
         "@context": "https://schema.org",
-        "@type": "TravelAgency",
-        "name": "청원여행사",
-        "alternateName": "Chungwon Tour",
-        "url": "https://www.chungwontour.com",
-        "description": "일본 및 중국 골프여행 전문 여행사",
-        "logo": "https://wekgpjpkxjxoeledqhbe.supabase.co/storage/v1/object/public/site-assets/footer/eb217399-b063-4f2f-ab87-36f8facfcf01.png",
-        "telephone": "+82-51-747-8207",
-        "email": "chungwon87@naver.com",
-        "faxNumber": "+82-51-747-8204",
-        "address": {
-            "@type": "PostalAddress",
-            "streetAddress": "해운대로 216 2층",
-            "addressLocality": "해운대구",
-            "addressRegion": "부산광역시",
-            "addressCountry": "KR"
-        },
-        "founder": {
-            "@type": "Person",
-            "name": "김동현"
-        },
-        "identifier": [
+        "@graph": [
             {
-                "@type": "PropertyValue",
-                "name": "사업자등록번호",
-                "value": "473-15-00667"
+                "@type": ["TravelAgency", "LocalBusiness"],
+                "@id": "https://www.chungwontour.com/#organization",
+                "name": "청원여행사",
+                "alternateName": "Chungwon Tour",
+                "url": "https://www.chungwontour.com",
+                "description": "청원여행사는 일본, 중국, 베트남, 호주 골프여행을 중심으로 해외 골프투어, 맞춤 골프패키지, 단체 골프여행 상담을 제공하는 골프여행 전문 여행사입니다.",
+                "logo": "https://wekgpjpkxjxoeledqhbe.supabase.co/storage/v1/object/public/site-assets/footer/eb217399-b063-4f2f-ab87-36f8facfcf01.png",
+                "telephone": "+82-51-747-8207",
+                "email": "chungwon87@naver.com",
+                "faxNumber": "+82-51-747-8204",
+                "address": {
+                    "@type": "PostalAddress",
+                    "streetAddress": "해운대로 216 2층",
+                    "addressLocality": "해운대구",
+                    "addressRegion": "부산광역시",
+                    "addressCountry": "KR"
+                },
+                "founder": {
+                    "@type": "Person",
+                    "name": "김동현"
+                },
+                "identifier": [
+                    {
+                        "@type": "PropertyValue",
+                        "name": "사업자등록번호",
+                        "value": "473-15-00667"
+                    },
+                    {
+                        "@type": "PropertyValue",
+                        "name": "통신판매업신고번호",
+                        "value": "제2023-부산해운대-1696호"
+                    },
+                    {
+                        "@type": "PropertyValue",
+                        "name": "관광사업자등록번호",
+                        "value": "제2017-000026호"
+                    }
+                ],
+                "areaServed": [
+                    { "@type": "Country", "name": "대한민국" },
+                    { "@type": "Country", "name": "일본" },
+                    { "@type": "Country", "name": "중국" },
+                    { "@type": "Country", "name": "베트남" },
+                    { "@type": "Country", "name": "호주" }
+                ],
+                "availableLanguage": ["ko", "en"],
+                "knowsAbout": [
+                    "해외 골프여행",
+                    "일본 골프여행",
+                    "중국 골프여행",
+                    "베트남 골프여행",
+                    "호주 골프여행",
+                    "골프패키지",
+                    "맞춤 골프투어",
+                    "단체 골프여행"
+                ],
+                "contactPoint": {
+                    "@type": "ContactPoint",
+                    "contactType": "customer service",
+                    "areaServed": "KR",
+                    "availableLanguage": ["Korean"]
+                },
+                "sameAs": [
+                    "https://blog.naver.com/chungwon87",
+                    "https://pf.kakao.com/_qFxdqX",
+                    "https://www.instagram.com/chungwon.tour"
+                ]
             },
             {
-                "@type": "PropertyValue",
-                "name": "통신판매업신고번호",
-                "value": "제2023-부산해운대-1696호"
+                "@type": "WebSite",
+                "@id": "https://www.chungwontour.com/#website",
+                "url": "https://www.chungwontour.com",
+                "name": "청원여행사",
+                "description": "일본·중국·베트남·호주 해외 골프여행 전문 청원여행사 공식 홈페이지",
+                "publisher": {
+                    "@id": "https://www.chungwontour.com/#organization"
+                },
+                "inLanguage": "ko-KR"
             },
             {
-                "@type": "PropertyValue",
-                "name": "관광사업자등록번호",
-                "value": "제2017-000026호"
+                "@type": "Service",
+                "@id": "https://www.chungwontour.com/#golf-travel-service",
+                "name": "해외 골프여행 맞춤 상담 및 패키지 예약",
+                "serviceType": "Golf Travel Package",
+                "provider": {
+                    "@id": "https://www.chungwontour.com/#organization"
+                },
+                "areaServed": ["일본", "중국", "베트남", "호주"],
+                "description": "일본, 중국, 베트남, 호주 지역의 해외 골프여행 상품과 맞춤형 골프투어 상담을 제공합니다.",
+                "offers": {
+                    "@type": "Offer",
+                    "url": "https://www.chungwontour.com/",
+                    "availability": "https://schema.org/InStock",
+                    "priceCurrency": "KRW"
+                }
+            },
+            {
+                "@type": "ItemList",
+                "@id": "https://www.chungwontour.com/#golf-destinations",
+                "name": "청원여행사 해외 골프여행 지역",
+                "itemListElement": [
+                    {
+                        "@type": "ListItem",
+                        "position": 1,
+                        "name": "일본 골프여행",
+                        "url": "https://www.chungwontour.com/theme/japan-golf"
+                    },
+                    {
+                        "@type": "ListItem",
+                        "position": 2,
+                        "name": "중국 골프여행",
+                        "url": "https://www.chungwontour.com/"
+                    },
+                    {
+                        "@type": "ListItem",
+                        "position": 3,
+                        "name": "베트남 골프여행",
+                        "url": "https://www.chungwontour.com/"
+                    },
+                    {
+                        "@type": "ListItem",
+                        "position": 4,
+                        "name": "호주 골프여행",
+                        "url": "https://www.chungwontour.com/"
+                    }
+                ]
+            },
+            {
+                "@type": "FAQPage",
+                "@id": "https://www.chungwontour.com/#faq",
+                "mainEntity": [
+                    {
+                        "@type": "Question",
+                        "name": "청원여행사는 어떤 골프여행 상품을 제공하나요?",
+                        "acceptedAnswer": {
+                            "@type": "Answer",
+                            "text": "청원여행사는 일본, 중국, 베트남, 호주를 중심으로 해외 골프여행, 맞춤 골프투어, 단체 골프여행 상담 및 패키지 상품을 제공합니다."
+                        }
+                    },
+                    {
+                        "@type": "Question",
+                        "name": "맞춤 골프여행 견적 상담이 가능한가요?",
+                        "acceptedAnswer": {
+                            "@type": "Answer",
+                            "text": "네. 여행 일정, 인원, 선호 지역, 골프장, 숙박 조건에 따라 1:1 맞춤 견적 상담이 가능합니다."
+                        }
+                    },
+                    {
+                        "@type": "Question",
+                        "name": "청원여행사의 주요 해외 골프여행 지역은 어디인가요?",
+                        "acceptedAnswer": {
+                            "@type": "Answer",
+                            "text": "주요 지역은 일본, 중국, 베트남, 호주이며 계절과 항공 일정에 따라 다양한 골프여행 상품을 상담할 수 있습니다."
+                        }
+                    }
+                ]
             }
-        ],
-        "areaServed": ["KR", "Busan", "JP", "CN"],
-        "availableLanguage": ["ko", "en"],
-        "sameAs": [
-            "https://www.instagram.com/chungwon.tour/",
-            "https://blog.naver.com/chungwon87",
-            "https://pf.kakao.com/_qFxdqX"
-        ],
-        "contactPoint": {
-            "@type": "ContactPoint",
-            "contactType": "customer service",
-            "areaServed": "KR",
-            "availableLanguage": ["Korean"]
-        },
-        "knowsAbout": [
-            "일본 골프 여행",
-            "중국 골프 여행",
-            "골프 투어",
-            "골프 패키지",
-            "해외 골프 여행",
-            "부산 골프 여행사"
         ]
     }
     </script>
