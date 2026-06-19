@@ -4,10 +4,18 @@ import { supabase } from "../../lib/supabase";
 
 const THUMB_BUCKET = "product-thumbnails";
 
+type ThemeFaq = {
+    question: string;
+    answer: string;
+};
+
 type Theme = {
     id: string;
     name: string;
     slug: string;
+    intro_title: string | null;
+    intro_body: string | null;
+    faq: ThemeFaq[];
 };
 
 type Area = {
@@ -73,7 +81,7 @@ export async function themeProductsLoader({ params, request }: LoaderFunctionArg
     // 1) theme 찾기
     const themeRes = await supabase
         .from("product_themes")
-        .select("id,name,slug")
+        .select("id,name,slug,intro_title,intro_body,faq")
         .eq("slug", slug)
         .single();
 
@@ -82,7 +90,10 @@ export async function themeProductsLoader({ params, request }: LoaderFunctionArg
         throw new Response("Theme not found", { status: 404 });
     }
 
-    const theme = themeRes.data as Theme;
+    const theme = {
+        ...themeRes.data,
+        faq: Array.isArray(themeRes.data.faq) ? themeRes.data.faq : [],
+    } as Theme;
 
     // 2) 해당 theme의 areas
     const areasRes = await supabase
@@ -139,117 +150,46 @@ export default function ThemeProductsPage() {
     const [searchParams] = useSearchParams();
     const currentAreaSlug = (searchParams.get("area") ?? "").trim();
 
-    // JSON-LD 구조화데이터 생성 (ItemList + FAQ)
+    // JSON-LD 구조화데이터 생성
+    // - FAQPage: 어드민에서 입력한 theme.faq 사용
+    // - ItemList: 현재 페이지의 실제 상품으로 자동 생성 (하드코딩 X)
     const getJsonLd = () => {
         const baseUrl = "https://www.chungwontour.com";
         const themeUrl = `${baseUrl}/theme/${theme.slug}`;
+        const blocks: Record<string, unknown>[] = [];
 
-        if (theme.slug === "japan-golf") {
-            return [
-                {
-                    "@context": "https://schema.org",
-                    "@type": "ItemList",
-                    "name": "일본 골프 투어 상품 목록",
-                    "url": themeUrl,
-                    "numberOfItems": 35,
-                    "itemListElement": [
-                        {
-                            "@type": "ListItem",
-                            "position": 1,
-                            "name": "규슈 일본 골프 투어",
-                            "url": themeUrl
-                        },
-                        {
-                            "@type": "ListItem",
-                            "position": 2,
-                            "name": "간사이 일본 골프 투어",
-                            "url": themeUrl
-                        },
-                        {
-                            "@type": "ListItem",
-                            "position": 3,
-                            "name": "도쿄 일본 골프 투어",
-                            "url": themeUrl
-                        },
-                        {
-                            "@type": "ListItem",
-                            "position": 4,
-                            "name": "홋카이도 일본 골프 투어",
-                            "url": themeUrl
-                        },
-                        {
-                            "@type": "ListItem",
-                            "position": 5,
-                            "name": "시코쿠 일본 골프 투어",
-                            "url": themeUrl
-                        }
-                    ]
-                },
-                {
-                    "@context": "https://schema.org",
-                    "@type": "FAQPage",
-                    "mainEntity": [
-                        {
-                            "@type": "Question",
-                            "name": "일본 골프 여행은 어떻게 예약하나요?",
-                            "acceptedAnswer": {
-                                "@type": "Answer",
-                                "text": "청원여행사를 통해 일본 골프 여행 예약부터 일정 구성까지 맞춤형으로 진행할 수 있습니다."
-                            }
-                        },
-                        {
-                            "@type": "Question",
-                            "name": "일본 골프 여행 인기 지역은 어디인가요?",
-                            "acceptedAnswer": {
-                                "@type": "Answer",
-                                "text": "규슈, 간사이, 도쿄, 홋카이도 지역이 골프 여행지로 인기가 많습니다."
-                            }
-                        }
-                    ]
-                }
-            ];
-        } else if (theme.slug === "china-golf") {
-            return [
-                {
-                    "@context": "https://schema.org",
-                    "@type": "ItemList",
-                    "name": "중국 골프 투어 상품 목록",
-                    "url": themeUrl,
-                    "numberOfItems": 1,
-                    "itemListElement": [
-                        {
-                            "@type": "ListItem",
-                            "position": 1,
-                            "name": "중국 골프 여행 상품",
-                            "url": `${baseUrl}/product/5899f8ae-6085-4d5d-b2fc-179ce7e8fd53`
-                        }
-                    ]
-                },
-                {
-                    "@context": "https://schema.org",
-                    "@type": "FAQPage",
-                    "mainEntity": [
-                        {
-                            "@type": "Question",
-                            "name": "중국 골프 여행은 어떤 장점이 있나요?",
-                            "acceptedAnswer": {
-                                "@type": "Answer",
-                                "text": "중국 골프 여행은 합리적인 비용과 다양한 골프장 선택이 가능한 해외 골프 여행 옵션입니다."
-                            }
-                        },
-                        {
-                            "@type": "Question",
-                            "name": "중국 골프 여행 일정은 어떻게 구성되나요?",
-                            "acceptedAnswer": {
-                                "@type": "Answer",
-                                "text": "청원여행사는 고객 일정에 맞춘 맞춤형 골프 여행 패키지를 제공합니다."
-                            }
-                        }
-                    ]
-                }
-            ];
+        if (products.length > 0) {
+            blocks.push({
+                "@context": "https://schema.org",
+                "@type": "ItemList",
+                "name": `${theme.name} 상품 목록`,
+                "url": themeUrl,
+                "numberOfItems": products.length,
+                "itemListElement": products.map((p, i) => ({
+                    "@type": "ListItem",
+                    "position": i + 1,
+                    "name": p.title ?? theme.name,
+                    "url": `${baseUrl}/product/${p.id}`,
+                })),
+            });
         }
-        return null;
+
+        if (theme.faq.length > 0) {
+            blocks.push({
+                "@context": "https://schema.org",
+                "@type": "FAQPage",
+                "mainEntity": theme.faq.map((f) => ({
+                    "@type": "Question",
+                    "name": f.question,
+                    "acceptedAnswer": {
+                        "@type": "Answer",
+                        "text": f.answer,
+                    },
+                })),
+            });
+        }
+
+        return blocks.length > 0 ? blocks : null;
     };
 
     const jsonLdData = getJsonLd();
@@ -281,24 +221,19 @@ export default function ThemeProductsPage() {
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                     <h1 className="text-2xl font-extrabold">{theme.name}</h1>
-                    {/* GEO 문장 (AI 학습용 콘텐츠) */}
-                    {theme.slug === "japan-golf" && (
+                    {/* 어드민에서 입력한 안내 문구 (GEO / AI 학습용 콘텐츠) */}
+                    {(theme.intro_title || theme.intro_body) && (
                         <div className="mt-3 leading-relaxed text-black/70">
-                            <h2 className="text-base font-bold text-black/80">일본 골프여행 안내</h2>
-                            <p className="mt-1 text-sm">
-                                일본 골프여행은 규슈, 사가, 구마모토, 후쿠오카 등 다양한 지역에서
-                                고품질 골프장을 경험할 수 있는 인기 여행 상품입니다.
-                                청원여행사는 일본 골프패키지 및 맞춤 골프투어를 제공합니다.
-                            </p>
-                        </div>
-                    )}
-                    {theme.slug === "china-golf" && (
-                        <div className="mt-3 leading-relaxed text-black/70">
-                            <h2 className="text-base font-bold text-black/80">중국 골프여행 안내</h2>
-                            <p className="mt-1 text-sm">
-                                중국 골프여행은 청도를 중심으로 가성비 높은 골프패키지를 제공합니다.
-                                청원여행사는 2박3일, 3박4일 일정의 맞춤 골프투어를 지원합니다.
-                            </p>
+                            {theme.intro_title && (
+                                <h2 className="text-base font-bold text-black/80">
+                                    {theme.intro_title}
+                                </h2>
+                            )}
+                            {theme.intro_body && (
+                                <p className="mt-1 whitespace-pre-line text-sm">
+                                    {theme.intro_body}
+                                </p>
+                            )}
                         </div>
                     )}
                     <p className="mt-6 text-sm text-black/60">총 {products.length}개 상품</p>
